@@ -1,50 +1,68 @@
 
-# DSM – Digital Software Market | React Frontend
 
-## Overview
-Replicate the existing luxury editorial HTML design pixel-for-pixel into a modular React + Tailwind CSS frontend. The site is a premium software licensing marketplace (official Microsoft/Adobe/Autodesk partner) with a high-end, Porsche/Apple-inspired aesthetic using Playfair Display + Inter fonts, stone color palette, and smooth scroll-triggered animations.
+# Visual Upgrade: Logos, Images, and Interactive Product Cards
+
+## What's Changing
+
+### 1. Logo Strip - Fix Broken Images
+Replace external Wikipedia SVG links (which often get blocked by CORS/hotlinking) with inline SVG logos rendered directly in the component. This guarantees they always display correctly.
+
+**Logos to render inline:** Microsoft, Apple, Autodesk, Adobe, SketchUp, V-Ray
+
+### 2. Creative Studio Card - Artistic Image
+Replace the current Unsplash photo with an AI-generated artistic image that feels relevant to creative software (think: colorful digital art workspace, paint splashes merging with digital tools). This will be generated using the Nano banana image generation model and uploaded to the project.
+
+### 3. Product Cards - Interactive 3D Hover Effect
+Replace the current simple letter icons with actual product box visuals using CSS 3D transforms. On hover, the product image will perform a smooth **3D tilt/rotation effect** (perspective-based rotation that follows the mouse or does a gentle spin animation), giving a holographic feel.
+
+**Effect details:**
+- Cards get `perspective` and `transform-style: preserve-3d`
+- On hover: smooth Y-axis rotation (partial 360 spin) with a glossy shine overlay that sweeps across
+- A subtle shadow shift to enhance the 3D depth illusion
+- Product visuals will use recognizable software box art style images
+
+### 4. Product Images
+Replace gradient letter placeholders with proper product visuals:
+- **Office 2021 Pro Plus** - Blue Office logo/box visual
+- **Acrobat Pro DC** - Red Adobe Acrobat icon
+- **AutoCAD 2024** - Autodesk AutoCAD icon
+- **Kaspersky Total** - Green Kaspersky shield icon
+
+These will be rendered as styled SVG/CSS compositions (not external URLs that can break).
 
 ---
 
-## Pages & Sections to Build
+## Technical Details
 
-### 1. Homepage (Landing Page)
-All sections from the HTML, built as reusable React components:
+### Files Modified
+1. **`src/components/LogoStrip.tsx`** - Replace img tags with inline SVGs for all 6 partner logos
+2. **`src/components/RoleGrid.tsx`** - Update Creative Studio card image source
+3. **`src/components/ProductGrid.tsx`** - Major update:
+   - Add product image URLs to data
+   - Add CSS 3D perspective container
+   - Add hover rotation keyframe animation
+   - Add glossy shine sweep overlay on hover
+4. **`src/index.css`** - Add 3D card animation keyframes and holographic shine effect
+5. **AI image generation** - Generate 1 artistic creative studio image
 
-- **Fixed Navigation Header** – Logo "DSM.", desktop menu with mega-menu dropdown on "Software" (categories, partner showroom, editorial feature card), links for Enterprise/Support/About, icon buttons for Search/User/Cart with cart badge
-- **Hero Section** – Full-viewport with background image overlay, trust badge ("Official Certified Reseller"), large serif headline ("Digital Architecture For Creators"), subheadline, two CTAs (Shop Licenses + Talk to a Specialist), trust indicators (Genuine, Instant Delivery, Lifetime Warranty), scroll-down indicator
-- **Logo Strip** – Monochrome partner logos (Microsoft, Apple, Autodesk, Adobe, SketchUp, V-Ray) with grayscale-to-color hover effect
-- **Curated by Role (Bento Grid)** – 4-item asymmetric grid: Enterprise & IT (large), Creative Studio, AEC & BIM, Education (dark card with icon)
-- **Editorial Spotlight (Dark Section)** – Windows 11 Professional feature with pricing (AED 199), product visual with gradient background and Windows logo, "Configure License" CTA
-- **Bestselling Essentials (Product Grid)** – 4 product cards with hover-reveal "Add to Cart" overlays, badges (Best Value, Sale), pricing in AED, filter tabs (All/Office/Security/Design)
-- **Trust Section** – "Why companies trust DSM" with 4 feature cards: Certified Authenticity, Instant Delivery, Technical Support, Secure Transactions
-- **Footer** – 4-column layout (Brand + socials, Shop links, Support links, Legal links), payment method badges (VISA/MC/AMEX), copyright
+### 3D Hover Effect Implementation
+```text
++---------------------------+
+|  Card Container           |
+|  perspective: 1000px      |
+|                           |
+|  +---------------------+  |
+|  | Product Image       |  |
+|  | transform-style:    |  |
+|  |   preserve-3d       |  |
+|  |                     |  |
+|  | HOVER triggers:     |  |
+|  | - rotateY(15deg)    |  |
+|  | - shine sweep       |  |
+|  | - shadow shift      |  |
+|  +---------------------+  |
++---------------------------+
+```
 
-### 2. Visual Effects & Interactions
-- **Film grain overlay** – Subtle SVG noise texture fixed overlay
-- **Scroll-triggered animations** – Fade-up, fade-right, and scale-in animations on scroll (using CSS animations/Intersection Observer to replace GSAP)
-- **Mega menu** – Smooth open/close on hover with backdrop blur
-- **Product card hover** – Slide-up overlay with "Add to Cart" button
-- **Custom scrollbar** – Thin 6px styled scrollbar
-- **Floating chat button** – Fixed bottom-right "Chat with Expert" button that expands on hover
+The effect uses pure CSS (no heavy 3D libraries) for performance - a smooth `rotateY` animation with a diagonal shine gradient that sweeps across on hover.
 
-### 3. Design System Setup
-- **Fonts**: Playfair Display (serif headings) + Inter (UI text) via Google Fonts
-- **Colors**: Stone palette (stone-50 through stone-900), cobalt blue accent, green for status indicators
-- **Typography**: Editorial large serif headlines, light-weight body text, uppercase tracking for labels
-- **Spacing**: Max-width 1600px container, generous padding (py-24 to py-32 sections)
-
-### 4. Component Architecture
-Modular, reusable components ready for future pages:
-- `Header` with `MegaMenu` sub-component
-- `Hero`
-- `LogoStrip`
-- `RoleGrid` (Bento layout)
-- `EditorialSpotlight`
-- `ProductCard` + `ProductGrid`
-- `TrustSection`
-- `Footer`
-- `FloatingChatButton`
-- `GrainOverlay`
-
-All components will be fully responsive (mobile hamburger menu pattern for navigation, stacked layouts on small screens) matching the existing HTML breakpoints.
