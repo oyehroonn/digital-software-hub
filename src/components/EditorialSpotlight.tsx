@@ -1,4 +1,5 @@
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import windows11Bg from "@/assets/windows11-bg.jpg";
 
 const EditorialSpotlight = () => {
   const fadeRight = useScrollAnimation("animate-fade-right");
@@ -32,9 +33,13 @@ const EditorialSpotlight = () => {
 
         <div ref={scaleIn.ref} className={`order-1 lg:order-2 relative ${scaleIn.className}`}>
           <div className="aspect-[4/5] relative bg-gradient-to-br from-stone-800 to-black rounded-lg overflow-hidden shadow-2xl border border-stone-800">
+            <div className="absolute inset-0">
+              <img src={windows11Bg} alt="Windows 11 background" className="w-full h-full object-cover blur-xl scale-110 opacity-90" />
+            </div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-3/4 h-3/4 bg-gradient-to-b from-[#e6f4f1] to-[#87a9e0] rounded opacity-90 blur-xl" />
-              <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Windows_11_logo.svg" alt="Windows 11" className="w-32 h-32 relative z-10 drop-shadow-2xl" />
+              <svg viewBox="0 0 88 88" className="w-28 h-28 relative z-10 drop-shadow-2xl" fill="white">
+                <path d="M0 12.402l35.687-4.86.016 34.423-35.67.203zm35.67 33.529l.028 34.453L.028 75.48.026 45.7zm4.326-39.025L87.314 0v41.527l-47.318.376zm47.329 39.349l-.011 41.34-47.318-6.678-.066-34.739z" />
+              </svg>
             </div>
             <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/10 backdrop-blur-md border border-white/10 rounded flex justify-between items-center">
               <div>
