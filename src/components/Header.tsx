@@ -26,14 +26,14 @@ const Header = () => {
         </a>
 
         {/* Desktop Menu */}
-        <nav className="hidden lg:flex items-center gap-8 h-full">
+        <nav className="hidden lg:flex items-center gap-8 h-full overflow-visible">
           <div className="group h-full flex items-center relative nav-item">
             <button className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors tracking-wide h-full flex items-center gap-1">
               Software <ChevronDown className="w-3 h-3 opacity-50" />
             </button>
 
             {/* Mega Menu */}
-            <div className="mega-menu absolute top-full left-1/2 -translate-x-1/2 w-[90vw] max-w-[1200px] bg-white border border-border shadow-2xl rounded-b-xl overflow-hidden pt-8 pb-12 px-12 z-40 origin-top">
+            <div className="mega-menu absolute top-full left-1/2 -translate-x-1/2 w-[90vw] max-w-[1200px] bg-white border border-border shadow-2xl rounded-b-xl pt-8 pb-12 px-12 z-50 origin-top">
               <div className="grid grid-cols-12 gap-8">
                 {/* Categories */}
                 <div className="col-span-3 border-r border-stone-100">
