@@ -33,7 +33,7 @@ const Header = () => {
             </button>
 
             {/* Mega Menu - positioned relative to the header container */}
-            <div className="mega-menu fixed left-1/2 -translate-x-1/2 top-16 w-[90vw] max-w-[1200px] bg-white border border-border shadow-2xl rounded-b-xl pt-8 pb-12 px-12 z-50 origin-top">
+            <div className="mega-menu fixed left-4 right-4 top-16 max-w-[1200px] mx-auto bg-white border border-border shadow-2xl rounded-b-xl pt-8 pb-12 px-8 md:px-12 z-50 origin-top overflow-auto max-h-[80vh]">
               <div className="grid grid-cols-12 gap-8">
                 {/* Categories */}
                 <div className="col-span-3 border-r border-stone-100">
