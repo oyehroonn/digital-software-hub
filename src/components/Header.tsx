@@ -18,7 +18,7 @@ const brands = [
 const Header = () => {
   return (
     <header className="fixed top-0 left-0 w-full z-50 transition-all duration-300 border-b border-transparent bg-background/80 backdrop-blur-md">
-      <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between relative">
         {/* Logo */}
         <a href="#" className="font-serif text-xl tracking-tight z-50 font-medium relative group">
           DSM.
@@ -27,13 +27,13 @@ const Header = () => {
 
         {/* Desktop Menu */}
         <nav className="hidden lg:flex items-center gap-8 h-full overflow-visible">
-          <div className="group h-full flex items-center relative nav-item">
+          <div className="group h-full flex items-center nav-item">
             <button className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors tracking-wide h-full flex items-center gap-1">
               Software <ChevronDown className="w-3 h-3 opacity-50" />
             </button>
 
-            {/* Mega Menu */}
-            <div className="mega-menu absolute top-full left-1/2 -translate-x-1/2 w-[90vw] max-w-[1200px] bg-white border border-border shadow-2xl rounded-b-xl pt-8 pb-12 px-12 z-50 origin-top">
+            {/* Mega Menu - positioned relative to the header container */}
+            <div className="mega-menu fixed left-1/2 -translate-x-1/2 top-16 w-[90vw] max-w-[1200px] bg-white border border-border shadow-2xl rounded-b-xl pt-8 pb-12 px-12 z-50 origin-top">
               <div className="grid grid-cols-12 gap-8">
                 {/* Categories */}
                 <div className="col-span-3 border-r border-stone-100">
