@@ -8,12 +8,56 @@ interface Product {
   oldPrice?: string;
   badge?: string;
   badgeColor?: string;
-  gradient: string;
-  letter: string;
+  icon: React.ReactNode;
   hoverLabel: string;
   hoverAction: string;
   category: string;
 }
+
+const OfficeIcon = () => (
+  <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-400 rounded-xl shadow-lg flex items-center justify-center">
+    <svg viewBox="0 0 48 48" className="w-10 h-10">
+      <rect x="8" y="6" width="32" height="36" rx="2" fill="white" opacity="0.9"/>
+      <rect x="12" y="14" width="16" height="2" rx="1" fill="#2563eb"/>
+      <rect x="12" y="20" width="24" height="2" rx="1" fill="#2563eb" opacity="0.6"/>
+      <rect x="12" y="26" width="20" height="2" rx="1" fill="#2563eb" opacity="0.4"/>
+      <rect x="12" y="32" width="22" height="2" rx="1" fill="#2563eb" opacity="0.3"/>
+      <text x="24" y="12" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#1d4ed8">O</text>
+    </svg>
+  </div>
+);
+
+const AcrobatIcon = () => (
+  <div className="w-20 h-20 bg-gradient-to-br from-red-600 to-orange-500 rounded-xl shadow-lg flex items-center justify-center">
+    <svg viewBox="0 0 48 48" className="w-10 h-10">
+      <path d="M24 8L36 40H12L24 8z" fill="white" opacity="0.9"/>
+      <path d="M24 16L31 36H17L24 16z" fill="#dc2626"/>
+      <circle cx="24" cy="28" r="3" fill="white"/>
+    </svg>
+  </div>
+);
+
+const AutoCADIcon = () => (
+  <div className="w-20 h-20 bg-gradient-to-br from-stone-800 to-stone-600 rounded-xl shadow-lg flex items-center justify-center">
+    <svg viewBox="0 0 48 48" className="w-10 h-10">
+      <polygon points="24,6 42,18 42,36 24,42 6,36 6,18" fill="none" stroke="white" strokeWidth="1.5" opacity="0.8"/>
+      <polygon points="24,12 36,20 36,32 24,38 12,32 12,20" fill="none" stroke="#22d3ee" strokeWidth="1.5"/>
+      <line x1="24" y1="12" x2="24" y2="38" stroke="#22d3ee" strokeWidth="0.8" opacity="0.5"/>
+      <line x1="12" y1="20" x2="36" y2="32" stroke="#22d3ee" strokeWidth="0.8" opacity="0.5"/>
+      <line x1="36" y1="20" x2="12" y2="32" stroke="#22d3ee" strokeWidth="0.8" opacity="0.5"/>
+    </svg>
+  </div>
+);
+
+const KasperskyIcon = () => (
+  <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-400 rounded-xl shadow-lg flex items-center justify-center">
+    <svg viewBox="0 0 48 48" className="w-10 h-10">
+      <path d="M24 4C16 4 8 10 8 20C8 32 24 44 24 44C24 44 40 32 40 20C40 10 32 4 24 4z" fill="white" opacity="0.9"/>
+      <path d="M24 10C18 10 14 14 14 20C14 28 24 38 24 38C24 38 34 28 34 20C34 14 30 10 24 10z" fill="#16a34a"/>
+      <path d="M20 20L23 24L30 16" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  </div>
+);
 
 const products: Product[] = [
   {
@@ -22,8 +66,7 @@ const products: Product[] = [
     price: "AED 120",
     badge: "Best Value",
     badgeColor: "bg-stone-100 text-stone-600",
-    gradient: "from-blue-500 to-cyan-400",
-    letter: "O",
+    icon: <OfficeIcon />,
     hoverLabel: "Instant Delivery",
     hoverAction: "Add to Cart",
     category: "Office",
@@ -32,8 +75,7 @@ const products: Product[] = [
     name: "Acrobat Pro DC",
     subtitle: "1 Year Subscription",
     price: "AED 450",
-    gradient: "from-red-600 to-orange-500",
-    letter: "A",
+    icon: <AcrobatIcon />,
     hoverLabel: "Official Partner",
     hoverAction: "Add to Cart",
     category: "Design",
@@ -42,8 +84,7 @@ const products: Product[] = [
     name: "AutoCAD 2024",
     subtitle: "For Windows & Mac",
     price: "AED 2,100",
-    gradient: "bg-stone-800",
-    letter: "A",
+    icon: <AutoCADIcon />,
     hoverLabel: "Educational",
     hoverAction: "View Options",
     category: "Design",
@@ -55,8 +96,7 @@ const products: Product[] = [
     oldPrice: "AED 150",
     badge: "Sale",
     badgeColor: "bg-green-100 text-green-700",
-    gradient: "from-green-500 to-emerald-400",
-    letter: "K",
+    icon: <KasperskyIcon />,
     hoverLabel: "Instant Delivery",
     hoverAction: "Add to Cart",
     category: "Security",
@@ -95,7 +135,7 @@ const ProductGrid = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
           {filteredProducts.map((product) => (
             <div key={product.name} className="group relative">
-              <div className="relative aspect-[3/4] bg-white border border-border rounded-sm overflow-hidden mb-4 shadow-sm transition-all duration-300 group-hover:shadow-lg">
+              <div className="relative aspect-[3/4] bg-white border border-border rounded-sm overflow-hidden mb-4 shadow-sm transition-all duration-300 group-hover:shadow-lg" style={{ perspective: "1000px" }}>
                 {product.badge && (
                   <div className="absolute top-3 left-3 z-10">
                     <span className={`px-2 py-1 ${product.badgeColor} text-[10px] uppercase font-bold tracking-wider rounded-sm`}>
@@ -104,13 +144,15 @@ const ProductGrid = () => {
                   </div>
                 )}
                 <div className="w-full h-full flex items-center justify-center p-8 bg-stone-50 group-hover:bg-white transition-colors">
-                  <div className={`w-20 h-20 ${product.gradient.startsWith("from-") ? `bg-gradient-to-tr ${product.gradient}` : product.gradient} rounded-xl shadow-lg flex items-center justify-center text-white font-bold text-2xl`}>
-                    {product.letter}
+                  <div className="product-3d-card">
+                    {product.icon}
+                    {/* Shine overlay */}
+                    <div className="product-shine" />
                   </div>
                 </div>
 
                 {/* Hover overlay */}
-                <div className="absolute inset-x-0 bottom-0 p-4 bg-white/90 backdrop-blur border-t border-stone-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out flex flex-col gap-2">
+                <div className="absolute inset-x-0 bottom-0 p-4 bg-white/90 backdrop-blur border-t border-stone-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out flex flex-col gap-2 z-20">
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                     <CheckCircle className="w-3 h-3 text-green-600" /> {product.hoverLabel}
                   </div>

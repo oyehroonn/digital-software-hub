@@ -132,6 +132,46 @@
   transform: scale(1);
 }
 
+/* 3D Product Card Effect */
+.product-3d-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.6s ease;
+  border-radius: 0.75rem;
+}
+.group:hover .product-3d-card {
+  animation: product3dSpin 1.2s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  filter: drop-shadow(0 20px 30px rgba(0,0,0,0.15));
+}
+.product-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.75rem;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255,255,255,0.6) 45%,
+    rgba(255,255,255,0.3) 50%,
+    transparent 55%
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+.group:hover .product-shine {
+  animation: shineSwipe 1.2s ease-out forwards;
+}
+@keyframes product3dSpin {
+  0% { transform: rotateY(0deg) scale(1); }
+  40% { transform: rotateY(20deg) scale(1.05); }
+  70% { transform: rotateY(-10deg) scale(1.02); }
+  100% { transform: rotateY(0deg) scale(1); }
+}
+@keyframes shineSwipe {
+  0% { opacity: 0; transform: translateX(-100%); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(100%); }
+}
+
 /* Hero staggered reveal */
 .hero-reveal {
   opacity: 0;

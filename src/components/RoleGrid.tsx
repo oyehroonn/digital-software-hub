@@ -1,5 +1,6 @@
 import { ArrowRight, ArrowUpRight, GraduationCap } from "lucide-react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import creativeStudioImg from "@/assets/creative-studio.jpg";
 
 const AnimatedCard = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   const { ref, className: animClass } = useScrollAnimation();
@@ -35,7 +36,7 @@ const RoleGrid = () => {
 
           {/* Creative Studio */}
           <AnimatedCard className="group relative col-span-1 md:col-span-2 row-span-1 overflow-hidden bg-stone-200 rounded-sm cursor-pointer">
-            <img src="https://images.unsplash.com/photo-1558655146-d09347e0b7a9?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Creative" />
+            <img src={creativeStudioImg} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Creative Studio" />
             <div className="absolute inset-0 bg-stone-900/20" />
             <div className="absolute bottom-0 left-0 p-8 w-full flex justify-between items-end">
               <div>
