@@ -31,7 +31,9 @@ export function useHeroReveal() {
     const el = ref.current;
     if (!el) return;
     const children = el.querySelectorAll(".hero-reveal");
+    const spotlightOrbs = el.querySelectorAll(".hero-spotlight-orb");
     const timer = setTimeout(() => {
+      spotlightOrbs.forEach((orb) => orb.classList.add("visible"));
       children.forEach((child) => child.classList.add("visible"));
     }, 100);
     return () => clearTimeout(timer);

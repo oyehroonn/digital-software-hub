@@ -6,8 +6,8 @@ const features = [
     icon: ShieldCheck,
     title: "Certified Authenticity",
     desc: "Direct partner status with Microsoft, Adobe, and Autodesk ensures 100% genuine keys that pass every audit.",
-    accent: "text-gold",
-    glow: "group-hover:shadow-[0_0_20px_hsl(43_87%_60%/0.1)]",
+    accent: "text-crimson",
+    glow: "group-hover:shadow-[0_0_20px_hsl(4_65%_54%/0.1)]",
   },
   {
     icon: Clock,
@@ -42,19 +42,18 @@ const TrustSection = () => {
     >
       <div ref={glowRef} className="cursor-glow-dot" />
 
-      {/* Gold divider at top */}
-      <div className="absolute top-0 left-0 right-0 section-divider-gold" />
+      <div className="absolute top-0 left-0 right-0 section-divider-red" />
 
       <div className="max-w-[1600px] mx-auto px-6 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           <div className="lg:col-span-5">
             <h2 className="font-serif text-4xl mb-6 text-[#FEFEFE]">
-              Why the world's leading<br />companies trust <span className="text-gold">DSM.</span>
+              Why the world's leading<br />companies trust <span className="text-crimson">DSM.</span>
             </h2>
             <p className="text-[#B1B2B3] font-light leading-relaxed mb-8">
               We aren't just a marketplace; we are your licensing compliance partner. From audit support to volume discounts, we handle the complexities of software procurement so you can focus on building.
             </p>
-            <a href="#" className="text-sm font-medium text-gold border-b border-gold/30 pb-1 hover:border-gold transition-colors inline-flex items-center gap-2 group">
+            <a href="#" className="text-sm font-medium text-crimson border-b border-crimson/30 pb-1 hover:border-crimson transition-colors inline-flex items-center gap-2 group">
               Read our story <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </a>
           </div>

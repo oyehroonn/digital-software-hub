@@ -23,7 +23,7 @@ const EditorialSpotlight = () => {
               <span className="text-[10px] text-[hsl(220_3%_52%)] uppercase tracking-[0.14em]">Starting Price</span>
             </div>
             <div className="h-10 w-[1px] bg-[hsl(40_8%_88%)]" />
-            <button className="btn-magnetic px-8 py-3 bg-[hsl(220_10%_4%)] text-[#FEFEFE] hover:bg-gold hover:text-[#060708] hover:shadow-gold-glow transition-all duration-400 text-sm font-medium rounded-sm">
+            <button className="btn-magnetic px-8 py-3 bg-crimson text-[#FEFEFE] hover:bg-crimson-dark hover:shadow-crimson-glow transition-all duration-400 text-sm font-medium rounded-sm">
               Configure License
             </button>
           </div>
@@ -39,7 +39,7 @@ const EditorialSpotlight = () => {
                 <path d="M0 12.402l35.687-4.86.016 34.423-35.67.203zm35.67 33.529l.028 34.453L.028 75.48.026 45.7zm4.326-39.025L87.314 0v41.527l-47.318.376zm47.329 39.349l-.011 41.34-47.318-6.678-.066-34.739z" />
               </svg>
             </div>
-            <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/[0.06] backdrop-blur-md border border-gold/[0.1] rounded-md flex justify-between items-center">
+            <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/[0.06] backdrop-blur-md border border-crimson/[0.1] rounded-md flex justify-between items-center">
               <div>
                 <p className="text-xs font-semibold text-[#FEFEFE]">Retail License</p>
                 <p className="text-[10px] text-[#B1B2B3]">Lifetime Validity</p>

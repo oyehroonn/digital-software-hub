@@ -87,7 +87,7 @@ const products: Product[] = [
     price: "AED 1,281.70",
     priceRange: "AED 1,281.70 – AED 2,199.83",
     badge: "Popular",
-    badgeColor: "bg-gold/10 text-gold-hover",
+    badgeColor: "bg-crimson/10 text-crimson",
     icon: <SketchUpIcon />,
     glbSrc: "/models/Product_Sketch_UP.glb",
     hoverLabel: "Official Partner",
@@ -119,7 +119,7 @@ const products: Product[] = [
     price: "AED 85",
     oldPrice: "AED 150",
     badge: "Sale",
-    badgeColor: "bg-crimson/10 text-crimson",
+    badgeColor: "bg-gold/10 text-gold-hover",
     icon: <KasperskyIcon />,
     hoverLabel: "Instant Delivery",
     hoverAction: "Add to Cart",
@@ -146,8 +146,8 @@ const ProductGrid = () => {
                 onClick={() => setActiveFilter(f)}
                 className={`transition-all duration-300 ${
                   activeFilter === f
-                    ? "text-[hsl(220_10%_4%)] font-medium border-b border-gold pb-1"
-                    : "text-[hsl(220_3%_52%)] hover:text-gold"
+                    ? "text-[hsl(220_10%_4%)] font-medium border-b border-crimson pb-1"
+                    : "text-[hsl(220_3%_52%)] hover:text-crimson"
                 }`}
               >
                 {f}
@@ -181,19 +181,18 @@ const ProductGrid = () => {
                   </div>
                 )}
 
-                {/* Hover overlay — frosted glass */}
                 <div className="absolute inset-x-0 bottom-0 p-4 bg-[hsl(40_25%_99%)/0.92] backdrop-blur-lg border-t border-[hsl(40_8%_88%)] translate-y-full group-hover:translate-y-0 transition-transform duration-400 ease-out flex flex-col gap-2 z-20">
                   <div className="flex items-center gap-2 text-[10px] text-[hsl(220_3%_52%)]">
                     <CheckCircle className="w-3 h-3 text-green-600" /> {product.hoverLabel}
                   </div>
-                  <button className="btn-magnetic w-full py-2 bg-[hsl(220_10%_4%)] text-[#FEFEFE] text-xs font-medium rounded-sm hover:bg-gold hover:text-[#060708] transition-all duration-300">
+                  <button className="btn-magnetic w-full py-2 bg-crimson text-[#FEFEFE] text-xs font-medium rounded-sm hover:bg-crimson-dark transition-all duration-300">
                     {product.hoverAction}
                   </button>
                 </div>
               </div>
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-medium text-[hsl(220_10%_4%)] text-sm mb-1 group-hover:underline decoration-gold/30 underline-offset-4">{product.name}</h3>
+                  <h3 className="font-medium text-[hsl(220_10%_4%)] text-sm mb-1 group-hover:underline decoration-crimson/30 underline-offset-4">{product.name}</h3>
                   <p className="text-[hsl(220_3%_52%)] text-xs">{product.subtitle}</p>
                   {product.rating && (
                     <div className="flex items-center gap-0.5 mt-1">

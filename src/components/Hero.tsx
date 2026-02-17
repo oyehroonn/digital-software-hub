@@ -1,27 +1,35 @@
+import { useState } from "react";
 import { ArrowRight, ArrowDown, Check, Zap, Shield } from "lucide-react";
 import { useHeroReveal, useCursorGlow } from "@/hooks/useScrollAnimation";
+import MagnifyText from "./MagnifyText";
+import HeroMesh from "./HeroMesh";
+import type { MeshAccent } from "./HeroMesh";
 
 const Hero = () => {
   const ref = useHeroReveal();
   const { containerRef, glowRef } = useCursorGlow();
+  const [meshAccent, setMeshAccent] = useState<MeshAccent>("red");
 
   return (
     <section
       ref={containerRef}
-      className="cursor-glow relative min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-[#060708]"
+      className="cursor-glow relative min-h-screen flex items-center justify-center pt-20 overflow-hidden"
     >
-      {/* Cursor glow */}
+      {/* Three.js interactive mesh background */}
+      <HeroMesh accent={meshAccent} />
+
+      {/* Cursor spotlight */}
       <div ref={glowRef} className="cursor-glow-dot" />
 
-      {/* Ambient orbs */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
+      {/* Ambient orbs — layered above mesh, below text */}
+      <div className="absolute inset-0 z-[1] overflow-hidden pointer-events-none">
         <div
-          className="absolute top-1/3 left-1/4 w-[50vw] h-[50vw] rounded-full blur-[200px] bg-[hsl(43_87%_60%)]"
-          style={{ animation: "orbFloat 12s ease-in-out infinite, orbColorGold 8s ease-in-out infinite" }}
+          className="absolute top-1/3 left-1/4 w-[50vw] h-[50vw] rounded-full blur-[200px] bg-[hsl(4_65%_54%)]"
+          style={{ animation: "orbFloat 12s ease-in-out infinite, orbColorCrimson 8s ease-in-out infinite" }}
         />
         <div
-          className="absolute bottom-1/4 right-1/4 w-[35vw] h-[35vw] rounded-full blur-[180px] bg-[hsl(4_65%_54%)]"
-          style={{ animation: "orbFloat 15s ease-in-out infinite reverse, orbColorCrimson 10s ease-in-out infinite" }}
+          className="absolute bottom-1/4 right-1/4 w-[35vw] h-[35vw] rounded-full blur-[180px] bg-[hsl(43_87%_60%)]"
+          style={{ animation: "orbFloat 15s ease-in-out infinite reverse, orbColorGold 10s ease-in-out infinite" }}
         />
         <div
           className="absolute top-1/2 right-1/3 w-[25vw] h-[25vw] rounded-full blur-[160px] bg-[hsl(204_61%_51%)]"
@@ -29,58 +37,58 @@ const Hero = () => {
         />
       </div>
 
-      <div ref={ref} className="relative z-10 w-full max-w-[1600px] mx-auto px-6 grid grid-cols-12 gap-6 items-center">
-        <div className="col-span-12 lg:col-span-8 lg:col-start-2 text-center lg:text-left">
-          {/* Trust Badge */}
-          <div className="hero-reveal mb-8 flex justify-center lg:justify-start">
-            <span className="inline-flex items-center gap-2.5 px-4 py-2 border border-gold/20 rounded-full bg-gold/[0.05] backdrop-blur-sm text-xs font-medium text-gold uppercase tracking-[0.12em]">
-              <span className="w-1.5 h-1.5 bg-gold rounded-full animate-pulse" />
-              Official Certified Reseller
-            </span>
-          </div>
+      <div ref={ref} className="relative z-10 w-full max-w-5xl mx-auto px-6 flex flex-col items-center text-center">
+        {/* Trust Badge */}
+        <div className="hero-reveal mb-10 flex justify-center">
+          <span className="inline-flex items-center gap-2.5 px-4 py-2 border border-crimson/20 rounded-full bg-crimson/[0.06] backdrop-blur-sm text-xs font-medium text-crimson uppercase tracking-[0.12em]">
+            <span className="w-1.5 h-1.5 bg-crimson rounded-full animate-pulse" />
+            Official Certified Reseller
+          </span>
+        </div>
 
-          {/* Headline */}
-          <h1 className="hero-reveal font-serif text-5xl md:text-7xl lg:text-[5.5rem] leading-[0.88] tracking-tight text-[#FEFEFE] mb-8">
-            Digital <br />
-            <span className="italic font-light text-gold">Architecture</span> <br />
-            For Creators.
-          </h1>
+        {/* Headline */}
+        <div className="hero-reveal font-sans leading-[0.9] tracking-[0.04em] font-bold uppercase text-[#FEFEFE] mb-8 whitespace-nowrap" style={{ fontSize: "clamp(1.5rem, 5.5vw, 4.5rem)" }}>
+          <MagnifyText text="DIGITAL SOFTWARE MARKET" />
+        </div>
 
-          {/* Subheadline */}
-          <p className="hero-reveal text-lg md:text-xl font-light text-[#B1B2B3] max-w-lg mx-auto lg:mx-0 leading-relaxed mb-12">
-            The premium destination for genuine software licensing.
-            Instant delivery, concierge support, and enterprise-grade security for teams of all sizes.
-          </p>
+        {/* Subheadline */}
+        <div className="hero-reveal text-base md:text-lg font-light text-[#B1B2B3]/80 max-w-2xl mx-auto leading-relaxed mb-14">
+          <MagnifyText text="The premium destination for genuine software licensing. Instant delivery, concierge support, and enterprise-grade security for teams of all sizes." />
+        </div>
 
-          {/* CTAs */}
-          <div className="hero-reveal flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
-            <a
-              href="#"
-              className="btn-magnetic cta-gold-sheen px-8 py-4 bg-gold text-[#060708] text-sm font-semibold tracking-wide rounded-sm hover:bg-crimson hover:text-[#FEFEFE] hover:shadow-crimson-glow w-full sm:w-auto text-center flex items-center justify-center gap-2 group"
-            >
-              Shop Licenses <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </a>
-            <a
-              href="#"
-              className="btn-magnetic px-8 py-4 bg-transparent border border-gold/30 text-gold text-sm font-medium tracking-wide rounded-sm hover:bg-azure/[0.08] hover:border-azure hover:text-azure hover:shadow-azure-glow w-full sm:w-auto text-center transition-all duration-400"
-            >
-              Talk to a Specialist
-            </a>
-          </div>
+        {/* CTAs */}
+        <div className="hero-reveal flex items-center gap-6 justify-center">
+          <a
+            href="#"
+            className="btn-magnetic px-10 py-4 bg-[hsl(0_0%_100%/0.06)] border border-[hsl(0_0%_100%/0.15)] backdrop-blur-md text-[#FEFEFE] text-xs font-semibold uppercase tracking-[0.18em] rounded-sm hover:bg-azure/[0.12] hover:border-azure/40 hover:text-azure hover:shadow-azure-glow text-center flex items-center justify-center gap-3 group transition-all duration-400"
+            onMouseEnter={() => setMeshAccent("azure")}
+            onMouseLeave={() => setMeshAccent("red")}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-crimson group-hover:bg-azure transition-colors duration-300" />
+            Talk to a Specialist
+            <ArrowRight className="w-3.5 h-3.5 opacity-50 transition-all group-hover:opacity-100 group-hover:translate-x-0.5" />
+          </a>
+          <a
+            href="#"
+            className="text-xs font-medium text-[#B1B2B3]/60 uppercase tracking-[0.14em] hover:text-crimson flex items-center gap-1.5 group transition-colors duration-300"
+          >
+            Shop Licenses
+            <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+          </a>
+        </div>
 
-          {/* Trust indicators */}
-          <div className="hero-reveal mt-10 flex items-center gap-6 text-xs text-[#B1B2B3] justify-center lg:justify-start">
-            <span className="flex items-center gap-1.5"><Check className="w-3 h-3 text-gold" /> 100% Genuine</span>
-            <span className="flex items-center gap-1.5"><Zap className="w-3 h-3 text-gold" /> Instant Digital Delivery</span>
-            <span className="flex items-center gap-1.5"><Shield className="w-3 h-3 text-gold" /> Lifetime Warranty</span>
-          </div>
+        {/* Trust indicators */}
+        <div className="hero-reveal mt-14 flex items-center gap-6 text-xs text-[#B1B2B3]/50 justify-center">
+          <span className="flex items-center gap-1.5"><Check className="w-3 h-3 text-crimson/60" /> 100% Genuine</span>
+          <span className="flex items-center gap-1.5"><Zap className="w-3 h-3 text-crimson/60" /> Instant Digital Delivery</span>
+          <span className="flex items-center gap-1.5"><Shield className="w-3 h-3 text-crimson/60" /> Lifetime Warranty</span>
         </div>
       </div>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10">
         <span className="text-[10px] text-[#B1B2B3]/50 uppercase tracking-[0.2em]">Scroll</span>
-        <ArrowDown className="w-4 h-4 text-gold/60 animate-bounce" strokeWidth={1.5} />
+        <ArrowDown className="w-4 h-4 text-crimson/60 animate-bounce" strokeWidth={1.5} />
       </div>
     </section>
   );

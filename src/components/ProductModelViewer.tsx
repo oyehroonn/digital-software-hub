@@ -172,7 +172,7 @@ const ProductModelViewer = ({
         <>
           {!isLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-secondary z-10">
-              <div className="w-8 h-8 border-2 border-border border-t-gold rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-border border-t-crimson rounded-full animate-spin" />
             </div>
           )}
           <model-viewer

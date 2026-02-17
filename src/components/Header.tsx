@@ -21,14 +21,14 @@ const Header = () => {
       <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between relative">
         {/* Logo */}
         <a href="#" className="font-serif text-xl tracking-tight z-50 font-medium relative group text-[#FEFEFE]">
-          DSM<span className="text-gold">.</span>
-          <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-gold transition-all duration-500 group-hover:w-full" />
+          DSM<span className="text-crimson">.</span>
+          <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-crimson transition-all duration-500 group-hover:w-full" />
         </a>
 
         {/* Desktop Menu */}
         <nav className="hidden lg:flex items-center gap-8 h-full overflow-visible">
           <div className="group h-full flex items-center nav-item">
-            <button className="text-sm font-medium text-[#B1B2B3] hover:text-gold transition-colors duration-300 tracking-wide h-full flex items-center gap-1">
+            <button className="text-sm font-medium text-[#B1B2B3] hover:text-crimson transition-colors duration-300 tracking-wide h-full flex items-center gap-1">
               Software <ChevronDown className="w-3 h-3 opacity-50" />
             </button>
 
@@ -45,12 +45,12 @@ const Header = () => {
                           href="#"
                           className={`text-sm flex items-center justify-between transition-colors duration-300 ${
                             cat.active
-                              ? "text-gold font-medium"
-                              : "text-[#B1B2B3] hover:text-gold group/link"
+                              ? "text-crimson font-medium"
+                              : "text-[#B1B2B3] hover:text-crimson group/link"
                           }`}
                         >
                           {cat.name}
-                          <ArrowRight className={`w-3 h-3 ${cat.active ? "text-gold" : "opacity-0 group-hover/link:opacity-100 transition-all -translate-x-2 group-hover/link:translate-x-0"}`} />
+                          <ArrowRight className={`w-3 h-3 ${cat.active ? "text-crimson" : "opacity-0 group-hover/link:opacity-100 transition-all -translate-x-2 group-hover/link:translate-x-0"}`} />
                         </a>
                       </li>
                     ))}
@@ -62,9 +62,9 @@ const Header = () => {
                   <span className="text-[10px] font-semibold text-[#B1B2B3]/60 uppercase tracking-[0.14em] mb-6 block">Official Partner Showroom</span>
                   <div className="grid grid-cols-2 gap-4">
                     {brands.map((brand) => (
-                      <a key={brand.name} href="#" className="p-4 bg-white/[0.03] border border-white/[0.04] rounded-md hover:bg-white/[0.06] hover:border-gold/20 transition-all duration-300 group/brand">
+                      <a key={brand.name} href="#" className="p-4 bg-white/[0.03] border border-white/[0.04] rounded-md hover:bg-white/[0.06] hover:border-crimson/20 transition-all duration-300 group/brand">
                         <div className="flex items-center gap-2 mb-2">
-                          <brand.icon className="w-4 h-4 text-[#B1B2B3] group-hover/brand:text-gold transition-colors duration-300" />
+                          <brand.icon className="w-4 h-4 text-[#B1B2B3] group-hover/brand:text-crimson transition-colors duration-300" />
                           <span className="text-sm font-medium text-[#FEFEFE]">{brand.name}</span>
                         </div>
                         <p className="text-xs text-[#B1B2B3]/70">{brand.desc}</p>
@@ -82,26 +82,26 @@ const Header = () => {
                     alt="Creative workspace"
                   />
                   <div className="relative z-20">
-                    <span className="inline-block px-2 py-1 bg-gold/20 backdrop-blur text-[10px] uppercase tracking-[0.14em] font-semibold mb-2 rounded-sm text-gold">Featured</span>
+                    <span className="inline-block px-2 py-1 bg-crimson/20 backdrop-blur text-[10px] uppercase tracking-[0.14em] font-semibold mb-2 rounded-sm text-crimson">Featured</span>
                     <h4 className="font-serif text-lg leading-tight mb-1 text-[#FEFEFE]">The Creative Suite 2025</h4>
                     <p className="text-xs text-[#B1B2B3] mb-3 line-clamp-2">Upgrade your workflow with the latest tools from Adobe.</p>
-                    <span className="text-xs border-b border-gold/40 pb-0.5 inline-block text-gold hover:border-gold transition-colors">Explore Collection</span>
+                    <span className="text-xs border-b border-crimson/40 pb-0.5 inline-block text-crimson hover:border-crimson transition-colors">Explore Collection</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <a href="#" className="text-sm font-medium text-[#B1B2B3] hover:text-gold transition-colors duration-300">Enterprise</a>
-          <a href="#" className="text-sm font-medium text-[#B1B2B3] hover:text-gold transition-colors duration-300">Support</a>
-          <a href="#" className="text-sm font-medium text-[#B1B2B3] hover:text-gold transition-colors duration-300">About</a>
+          <a href="#" className="text-sm font-medium text-[#B1B2B3] hover:text-crimson transition-colors duration-300">Enterprise</a>
+          <a href="#" className="text-sm font-medium text-[#B1B2B3] hover:text-crimson transition-colors duration-300">Support</a>
+          <a href="#" className="text-sm font-medium text-[#B1B2B3] hover:text-crimson transition-colors duration-300">About</a>
         </nav>
 
         {/* Icons */}
         <div className="flex items-center gap-5">
-          <button className="text-[#B1B2B3] hover:text-gold transition-colors duration-300"><Search className="w-5 h-5" strokeWidth={1.5} /></button>
-          <a href="#" className="text-[#B1B2B3] hover:text-gold transition-colors duration-300"><User className="w-5 h-5" strokeWidth={1.5} /></a>
-          <a href="#" className="relative text-[#B1B2B3] hover:text-gold transition-colors duration-300">
+          <button className="text-[#B1B2B3] hover:text-crimson transition-colors duration-300"><Search className="w-5 h-5" strokeWidth={1.5} /></button>
+          <a href="#" className="text-[#B1B2B3] hover:text-crimson transition-colors duration-300"><User className="w-5 h-5" strokeWidth={1.5} /></a>
+          <a href="#" className="relative text-[#B1B2B3] hover:text-crimson transition-colors duration-300">
             <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
             <span className="absolute -top-1 -right-1 w-2 h-2 bg-crimson rounded-full" />
           </a>

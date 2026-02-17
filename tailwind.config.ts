@@ -27,14 +27,17 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        crimson: {
+          DEFAULT: "hsl(var(--crimson))",
+          hover: "hsl(var(--crimson-hover))",
+          dark: "hsl(var(--crimson-dark))",
+          foreground: "hsl(var(--crimson-foreground))",
+        },
         gold: {
           DEFAULT: "hsl(var(--gold))",
           hover: "hsl(var(--gold-hover))",
           pressed: "hsl(var(--gold-pressed))",
           foreground: "hsl(var(--gold-foreground))",
-        },
-        crimson: {
-          DEFAULT: "hsl(var(--crimson))",
         },
         azure: {
           DEFAULT: "hsl(var(--azure))",
@@ -86,9 +89,9 @@ export default {
       boxShadow: {
         premium: "0 1px 3px hsl(0 0% 0% / 0.3), 0 4px 20px hsl(0 0% 0% / 0.2)",
         "premium-lg": "0 2px 6px hsl(0 0% 0% / 0.25), 0 12px 40px hsl(0 0% 0% / 0.3)",
+        "crimson-glow": "0 0 20px hsl(var(--crimson) / 0.25), 0 0 60px hsl(var(--crimson) / 0.1)",
+        "crimson-glow-lg": "0 0 30px hsl(var(--crimson) / 0.3), 0 0 80px hsl(var(--crimson) / 0.12)",
         "gold-glow": "0 0 20px hsl(var(--gold) / 0.2), 0 0 60px hsl(var(--gold) / 0.08)",
-        "gold-glow-lg": "0 0 30px hsl(var(--gold) / 0.25), 0 0 80px hsl(var(--gold) / 0.1)",
-        "crimson-glow": "0 0 20px hsl(var(--crimson) / 0.2), 0 0 60px hsl(var(--crimson) / 0.08)",
         "azure-glow": "0 0 20px hsl(var(--azure) / 0.2), 0 0 60px hsl(var(--azure) / 0.08)",
       },
       keyframes: {
