@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 
 export function useScrollAnimation(className = "animate-on-scroll") {
   const ref = useRef<HTMLDivElement>(null);
@@ -14,7 +14,7 @@ export function useScrollAnimation(className = "animate-on-scroll") {
           observer.unobserve(el);
         }
       },
-      { threshold: 0.15 }
+      { threshold: 0.08, rootMargin: "0px 0px -20px 0px" }
     );
 
     observer.observe(el);
@@ -31,7 +31,6 @@ export function useHeroReveal() {
     const el = ref.current;
     if (!el) return;
     const children = el.querySelectorAll(".hero-reveal");
-    // Small delay to ensure mount
     const timer = setTimeout(() => {
       children.forEach((child) => child.classList.add("visible"));
     }, 100);
@@ -39,4 +38,29 @@ export function useHeroReveal() {
   }, []);
 
   return ref;
+}
+
+export function useCursorGlow() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    const container = containerRef.current;
+    const glow = glowRef.current;
+    if (!container || !glow) return;
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    glow.style.left = `${x}px`;
+    glow.style.top = `${y}px`;
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.addEventListener("mousemove", handleMouseMove);
+    return () => container.removeEventListener("mousemove", handleMouseMove);
+  }, [handleMouseMove]);
+
+  return { containerRef, glowRef };
 }

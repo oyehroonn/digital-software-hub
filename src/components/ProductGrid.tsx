@@ -1,17 +1,27 @@
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Star } from "lucide-react";
 import { useState } from "react";
+import ProductModelViewer from "./ProductModelViewer";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+
+const AnimatedCard = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+  const { ref, className: animClass } = useScrollAnimation();
+  return <div ref={ref} className={`${animClass} ${className ?? ""}`}>{children}</div>;
+};
 
 interface Product {
   name: string;
   subtitle: string;
   price: string;
+  priceRange?: string;
   oldPrice?: string;
   badge?: string;
   badgeColor?: string;
   icon: React.ReactNode;
+  glbSrc?: string;
   hoverLabel: string;
   hoverAction: string;
   category: string;
+  rating?: number;
 }
 
 const OfficeIcon = () => (
@@ -38,7 +48,7 @@ const AcrobatIcon = () => (
 );
 
 const AutoCADIcon = () => (
-  <div className="w-20 h-20 bg-gradient-to-br from-stone-800 to-stone-600 rounded-xl shadow-lg flex items-center justify-center">
+  <div className="w-20 h-20 bg-gradient-to-br from-neutral-800 to-neutral-600 rounded-xl shadow-lg flex items-center justify-center">
     <svg viewBox="0 0 48 48" className="w-10 h-10">
       <polygon points="24,6 42,18 42,36 24,42 6,36 6,18" fill="none" stroke="white" strokeWidth="1.5" opacity="0.8"/>
       <polygon points="24,12 36,20 36,32 24,38 12,32 12,20" fill="none" stroke="#22d3ee" strokeWidth="1.5"/>
@@ -59,17 +69,31 @@ const KasperskyIcon = () => (
   </div>
 );
 
+const SketchUpIcon = () => (
+  <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg flex items-center justify-center">
+    <svg viewBox="0 0 48 48" className="w-10 h-10">
+      <rect x="10" y="16" width="28" height="20" rx="2" fill="white" opacity="0.9"/>
+      <polygon points="24,8 34,16 14,16" fill="white" opacity="0.85"/>
+      <rect x="16" y="22" width="6" height="8" rx="1" fill="#dc2626"/>
+      <rect x="26" y="22" width="6" height="8" rx="1" fill="#dc2626" opacity="0.7"/>
+    </svg>
+  </div>
+);
+
 const products: Product[] = [
   {
-    name: "Office 2021 Pro Plus",
-    subtitle: "For 1 PC • Lifetime",
-    price: "AED 120",
-    badge: "Best Value",
-    badgeColor: "bg-stone-100 text-stone-600",
-    icon: <OfficeIcon />,
-    hoverLabel: "Instant Delivery",
-    hoverAction: "Add to Cart",
-    category: "Office",
+    name: "SketchUp – 3D Modeling",
+    subtitle: "Agencies & Freelancers",
+    price: "AED 1,281.70",
+    priceRange: "AED 1,281.70 – AED 2,199.83",
+    badge: "Popular",
+    badgeColor: "bg-gold/10 text-gold-hover",
+    icon: <SketchUpIcon />,
+    glbSrc: "/models/Product_Sketch_UP.glb",
+    hoverLabel: "Official Partner",
+    hoverAction: "Select Options",
+    category: "Design",
+    rating: 5,
   },
   {
     name: "Acrobat Pro DC",
@@ -95,7 +119,7 @@ const products: Product[] = [
     price: "AED 85",
     oldPrice: "AED 150",
     badge: "Sale",
-    badgeColor: "bg-green-100 text-green-700",
+    badgeColor: "bg-crimson/10 text-crimson",
     icon: <KasperskyIcon />,
     hoverLabel: "Instant Delivery",
     hoverAction: "Add to Cart",
@@ -111,19 +135,19 @@ const ProductGrid = () => {
   const filteredProducts = activeFilter === "All" ? products : products.filter((p) => p.category === activeFilter);
 
   return (
-    <section className="py-32 bg-background">
+    <section className="section-light py-32">
       <div className="max-w-[1600px] mx-auto px-6">
         <div className="flex justify-between items-end mb-12">
-          <h2 className="font-serif text-3xl text-foreground">Bestselling Essentials</h2>
+          <h2 className="font-serif text-3xl text-[hsl(220_10%_4%)]">Bestselling Essentials</h2>
           <div className="hidden md:flex gap-6 text-sm">
             {filters.map((f) => (
               <button
                 key={f}
                 onClick={() => setActiveFilter(f)}
-                className={`transition-colors ${
+                className={`transition-all duration-300 ${
                   activeFilter === f
-                    ? "text-foreground font-medium border-b border-foreground pb-1"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-[hsl(220_10%_4%)] font-medium border-b border-gold pb-1"
+                    : "text-[hsl(220_3%_52%)] hover:text-gold"
                 }`}
               >
                 {f}
@@ -132,50 +156,65 @@ const ProductGrid = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12 stagger-children">
           {filteredProducts.map((product) => (
-            <div key={product.name} className="group relative">
-              <div className="relative aspect-[3/4] bg-white border border-border rounded-sm overflow-hidden mb-4 shadow-sm transition-all duration-300 group-hover:shadow-lg" style={{ perspective: "1000px" }}>
+            <AnimatedCard key={product.name} className="group relative">
+              <div className="relative aspect-[3/4] bg-[hsl(40_25%_99%)] border border-[hsl(40_8%_88%)] rounded-md overflow-hidden mb-4 shadow-[0_1px_3px_hsl(0_0%_0%/0.04),0_4px_16px_hsl(0_0%_0%/0.03)] transition-all duration-500 group-hover:shadow-[0_2px_6px_hsl(0_0%_0%/0.06),0_12px_40px_hsl(0_0%_0%/0.08)]" style={{ perspective: "1000px" }}>
                 {product.badge && (
                   <div className="absolute top-3 left-3 z-10">
-                    <span className={`px-2 py-1 ${product.badgeColor} text-[10px] uppercase font-bold tracking-wider rounded-sm`}>
+                    <span className={`px-2 py-1 ${product.badgeColor} text-[10px] uppercase font-semibold tracking-[0.08em] rounded-sm`}>
                       {product.badge}
                     </span>
                   </div>
                 )}
-                <div className="w-full h-full flex items-center justify-center p-8 bg-stone-50 group-hover:bg-white transition-colors">
-                  <div className="product-3d-card">
-                    {product.icon}
-                    {/* Shine overlay */}
-                    <div className="product-shine" />
+                {product.glbSrc ? (
+                  <ProductModelViewer
+                    glbSrc={product.glbSrc}
+                    fallbackIcon={product.icon}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center p-8 bg-[hsl(40_12%_96%)] group-hover:bg-[hsl(40_25%_99%)] transition-colors duration-500">
+                    <div className="product-3d-card">
+                      {product.icon}
+                      <div className="product-shine" />
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Hover overlay */}
-                <div className="absolute inset-x-0 bottom-0 p-4 bg-white/90 backdrop-blur border-t border-stone-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out flex flex-col gap-2 z-20">
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                {/* Hover overlay — frosted glass */}
+                <div className="absolute inset-x-0 bottom-0 p-4 bg-[hsl(40_25%_99%)/0.92] backdrop-blur-lg border-t border-[hsl(40_8%_88%)] translate-y-full group-hover:translate-y-0 transition-transform duration-400 ease-out flex flex-col gap-2 z-20">
+                  <div className="flex items-center gap-2 text-[10px] text-[hsl(220_3%_52%)]">
                     <CheckCircle className="w-3 h-3 text-green-600" /> {product.hoverLabel}
                   </div>
-                  <button className="w-full py-2 bg-foreground text-background text-xs font-medium rounded-sm hover:bg-cobalt transition-colors">
+                  <button className="btn-magnetic w-full py-2 bg-[hsl(220_10%_4%)] text-[#FEFEFE] text-xs font-medium rounded-sm hover:bg-gold hover:text-[#060708] transition-all duration-300">
                     {product.hoverAction}
                   </button>
                 </div>
               </div>
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-medium text-foreground text-sm mb-1 group-hover:underline decoration-stone-300 underline-offset-4">{product.name}</h3>
-                  <p className="text-muted-foreground text-xs">{product.subtitle}</p>
+                  <h3 className="font-medium text-[hsl(220_10%_4%)] text-sm mb-1 group-hover:underline decoration-gold/30 underline-offset-4">{product.name}</h3>
+                  <p className="text-[hsl(220_3%_52%)] text-xs">{product.subtitle}</p>
+                  {product.rating && (
+                    <div className="flex items-center gap-0.5 mt-1">
+                      {Array.from({ length: product.rating }).map((_, i) => (
+                        <Star key={i} className="w-3 h-3 fill-gold text-gold" />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {product.oldPrice ? (
+                {product.priceRange ? (
+                  <span className="font-serif text-sm text-right whitespace-nowrap text-[hsl(220_10%_4%)]">{product.priceRange}</span>
+                ) : product.oldPrice ? (
                   <div className="flex flex-col text-right">
-                    <span className="font-serif text-sm text-red-600">{product.price}</span>
-                    <span className="text-xs text-muted-foreground line-through">{product.oldPrice}</span>
+                    <span className="font-serif text-sm text-crimson">{product.price}</span>
+                    <span className="text-xs text-[hsl(220_3%_52%)] line-through">{product.oldPrice}</span>
                   </div>
                 ) : (
-                  <span className="font-serif text-sm">{product.price}</span>
+                  <span className="font-serif text-sm text-[hsl(220_10%_4%)]">{product.price}</span>
                 )}
               </div>
-            </div>
+            </AnimatedCard>
           ))}
         </div>
       </div>
