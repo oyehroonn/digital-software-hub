@@ -366,21 +366,23 @@ model-viewer::part(default-ar-button) { display: none; }
 }
 .cursor-glow-dot {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 500px;
   height: 500px;
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    hsl(4 65% 54% / 0.12) 0%,
-    hsl(4 65% 54% / 0.05) 30%,
+    hsl(4 65% 54% / 0.10) 0%,
+    hsl(4 65% 54% / 0.04) 30%,
     transparent 65%
   );
   pointer-events: none;
   z-index: 2;
-  transform: translate(-50%, -50%);
+  will-change: transform;
+  transform: translate(-250px, -250px);
   transition: opacity 0.4s ease;
   opacity: 0;
-  mix-blend-mode: screen;
 }
 .cursor-glow:hover .cursor-glow-dot {
   opacity: 1;
@@ -396,4 +398,27 @@ model-viewer::part(default-ar-button) { display: none; }
     hsl(4 65% 54% / 0.3) 80%,
     transparent 100%
   );
+}
+
+/* ── Stagger children extended ─────────────────────── */
+.stagger-children > *:nth-child(7) { transition-delay: 480ms; }
+.stagger-children > *:nth-child(8) { transition-delay: 560ms; }
+.stagger-children > *:nth-child(9) { transition-delay: 640ms; }
+.stagger-children > *:nth-child(10) { transition-delay: 720ms; }
+.stagger-children > *:nth-child(11) { transition-delay: 800ms; }
+.stagger-children > *:nth-child(12) { transition-delay: 880ms; }
+
+/* ── Counter number tabular ──────────────────────────── */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Marquee (pure CSS, zero JS) ─────────────────────── */
+@keyframes marqueeScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marqueeScroll 30s linear infinite;
+  will-change: transform;
 }

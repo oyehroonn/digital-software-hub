@@ -21,19 +21,19 @@ const Hero = () => {
       {/* Cursor spotlight */}
       <div ref={glowRef} className="cursor-glow-dot" />
 
-      {/* Ambient orbs — layered above mesh, below text */}
+      {/* Ambient orbs — layered above mesh, below text (radial gradients, no blur) */}
       <div className="absolute inset-0 z-[1] overflow-hidden pointer-events-none">
         <div
-          className="absolute top-1/3 left-1/4 w-[50vw] h-[50vw] rounded-full blur-[200px] bg-[hsl(4_65%_54%)]"
-          style={{ animation: "orbFloat 12s ease-in-out infinite, orbColorCrimson 8s ease-in-out infinite" }}
+          className="absolute top-1/3 left-1/4 w-[50vw] h-[50vw] rounded-full"
+          style={{ background: "radial-gradient(circle, hsl(4 65% 54% / 0.08) 0%, transparent 70%)", animation: "orbFloat 12s ease-in-out infinite, orbColorCrimson 8s ease-in-out infinite" }}
         />
         <div
-          className="absolute bottom-1/4 right-1/4 w-[35vw] h-[35vw] rounded-full blur-[180px] bg-[hsl(43_87%_60%)]"
-          style={{ animation: "orbFloat 15s ease-in-out infinite reverse, orbColorGold 10s ease-in-out infinite" }}
+          className="absolute bottom-1/4 right-1/4 w-[35vw] h-[35vw] rounded-full"
+          style={{ background: "radial-gradient(circle, hsl(43 87% 60% / 0.05) 0%, transparent 70%)", animation: "orbFloat 15s ease-in-out infinite reverse, orbColorGold 10s ease-in-out infinite" }}
         />
         <div
-          className="absolute top-1/2 right-1/3 w-[25vw] h-[25vw] rounded-full blur-[160px] bg-[hsl(204_61%_51%)]"
-          style={{ animation: "orbFloat 18s ease-in-out infinite, orbColorAzure 12s ease-in-out infinite" }}
+          className="absolute top-1/2 right-1/3 w-[25vw] h-[25vw] rounded-full"
+          style={{ background: "radial-gradient(circle, hsl(204 61% 51% / 0.05) 0%, transparent 70%)", animation: "orbFloat 18s ease-in-out infinite, orbColorAzure 12s ease-in-out infinite" }}
         />
       </div>
 

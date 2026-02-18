@@ -103,6 +103,14 @@ const HeroMesh = ({ accent = "red" }: HeroMeshProps) => {
     const w = () => parent.clientWidth;
     const h = () => parent.clientHeight;
 
+    let isVisible = true;
+
+    const visObs = new IntersectionObserver(
+      ([entry]) => { isVisible = entry.isIntersecting; },
+      { threshold: 0, rootMargin: "100px" }
+    );
+    visObs.observe(parent);
+
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(BACKGROUND);
     scene.fog = new THREE.FogExp2(BACKGROUND, 0.025);
@@ -167,6 +175,7 @@ const HeroMesh = ({ accent = "red" }: HeroMeshProps) => {
     const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
     const onMouseMove = (e: MouseEvent) => {
+      if (!isVisible) return;
       const rect = parent.getBoundingClientRect();
       mouseNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -192,6 +201,10 @@ const HeroMesh = ({ accent = "red" }: HeroMeshProps) => {
     const clock = new THREE.Clock();
 
     const animate = () => {
+      frameRef.current = requestAnimationFrame(animate);
+
+      if (!isVisible) return;
+
       const elapsed = clock.getElapsedTime();
       material.uniforms.uTime.value = elapsed;
 
@@ -209,13 +222,13 @@ const HeroMesh = ({ accent = "red" }: HeroMeshProps) => {
       camera.lookAt(0, 0, -2);
 
       composer.render();
-      frameRef.current = requestAnimationFrame(animate);
     };
 
     animate();
 
     return () => {
       cancelAnimationFrame(frameRef.current);
+      visObs.disconnect();
       parent.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("resize", onResize);
       geometry.dispose();

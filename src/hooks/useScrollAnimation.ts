@@ -45,22 +45,34 @@ export function useHeroReveal() {
 export function useCursorGlow() {
   const containerRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
+  const rafPending = useRef(false);
+  const mouseX = useRef(0);
+  const mouseY = useRef(0);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    const container = containerRef.current;
-    const glow = glowRef.current;
-    if (!container || !glow) return;
-    const rect = container.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    glow.style.left = `${x}px`;
-    glow.style.top = `${y}px`;
+    mouseX.current = e.clientX;
+    mouseY.current = e.clientY;
+
+    if (rafPending.current) return;
+    rafPending.current = true;
+
+    requestAnimationFrame(() => {
+      const container = containerRef.current;
+      const glow = glowRef.current;
+      if (container && glow) {
+        const rect = container.getBoundingClientRect();
+        const x = mouseX.current - rect.left;
+        const y = mouseY.current - rect.top;
+        glow.style.transform = `translate(${x - 250}px, ${y - 250}px)`;
+      }
+      rafPending.current = false;
+    });
   }, []);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    container.addEventListener("mousemove", handleMouseMove);
+    container.addEventListener("mousemove", handleMouseMove, { passive: true });
     return () => container.removeEventListener("mousemove", handleMouseMove);
   }, [handleMouseMove]);
 

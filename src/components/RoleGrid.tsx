@@ -10,7 +10,7 @@ const AnimatedCard = ({ children, className }: { children: React.ReactNode; clas
 const RoleGrid = () => {
   return (
     <section className="py-32 bg-[#060708] relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-crimson/[0.03] rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, hsl(4 65% 54% / 0.05) 0%, transparent 70%)" }} />
 
       <div className="max-w-[1600px] mx-auto px-6 relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-end mb-16">
