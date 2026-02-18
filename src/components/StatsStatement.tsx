@@ -88,7 +88,7 @@ const StatsStatement = () => {
 
   return (
     <section
-      ref={(el) => {
+      ref={(el: HTMLDivElement | null) => {
         sectionRef.current = el;
         (containerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }}

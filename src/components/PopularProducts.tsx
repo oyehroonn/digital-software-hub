@@ -13,7 +13,7 @@ interface PopularProduct {
   price: string;
   oldPrice?: string;
   badge?: string;
-  badgeColor: string;
+  badgeColor?: string;
   mfr?: string;
   rating?: number;
 }
