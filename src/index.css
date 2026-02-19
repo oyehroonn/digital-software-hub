@@ -366,25 +366,27 @@ model-viewer::part(default-ar-button) { display: none; }
 }
 .cursor-glow-dot {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 500px;
-  height: 500px;
+  width: 300px;
+  height: 300px;
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    hsl(4 65% 54% / 0.10) 0%,
-    hsl(4 65% 54% / 0.04) 30%,
-    transparent 65%
+    hsl(4 65% 54% / 0.2) 0%,
+    hsl(4 65% 54% / 0.1) 25%,
+    hsl(4 65% 54% / 0.05) 50%,
+    transparent 70%
   );
   pointer-events: none;
-  z-index: 2;
-  will-change: transform;
-  transform: translate(-250px, -250px);
-  transition: opacity 0.4s ease;
+  will-change: left, top, opacity;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.2s ease;
   opacity: 0;
+  mix-blend-mode: screen;
+  filter: blur(1px);
+  z-index: 5;
 }
-.cursor-glow:hover .cursor-glow-dot {
+.cursor-glow:hover .cursor-glow-dot,
+.cursor-glow:has(.cursor-glow-dot:hover) .cursor-glow-dot {
   opacity: 1;
 }
 

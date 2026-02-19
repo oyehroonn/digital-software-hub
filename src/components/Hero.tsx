@@ -16,10 +16,9 @@ const Hero = () => {
       className="cursor-glow relative min-h-screen flex items-center justify-center pt-20 overflow-hidden"
     >
       {/* Three.js interactive mesh background */}
-      <HeroMesh accent={meshAccent} />
-
-      {/* Cursor spotlight */}
-      <div ref={glowRef} className="cursor-glow-dot" />
+      <div className="absolute inset-0 w-full h-full z-0">
+        <HeroMesh accent={meshAccent} />
+      </div>
 
       {/* Ambient orbs — layered above mesh, below text (radial gradients, no blur) */}
       <div className="absolute inset-0 z-[1] overflow-hidden pointer-events-none">
@@ -36,6 +35,9 @@ const Hero = () => {
           style={{ background: "radial-gradient(circle, hsl(204 61% 51% / 0.05) 0%, transparent 70%)", animation: "orbFloat 18s ease-in-out infinite, orbColorAzure 12s ease-in-out infinite" }}
         />
       </div>
+
+      {/* Cursor spotlight - above orbs, below content */}
+      <div ref={glowRef} className="cursor-glow-dot z-[2]" />
 
       <div ref={ref} className="relative z-10 w-full max-w-5xl mx-auto px-6 flex flex-col items-center text-center">
         {/* Trust Badge */}
