@@ -9,7 +9,7 @@ const AnimatedCard = ({ children, className }: { children: React.ReactNode; clas
 
 const RoleGrid = () => {
   return (
-    <section className="py-32 bg-[#060708] relative overflow-hidden">
+    <section className="py-32 bg-surface-dark relative overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, hsl(4 65% 54% / 0.05) 0%, transparent 70%)" }} />
 
       <div className="max-w-[1600px] mx-auto px-6 relative z-10">
@@ -63,7 +63,7 @@ const RoleGrid = () => {
           </AnimatedCard>
 
           {/* Education */}
-          <AnimatedCard className="group relative col-span-1 row-span-1 overflow-hidden bg-[#0a0b0d] rounded-md cursor-pointer flex items-center justify-center border border-white/[0.04] hover:border-crimson/20 transition-all duration-500">
+          <AnimatedCard className="group relative col-span-1 row-span-1 overflow-hidden bg-surface-card rounded-md cursor-pointer flex items-center justify-center border border-theme hover:border-crimson/20 transition-all duration-500">
             <div className="text-center p-6">
               <div className="w-12 h-12 rounded-full border border-[#B1B2B3]/20 flex items-center justify-center mx-auto mb-4 text-[#B1B2B3] group-hover:border-crimson group-hover:text-crimson group-hover:shadow-crimson-glow transition-all duration-500">
                 <GraduationCap className="w-5 h-5" />

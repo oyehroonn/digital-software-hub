@@ -132,7 +132,7 @@ export default function ProductModal({ product }: ProductModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) closeProduct();
       }}
@@ -142,7 +142,7 @@ export default function ProductModal({ product }: ProductModalProps) {
     >
       <div
         ref={modalRef}
-        className="relative w-full max-w-6xl max-h-[90vh] bg-[#060708] border border-white/[0.06] rounded-lg overflow-hidden flex flex-col shadow-premium-lg"
+        className="relative w-full max-w-6xl max-h-[90vh] bg-surface-card border border-theme rounded-lg overflow-hidden flex flex-col shadow-premium-lg"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -256,7 +256,7 @@ export default function ProductModal({ product }: ProductModalProps) {
             </ScrollArea>
 
             {/* AI Chat Section (sticky bottom) */}
-            <div className="border-t border-white/[0.06] bg-[#0a0b0d] p-4">
+            <div className="border-t border-theme bg-surface-elevated p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="w-4 h-4 text-crimson" />
                 <span className="text-xs font-medium text-[#FEFEFE] uppercase tracking-wider">

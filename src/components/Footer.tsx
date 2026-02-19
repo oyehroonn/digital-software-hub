@@ -2,7 +2,7 @@ import { Instagram, Twitter, Linkedin } from "lucide-react";
 
 const Footer = () => {
   return (
-    <footer className="bg-[#060708] text-[#B1B2B3] py-20 relative">
+    <footer className="bg-surface-dark text-muted-foreground py-20 relative">
       <div className="absolute top-0 left-0 right-0 section-divider-red" />
 
       <div className="max-w-[1600px] mx-auto px-6">

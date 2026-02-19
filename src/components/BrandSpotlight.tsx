@@ -11,7 +11,7 @@ const BrandSpotlight = () => {
   return (
     <section
       ref={containerRef}
-      className="cursor-glow relative py-32 md:py-40 overflow-hidden bg-[#060708]"
+      className="cursor-glow relative py-32 md:py-40 overflow-hidden bg-surface-dark"
     >
       <div ref={glowRef} className="cursor-glow-dot" />
 

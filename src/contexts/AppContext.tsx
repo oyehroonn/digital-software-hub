@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { Product } from '@/lib/api';
 
 interface AppState {
@@ -10,6 +10,8 @@ interface AppState {
     licenseType: string[];
   };
   sortBy: string;
+  marketingMode: boolean;
+  theme: 'light' | 'dark';
 }
 
 interface AppContextType {
@@ -20,11 +22,35 @@ interface AppContextType {
   setFilters: (filters: Partial<AppState['filters']>) => void;
   setSortBy: (sort: string) => void;
   applyAIAction: (action: { type: string; payload: any }) => void;
+  setMarketingMode: (enabled: boolean) => void;
+  setTheme: (theme: 'light' | 'dark') => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  // Load preferences from localStorage
+  const loadPreferences = useCallback(() => {
+    try {
+      const saved = localStorage.getItem('dsm-preferences');
+      if (saved) {
+        const prefs = JSON.parse(saved);
+        return {
+          marketingMode: prefs.marketingMode !== false, // default true
+          theme: prefs.theme || 'dark', // default dark
+        };
+      }
+    } catch (e) {
+      // Ignore parse errors
+    }
+    return {
+      marketingMode: true,
+      theme: 'dark' as const,
+    };
+  }, []);
+
+  const preferences = loadPreferences();
+
   const [state, setState] = useState<AppState>({
     selectedProduct: null,
     searchQuery: '',
@@ -34,7 +60,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
       licenseType: [],
     },
     sortBy: 'popular',
+    marketingMode: preferences.marketingMode,
+    theme: preferences.theme,
   });
+
+  // Apply theme to document root
+  useEffect(() => {
+    const root = document.documentElement;
+    if (state.theme === 'light') {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    } else {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    }
+  }, [state.theme]);
+
+  // Save preferences to localStorage
+  useEffect(() => {
+    localStorage.setItem('dsm-preferences', JSON.stringify({
+      marketingMode: state.marketingMode,
+      theme: state.theme,
+    }));
+  }, [state.marketingMode, state.theme]);
 
   const openProduct = useCallback(async (product: Product | string | number) => {
     if (typeof product === 'object') {
@@ -103,6 +151,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [openProduct, setFilters, setSearchQuery]);
 
+  const setMarketingMode = useCallback((enabled: boolean) => {
+    setState(prev => ({ ...prev, marketingMode: enabled }));
+  }, []);
+
+  const setTheme = useCallback((theme: 'light' | 'dark') => {
+    setState(prev => ({ ...prev, theme }));
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -113,6 +169,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setFilters,
         setSortBy,
         applyAIAction,
+        setMarketingMode,
+        setTheme,
       }}
     >
       {children}
