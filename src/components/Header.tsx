@@ -1,6 +1,7 @@
 import { User, ShoppingBag, ChevronDown, ArrowRight, LayoutGrid, PenTool, Box, ShieldCheck } from "lucide-react";
 import SearchBar from "./SearchBar";
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 const categories = [
   { name: "Operating Systems", active: false },
@@ -18,6 +19,28 @@ const brands = [
 ];
 
 const Header = () => {
+  const [isOverLightSection, setIsOverLightSection] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const lightSections = document.querySelectorAll('.section-light');
+      const headerHeight = 64;
+      
+      for (const section of lightSections) {
+        const rect = section.getBoundingClientRect();
+        if (rect.top < headerHeight && rect.bottom > 0) {
+          setIsOverLightSection(true);
+          return;
+        }
+      }
+      setIsOverLightSection(false);
+    };
+    
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <header className="fixed top-0 left-0 w-full z-50 transition-all duration-500 border-b border-theme bg-surface-dark/85 backdrop-blur-2xl">
       <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between relative">
@@ -112,7 +135,7 @@ const Header = () => {
         {/* Search & Icons */}
         <div className="flex items-center gap-4">
           <div className="hidden md:block w-64">
-            <SearchBar />
+            <SearchBar darkText={isOverLightSection} />
           </div>
           <a href="#" className="text-[#B1B2B3] hover:text-crimson transition-colors duration-300"><User className="w-5 h-5" strokeWidth={1.5} /></a>
           <a href="#" className="relative text-[#B1B2B3] hover:text-crimson transition-colors duration-300">
