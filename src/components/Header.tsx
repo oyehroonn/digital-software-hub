@@ -22,8 +22,12 @@ const Header = () => {
     <header className="fixed top-0 left-0 w-full z-50 transition-all duration-500 border-b border-theme bg-surface-dark/85 backdrop-blur-2xl">
       <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between relative">
         {/* Logo */}
-        <Link to="/" className="font-serif text-xl tracking-tight z-50 font-medium relative group text-[#FEFEFE]">
-          DSM<span className="text-crimson">.</span>
+        <Link to="/" className="z-50 relative group flex items-center">
+          <img 
+            src="/dsm.png" 
+            alt="DSM" 
+            className="h-8 w-auto transition-opacity duration-300 group-hover:opacity-80"
+          />
           <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-crimson transition-all duration-500 group-hover:w-full" />
         </Link>
 

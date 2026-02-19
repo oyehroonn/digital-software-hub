@@ -49,6 +49,7 @@ export interface AIChatResponse {
   message: string;
   actions: AIAction[];
   suggestions: string[];
+  products?: Product[]; // Products found during search
 }
 
 export interface AIAction {
