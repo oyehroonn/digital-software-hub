@@ -42,14 +42,14 @@ const Hero = () => {
       <div ref={ref} className="relative z-10 w-full max-w-5xl mx-auto px-6 flex flex-col items-center text-center">
         {/* Trust Badge */}
         <div className="hero-reveal mb-10 flex justify-center">
-          <span className="inline-flex items-center gap-2.5 px-4 py-2 border border-crimson/20 rounded-full bg-crimson/[0.06] backdrop-blur-sm text-xs font-medium text-crimson uppercase tracking-[0.12em]">
+          <span className="inline-flex items-center gap-2.5 px-4 py-2 border border-white/20 rounded-full bg-white/[0.06] backdrop-blur-sm text-xs font-medium text-white uppercase tracking-[0.12em]">
             <span className="w-1.5 h-1.5 bg-crimson rounded-full animate-pulse" />
             Official Certified Reseller
           </span>
         </div>
 
         {/* Headline */}
-        <div className="hero-reveal font-sans leading-[0.9] tracking-[0.04em] font-bold uppercase text-[#FEFEFE] mb-8 whitespace-nowrap" style={{ fontSize: "clamp(1.5rem, 5.5vw, 4.5rem)" }}>
+        <div className="hero-reveal w-full text-center font-sans leading-[0.9] tracking-[0.04em] font-bold uppercase text-[#FEFEFE] mb-8 whitespace-nowrap" style={{ fontSize: "clamp(1.2rem, 4.8vw, 4rem)" }}>
           <MagnifyText text="DIGITAL SOFTWARE MARKET" />
         </div>
 
