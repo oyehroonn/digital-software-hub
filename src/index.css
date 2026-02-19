@@ -64,6 +64,54 @@
     --sidebar-border: 220 6% 15%;
     --sidebar-ring: 4 65% 54%;
   }
+
+  /* Light mode overrides */
+  .light {
+    --background: 40 20% 98%;
+    --foreground: 220 10% 4%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 10% 4%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 10% 4%;
+
+    --primary: 4 65% 54%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 40 12% 96%;
+    --secondary-foreground: 220 10% 4%;
+
+    --muted: 40 10% 96%;
+    --muted-foreground: 220 3% 52%;
+
+    --accent: 40 15% 95%;
+    --accent-foreground: 220 10% 4%;
+
+    --destructive: 4 65% 54%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 8% 88%;
+    --input: 40 10% 92%;
+    --ring: 4 65% 54%;
+
+    /* Light mode surface colors */
+    --surface-dark: 40 20% 98%;
+    --surface-dark-elevated: 0 0% 100%;
+    --surface-elevated: 0 0% 100%;
+    --surface-light: 40 20% 98%;
+    --surface-light-card: 0 0% 100%;
+    --surface-light-muted: 40 10% 96%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 3% 52%;
+    --sidebar-primary: 4 65% 54%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 15% 95%;
+    --sidebar-accent-foreground: 220 10% 4%;
+    --sidebar-border: 40 8% 88%;
+    --sidebar-ring: 4 65% 54%;
+  }
 }
 
 @layer base {
@@ -74,17 +122,47 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    line-height: 1.5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
   }
   body {
-    @apply bg-background text-foreground font-sans overflow-x-hidden;
+    @apply bg-background text-foreground overflow-x-hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.6;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  button, input, select, option, textarea {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   ::selection {
     background: hsl(4 65% 54%);
     color: hsl(0 0% 100%);
   }
 
-  h1, h2, h3, h4 {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 600;
     letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+  
+  /* Ensure all text elements use Inter */
+  p, span, div, a, li, td, th, label {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
   ::-webkit-scrollbar {
@@ -99,6 +177,17 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(4 65% 54% / 0.45);
+  }
+
+  /* Light mode scrollbar */
+  .light ::-webkit-scrollbar-track {
+    background: hsl(40 20% 97%);
+  }
+  .light ::-webkit-scrollbar-thumb {
+    background: hsl(4 65% 54% / 0.2);
+  }
+  .light ::-webkit-scrollbar-thumb:hover {
+    background: hsl(4 65% 54% / 0.35);
   }
 }
 
@@ -423,4 +512,41 @@ model-viewer::part(default-ar-button) { display: none; }
 .marquee-track {
   animation: marqueeScroll 30s linear infinite;
   will-change: transform;
+}
+
+/* ── Theme-aware utility classes ─────────────────────── */
+.bg-surface-dark {
+  background-color: hsl(var(--surface-dark));
+}
+.light .bg-surface-dark {
+  background-color: hsl(var(--surface-dark));
+}
+
+.bg-surface-elevated {
+  background-color: hsl(var(--surface-elevated));
+}
+.light .bg-surface-elevated {
+  background-color: hsl(var(--surface-elevated));
+}
+
+.bg-surface-card {
+  background-color: hsl(var(--card));
+}
+.light .bg-surface-card {
+  background-color: hsl(var(--card));
+}
+
+.text-foreground-primary {
+  color: hsl(var(--foreground));
+}
+
+.border-theme {
+  border-color: hsl(var(--border));
+}
+
+.bg-overlay {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+.light .bg-overlay {
+  background-color: rgba(0, 0, 0, 0.4);
 }

@@ -84,7 +84,7 @@ export default function Storefront() {
     state.filters.licenseType.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#060708]">
+    <div className="min-h-screen bg-surface-dark">
       <Header />
       <main className="max-w-[1600px] mx-auto px-6 py-12">
         {/* Header Section */}
@@ -142,7 +142,7 @@ export default function Storefront() {
                     Filters
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="bg-[#0a0b0d] border-white/[0.06]">
+                <SheetContent side="left" className="bg-surface-card border-theme">
                   <FilterPanel
                     filters={state.filters}
                     onFilterChange={handleFilterChange}

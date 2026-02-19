@@ -38,7 +38,7 @@ const TrustSection = () => {
   return (
     <section
       ref={containerRef}
-      className="cursor-glow py-28 bg-[#060708] relative overflow-hidden"
+      className="cursor-glow py-28 bg-surface-dark relative overflow-hidden"
     >
       <div ref={glowRef} className="cursor-glow-dot" />
 

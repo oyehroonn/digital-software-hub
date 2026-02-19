@@ -19,11 +19,15 @@ const brands = [
 
 const Header = () => {
   return (
-    <header className="fixed top-0 left-0 w-full z-50 transition-all duration-500 border-b border-white/[0.04] bg-[#060708]/85 backdrop-blur-2xl">
+    <header className="fixed top-0 left-0 w-full z-50 transition-all duration-500 border-b border-theme bg-surface-dark/85 backdrop-blur-2xl">
       <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between relative">
         {/* Logo */}
-        <Link to="/" className="font-serif text-xl tracking-tight z-50 font-medium relative group text-[#FEFEFE]">
-          DSM<span className="text-crimson">.</span>
+        <Link to="/" className="z-50 relative group flex items-center">
+          <img 
+            src="/dsm.png" 
+            alt="DSM" 
+            className="h-8 w-auto transition-opacity duration-300 group-hover:opacity-80"
+          />
           <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-crimson transition-all duration-500 group-hover:w-full" />
         </Link>
 
@@ -35,7 +39,7 @@ const Header = () => {
             </button>
 
             {/* Mega Menu */}
-            <div className="mega-menu fixed left-4 right-4 top-16 max-w-[1200px] mx-auto bg-[#0a0b0d]/95 backdrop-blur-2xl border border-white/[0.06] shadow-premium-lg rounded-b-lg pt-8 pb-12 px-8 md:px-12 z-50 origin-top overflow-auto max-h-[80vh]">
+            <div className="mega-menu fixed left-4 right-4 top-16 max-w-[1200px] mx-auto bg-surface-card/95 backdrop-blur-2xl border border-theme shadow-premium-lg rounded-b-lg pt-8 pb-12 px-8 md:px-12 z-50 origin-top overflow-auto max-h-[80vh]">
               <div className="grid grid-cols-12 gap-8">
                 {/* Categories */}
                 <div className="col-span-3 border-r border-white/[0.06]">
@@ -76,7 +80,7 @@ const Header = () => {
                 </div>
 
                 {/* Editorial Feature */}
-                <div className="col-span-4 relative group cursor-pointer overflow-hidden rounded-md bg-[#060708] text-white p-6 flex flex-col justify-end h-64 border border-white/[0.04]">
+                <div className="col-span-4 relative group cursor-pointer overflow-hidden rounded-md bg-surface-dark text-foreground-primary p-6 flex flex-col justify-end h-64 border border-theme">
                   <div className="absolute inset-0 bg-gradient-to-t from-[#060708] via-[#060708]/60 to-transparent z-10" />
                   <img
                     src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop"

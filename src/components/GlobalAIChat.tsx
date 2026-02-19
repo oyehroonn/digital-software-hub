@@ -1,23 +1,107 @@
-import { MessageCircle, X, Send, Minimize2, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, Minimize2, Sparkles, ExternalLink } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { aiChat, AIChatResponse } from '@/lib/api';
+import { aiChat, AIChatResponse, Product } from '@/lib/api';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
+import ProductModelViewer from './ProductModelViewer';
+import { Badge } from './ui/badge';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   actions?: Array<{ type: string; payload: any }>;
+  products?: Product[];
 }
 
 const WELCOME_MESSAGE = "Hello! I'm your DSM concierge. I can help you find products, answer questions, or navigate the store. How can I assist you today?";
 
+// Product Card Component for Chat
+function ProductChatCard({ product, onSelect }: { product: Product; onSelect?: () => void }) {
+  return (
+    <div
+      onClick={onSelect}
+      className="w-full max-w-[280px] bg-surface-card border border-theme rounded-lg overflow-hidden cursor-pointer hover:border-crimson/30 transition-all group"
+    >
+      {/* 3D Model Preview */}
+      <div className="relative h-48 bg-white/[0.02] overflow-hidden">
+        {product.link ? (
+          <ProductModelViewer
+            glbSrc={product.link}
+            fallbackIcon={
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="w-16 h-16 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                  <span className="text-xl font-serif text-foreground-primary/30">
+                    {product.name.charAt(0)}
+                  </span>
+                </div>
+              </div>
+            }
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="w-16 h-16 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+              <span className="text-xl font-serif text-foreground-primary/30">
+                {product.name.charAt(0)}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Product Info */}
+      <div className="p-3 space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-sm text-foreground-primary line-clamp-2 group-hover:text-crimson transition-colors">
+              {product.name}
+            </h4>
+            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+              {product.description}
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-1">
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+              {product.brand}
+            </Badge>
+            <Badge className="bg-crimson/10 text-crimson text-[10px] px-1.5 py-0">
+              {product.category}
+            </Badge>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between pt-1 border-t border-theme">
+          <span className="font-serif text-sm font-medium text-foreground-primary">
+            {product.price}
+          </span>
+          <button className="text-xs text-crimson hover:text-crimson-dark flex items-center gap-1">
+            View Details
+            <ExternalLink className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function GlobalAIChat() {
-  const { applyAIAction } = useApp();
+  const { applyAIAction, state, openProduct } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  
+  // When marketing mode is disabled, always show chat fullscreen
+  const isMarketingModeDisabled = !state.marketingMode;
+  
+  useEffect(() => {
+    if (isMarketingModeDisabled) {
+      setIsOpen(true);
+      setIsMinimized(false);
+    }
+  }, [isMarketingModeDisabled]);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: 'assistant', content: WELCOME_MESSAGE },
   ]);
@@ -83,16 +167,29 @@ export default function GlobalAIChat() {
           role: 'assistant',
           content: response.message,
           actions: response.actions,
+          products: response.products,
         },
       ]);
 
-      // Execute actions
+      // Execute actions (but don't navigate if we're showing products in chat)
       if (response.actions && response.actions.length > 0) {
         response.actions.forEach((action) => {
-          setTimeout(() => applyAIAction(action), 100);
+          // Skip NAVIGATE action if products are being shown in chat (to avoid page reload)
+          if (action.type === 'NAVIGATE' && response.products && response.products.length > 0) {
+            return;
+          }
+          // Delay action execution to avoid conflicts
+          setTimeout(() => {
+            try {
+              applyAIAction(action);
+            } catch (error) {
+              console.error('Error executing AI action:', error);
+            }
+          }, 100);
         });
       }
     } catch (error) {
+      console.error('Chat error:', error);
       setMessages(prev => [
         ...prev,
         { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' },
@@ -107,7 +204,7 @@ export default function GlobalAIChat() {
     setTimeout(() => handleSend(), 100);
   };
 
-  if (!isOpen) {
+  if (!isOpen && !isMarketingModeDisabled) {
     return (
       <button
         onClick={() => setIsOpen(true)}
@@ -121,8 +218,12 @@ export default function GlobalAIChat() {
 
   return (
     <div
-      className={`fixed bottom-6 right-6 z-50 w-96 bg-[#0a0b0d] border border-white/[0.06] rounded-lg shadow-premium-lg flex flex-col transition-all ${
-        isMinimized ? 'h-14' : 'h-[600px]'
+      className={`${
+        isMarketingModeDisabled
+          ? 'fixed inset-0 z-50 w-full h-full rounded-none'
+          : 'fixed bottom-6 right-6 z-50 w-96 rounded-lg'
+      } bg-surface-card border border-theme shadow-premium-lg flex flex-col transition-all ${
+        isMinimized && !isMarketingModeDisabled ? 'h-14' : isMarketingModeDisabled ? 'h-full' : 'h-[600px]'
       }`}
     >
       {/* Header */}
@@ -132,22 +233,26 @@ export default function GlobalAIChat() {
           <span className="text-sm font-medium text-[#FEFEFE]">DSM Concierge</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsMinimized(!isMinimized)}
-            className="w-7 h-7 flex items-center justify-center rounded-sm text-[#B1B2B3] hover:text-[#FEFEFE] hover:bg-white/[0.06] transition-colors"
-            aria-label={isMinimized ? 'Expand' : 'Minimize'}
-            title={isMinimized ? 'Expand chat' : 'Minimize chat'}
-          >
-            <Minimize2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="w-7 h-7 flex items-center justify-center rounded-sm text-[#B1B2B3] hover:text-crimson hover:bg-white/[0.06] transition-colors"
-            aria-label="Close chat"
-            title="Close chat"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {!isMarketingModeDisabled && (
+            <>
+              <button
+                onClick={() => setIsMinimized(!isMinimized)}
+                className="w-7 h-7 flex items-center justify-center rounded-sm text-[#B1B2B3] hover:text-[#FEFEFE] hover:bg-white/[0.06] transition-colors"
+                aria-label={isMinimized ? 'Expand' : 'Minimize'}
+                title={isMinimized ? 'Expand chat' : 'Minimize chat'}
+              >
+                <Minimize2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-sm text-[#B1B2B3] hover:text-crimson hover:bg-white/[0.06] transition-colors"
+                aria-label="Close chat"
+                title="Close chat"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -157,26 +262,39 @@ export default function GlobalAIChat() {
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
               {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
+                <div key={i} className="space-y-3">
                   <div
-                    className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                      msg.role === 'user'
-                        ? 'bg-crimson/20 text-[#FEFEFE]'
-                        : 'bg-white/[0.04] text-[#B1B2B3]'
-                    }`}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {msg.content}
-                    {msg.actions && msg.actions.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-white/[0.06]">
-                        <div className="text-xs text-[#B1B2B3]/70">
-                          Actions executed: {msg.actions.map((a) => a.type).join(', ')}
-                        </div>
-                      </div>
-                    )}
+                    <div
+                      className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                        msg.role === 'user'
+                          ? 'bg-crimson/20 text-[#FEFEFE]'
+                          : 'bg-white/[0.04] text-[#B1B2B3]'
+                      }`}
+                    >
+                      {msg.content}
+                    </div>
                   </div>
+                  
+                  {/* Product Cards */}
+                  {msg.products && msg.products.length > 0 && (
+                    <div className="flex flex-wrap gap-3">
+                      {msg.products.map((product) => (
+                        <ProductChatCard
+                          key={`${product.id}-${product.name}`}
+                          product={product}
+                          onSelect={() => {
+                            try {
+                              openProduct(product);
+                            } catch (error) {
+                              console.error('Error opening product:', error);
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
               {isLoading && (

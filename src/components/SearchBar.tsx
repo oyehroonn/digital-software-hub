@@ -131,7 +131,7 @@ export default function SearchBar({ className = '', onProductSelect }: SearchBar
 
       {/* Suggestions Popover */}
       {isOpen && (suggestions.length > 0 || productResults.length > 0) && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-[#0a0b0d] border border-white/[0.06] rounded-lg shadow-premium-lg z-50 max-h-96 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-surface-card border border-theme rounded-lg shadow-premium-lg z-50 max-h-96 overflow-y-auto">
           {/* AI Suggestions */}
           {isAISearch && suggestions.length > 0 && (
             <div className="p-3 border-b border-white/[0.06]">

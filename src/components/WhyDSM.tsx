@@ -37,7 +37,7 @@ const WhyDSM = () => {
   const headingAnim = useScrollAnimation();
 
   return (
-    <section className="py-32 md:py-40 bg-[#060708] relative overflow-hidden">
+    <section className="py-32 md:py-40 bg-surface-dark relative overflow-hidden">
       {/* Ambient */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, hsl(4 65% 54% / 0.04) 0%, transparent 70%)" }} />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, hsl(204 61% 51% / 0.04) 0%, transparent 70%)" }} />

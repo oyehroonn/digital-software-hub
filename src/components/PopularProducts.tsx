@@ -220,7 +220,7 @@ const PopularProducts = () => {
   const displayed = showAll ? popularProducts : popularProducts.slice(0, 8);
 
   return (
-    <section className="py-32 bg-[#060708] relative overflow-hidden">
+    <section className="py-32 bg-surface-dark relative overflow-hidden">
       <div className="absolute top-0 left-0 right-0 section-divider-red" />
 
       {/* Ambient glow effects */}

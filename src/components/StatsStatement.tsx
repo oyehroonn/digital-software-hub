@@ -92,7 +92,7 @@ const StatsStatement = () => {
         sectionRef.current = el;
         (containerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }}
-      className="cursor-glow relative py-32 md:py-40 bg-[#060708] overflow-hidden"
+      className="cursor-glow relative py-32 md:py-40 bg-surface-dark overflow-hidden"
     >
       <div ref={glowRef} className="cursor-glow-dot" />
 
