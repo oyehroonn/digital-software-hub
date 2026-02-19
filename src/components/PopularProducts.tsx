@@ -13,6 +13,7 @@ interface PopularProduct {
   category: string;
   price: string;
   oldPrice?: string;
+  priceRange?: string;
   badge?: string;
   badgeColor?: string;
   mfr?: string;
@@ -48,10 +49,11 @@ const popularProducts: PopularProduct[] = [
     glbSrc: "/models/AutoCAD_2026.glb",
   },
   {
-    name: "Microsoft Visio Plan 2 Professional",
-    category: "Microsoft Office",
-    price: "AED 624.00",
-    mfr: "VISIOCLIENT",
+    name: "Chaos Corona Renderer",
+    category: "3D Rendering",
+    price: "AED 1,098.00",
+    priceRange: "AED 1,098.00 – AED 1,466.00",
+    glbSrc: "/models/Chaos_Corona_Renderer.glb",
   },
   {
     name: "Revit 2026 — BIM Software",
@@ -194,10 +196,16 @@ const ProductCard = ({ product }: { product: PopularProduct }) => {
             )}
           </div>
           <div className="text-right">
-            {product.oldPrice && (
-              <span className="text-xs text-[#B1B2B3]/40 line-through mr-2">{product.oldPrice}</span>
+            {product.priceRange ? (
+              <span className="font-serif text-sm text-[#FEFEFE]">{product.priceRange}</span>
+            ) : (
+              <>
+                {product.oldPrice && (
+                  <span className="text-xs text-[#B1B2B3]/40 line-through mr-2">{product.oldPrice}</span>
+                )}
+                <span className="font-serif text-sm text-[#FEFEFE]">{product.price}</span>
+              </>
             )}
-            <span className="font-serif text-sm text-[#FEFEFE]">{product.price}</span>
           </div>
         </div>
       </div>

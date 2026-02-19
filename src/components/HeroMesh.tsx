@@ -10,18 +10,18 @@ interface HeroMeshProps {
   accent?: MeshAccent;
 }
 
-const BACKGROUND = 0x060708;
+const BACKGROUND = 0x030305;
 
 const COLOR_SCHEMES = {
   red: {
     lines: new THREE.Color("hsl(4, 65%, 54%)"),
     peaks: new THREE.Color("hsl(4, 45%, 22%)"),
-    bloom: 0.8,
+    bloom: 1.2,
   },
   azure: {
     lines: new THREE.Color("hsl(204, 61%, 55%)"),
     peaks: new THREE.Color("hsl(204, 50%, 30%)"),
-    bloom: 1.2,
+    bloom: 1.4,
   },
 };
 
@@ -60,13 +60,16 @@ const VERTEX = /* glsl */ `
   void main(){
     vUv=uv;
     vec3 pos=position;
-    float noise=snoise(vec2(pos.x*0.15+uTime*0.2,pos.y*0.15+uTime*0.1));
-    float detail=snoise(vec2(pos.x*0.5-uTime*0.5,pos.y*0.5));
-      float dist=distance(pos.xy,uMouse);
-      float radius=12.0;
-      float mouse=smoothstep(radius,0.0,dist)*4.0;
-      pos.z+=(noise*1.5)+(detail*0.2)+mouse;
-      pos.z+=sin(dist*2.0-uTime*3.0)*smoothstep(radius,0.0,dist)*0.5;
+    float noiseFreq=0.15;
+    float noiseAmp=1.5;
+    float noise=snoise(vec2(pos.x*noiseFreq+uTime*0.2,pos.y*noiseFreq+uTime*0.1));
+    float detailNoise=snoise(vec2(pos.x*0.5-uTime*0.5,pos.y*0.5));
+    float dist=distance(pos.xy,uMouse);
+    float interactionRadius=12.0;
+    float mouseEffect=smoothstep(interactionRadius,0.0,dist)*4.0;
+    pos.z+=(noise*noiseAmp)+(detailNoise*0.2)+mouseEffect;
+    float ripple=sin(dist*2.0-uTime*3.0)*smoothstep(interactionRadius,0.0,dist)*0.5;
+    pos.z+=ripple;
     vElevation=pos.z;
     gl_Position=projectionMatrix*modelViewMatrix*vec4(pos,1.0);
   }
@@ -111,33 +114,34 @@ const HeroMesh = ({ accent = "red" }: HeroMeshProps) => {
     );
     visObs.observe(parent);
 
+    // Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(BACKGROUND);
     scene.fog = new THREE.FogExp2(BACKGROUND, 0.025);
 
-    const camera = new THREE.PerspectiveCamera(50, w() / h(), 0.1, 100);
-    camera.position.set(0, 15, 22);
+    // Camera — matches mesh.html exactly
+    const camera = new THREE.PerspectiveCamera(75, w() / h(), 0.1, 100);
+    camera.position.set(0, 8, 12);
     camera.lookAt(0, 0, -5);
 
+    // Renderer
     const renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: false,
       powerPreference: "high-performance",
       alpha: false,
     });
-    const initialWidth = w();
-    const initialHeight = h();
-    renderer.setSize(initialWidth, initialHeight);
+    renderer.setSize(w(), h());
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ReinhardToneMapping;
-    canvas.width = initialWidth;
-    canvas.height = initialHeight;
 
+    // Colors
     const currentLines = COLOR_SCHEMES.red.lines.clone();
     const currentPeaks = COLOR_SCHEMES.red.peaks.clone();
     let currentBloom = COLOR_SCHEMES.red.bloom;
 
-    const geometry = new THREE.PlaneGeometry(100, 100, 128, 128);
+    // Geometry — 80x80 grid, 128 segments, matches mesh.html
+    const geometry = new THREE.PlaneGeometry(80, 80, 128, 128);
     const material = new THREE.ShaderMaterial({
       vertexShader: VERTEX,
       fragmentShader: FRAGMENT,
@@ -152,21 +156,19 @@ const HeroMesh = ({ accent = "red" }: HeroMeshProps) => {
       side: THREE.DoubleSide,
     });
 
+    // Plane — positioned at y=-2, matches mesh.html
     const planeMesh = new THREE.Mesh(geometry, material);
     planeMesh.rotation.x = -Math.PI / 2;
     planeMesh.position.y = -2;
-    planeMesh.position.x = 0;
-    planeMesh.position.z = 0;
     scene.add(planeMesh);
 
+    // Post-processing — bloom at 1.2 strength, matches mesh.html
     const renderPass = new RenderPass(scene, camera);
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(w(), h()),
-      1.5,
-      0.4,
-      0.85
+      1.5, 0.4, 0.85
     );
-    bloomPass.strength = currentBloom;
+    bloomPass.strength = 1.2;
     bloomPass.radius = 0.5;
     bloomPass.threshold = 0;
 
@@ -174,40 +176,27 @@ const HeroMesh = ({ accent = "red" }: HeroMeshProps) => {
     composer.addPass(renderPass);
     composer.addPass(bloomPass);
 
+    // Mouse interaction — raycaster plane at y=0, matches mesh.html
     const raycaster = new THREE.Raycaster();
     const mouseNDC = new THREE.Vector2(0, 0);
     const targetMouse = new THREE.Vector2(0, 0);
     const currentMouse = new THREE.Vector2(0, 0);
-    // Plane at y = -2 (where the mesh plane is positioned)
-    // Plane equation: normal.dot(point) = constant, so (0,1,0).dot(point) = -2 means y = -2
-    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -2);
+    const testPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
     const onMouseMove = (e: MouseEvent) => {
       if (!isVisible) return;
-      const rect = parent.getBoundingClientRect();
-      // Normalized device coordinates: -1 to 1
-      mouseNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouseNDC, camera);
       const target = new THREE.Vector3();
-      const intersection = raycaster.ray.intersectPlane(groundPlane, target);
-      if (intersection !== null) {
-        // The mesh is rotated -90deg on X axis, so:
-        // - World X maps directly to mesh local X
-        // - World Z maps to mesh local Y (after rotation)
-        // Since the plane is at y=-2 and rotated, we use x and z from world space
-        // and map them to mesh local xy
-        targetMouse.set(target.x, target.z);
+      const hit = raycaster.ray.intersectPlane(testPlane, target);
+      if (hit) {
+        targetMouse.set(target.x, -target.z);
       }
     };
-    
-    const onMouseEnter = () => {
-      // Make hover effect more pronounced
-    };
-    
+
     const onMouseLeave = () => {
-      // Reset mouse position when leaving
       targetMouse.set(0, 0);
     };
 
@@ -218,38 +207,36 @@ const HeroMesh = ({ accent = "red" }: HeroMeshProps) => {
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
       composer.setSize(width, height);
-      canvas.width = width;
-      canvas.height = height;
     };
-    
-    // Initial resize
+
     onResize();
 
-    parent.addEventListener("mousemove", onMouseMove, { passive: true });
-    parent.addEventListener("mouseenter", onMouseEnter);
+    window.addEventListener("mousemove", onMouseMove, { passive: true });
     parent.addEventListener("mouseleave", onMouseLeave);
     window.addEventListener("resize", onResize);
 
+    // Animation — matches mesh.html exactly
     const clock = new THREE.Clock();
 
     const animate = () => {
       frameRef.current = requestAnimationFrame(animate);
-
       if (!isVisible) return;
 
       const elapsed = clock.getElapsedTime();
       material.uniforms.uTime.value = elapsed;
 
-      currentMouse.lerp(targetMouse, 0.15);
-      material.uniforms.uMouse.value.set(currentMouse.x, currentMouse.y);
+      currentMouse.lerp(targetMouse, 0.1);
+      material.uniforms.uMouse.value.copy(currentMouse);
 
+      // Accent color transitions
       const scheme = COLOR_SCHEMES[accentRef.current];
       currentLines.lerp(scheme.lines, LERP_SPEED);
       currentPeaks.lerp(scheme.peaks, LERP_SPEED);
       currentBloom += (scheme.bloom - currentBloom) * LERP_SPEED;
       bloomPass.strength = currentBloom;
 
-      camera.position.y = 15 + Math.sin(elapsed * 0.5) * 0.5;
+      // Camera sway — matches mesh.html
+      camera.position.y = 8 + Math.sin(elapsed * 0.5) * 0.5;
       camera.position.x = Math.cos(elapsed * 0.2) * 1;
       camera.lookAt(0, 0, -2);
 
@@ -261,8 +248,7 @@ const HeroMesh = ({ accent = "red" }: HeroMeshProps) => {
     return () => {
       cancelAnimationFrame(frameRef.current);
       visObs.disconnect();
-      parent.removeEventListener("mousemove", onMouseMove);
-      parent.removeEventListener("mouseenter", onMouseEnter);
+      window.removeEventListener("mousemove", onMouseMove);
       parent.removeEventListener("mouseleave", onMouseLeave);
       window.removeEventListener("resize", onResize);
       geometry.dispose();

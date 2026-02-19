@@ -13,7 +13,7 @@ const Hero = () => {
   return (
     <section
       ref={containerRef}
-      className="cursor-glow relative min-h-screen flex items-center justify-center pt-20 overflow-hidden"
+      className="cursor-glow relative min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-[#030305]"
     >
       {/* Three.js interactive mesh background */}
       <div className="absolute inset-0 w-full h-full z-0">
