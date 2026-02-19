@@ -113,15 +113,15 @@ export default function ProductCard({ product, viewMode = 'grid', onClick }: Pro
 
       {/* Product Info */}
       <div className="space-y-1">
-        <h3 className="font-medium text-[#FEFEFE] text-sm mb-1 group-hover:text-crimson transition-colors line-clamp-2">
+        <h3 className="font-medium text-foreground text-sm mb-1 group-hover:text-crimson transition-colors line-clamp-2">
           {product.name}
         </h3>
-        <p className="text-xs text-[#B1B2B3]/70 line-clamp-1">{product.description}</p>
+        <p className="text-xs text-muted-foreground line-clamp-1">{product.description}</p>
         <div className="flex items-center justify-between mt-2">
-          <Badge variant="outline" className="text-[10px] text-[#B1B2B3]">
+          <Badge variant="outline" className="text-[10px] text-muted-foreground">
             {product.category}
           </Badge>
-          <span className="font-serif text-sm text-[#FEFEFE]">{product.price}</span>
+          <span className="font-serif text-sm text-foreground">{product.price}</span>
         </div>
       </div>
     </div>

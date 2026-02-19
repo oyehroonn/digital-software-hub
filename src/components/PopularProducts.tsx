@@ -29,7 +29,7 @@ const popularProducts: PopularProduct[] = [
     badge: "Lifetime",
     badgeColor: "bg-crimson/20 text-crimson",
     mfr: "AAA-03509-CCF",
-    glbSrc: "/models/Microsoft_Office_2024_Lifetime.glb",
+    glbSrc: "/models/Microsoft_Office_2024_Professional_Plus.glb",
   },
   {
     name: "V-Ray 3D Rendering Software by Chaos",
@@ -38,7 +38,7 @@ const popularProducts: PopularProduct[] = [
     badge: "Popular",
     badgeColor: "bg-gold/20 text-gold",
     rating: 5,
-    glbSrc: "/models/V_Ray_3D_Rendering_Software.glb",
+    glbSrc: "/models/V_Ray_3D_Rendering_Software_NEW.glb",
   },
   {
     name: "AutoCAD 2026 — Yearly Subscription",
@@ -46,14 +46,14 @@ const popularProducts: PopularProduct[] = [
     price: "AED 4,403.33",
     badge: "New",
     badgeColor: "bg-azure/20 text-azure",
-    glbSrc: "/models/AutoCAD_2026.glb",
+    glbSrc: "/models/AutoCAD_2026_NEW.glb",
   },
   {
     name: "Chaos Corona Renderer",
     category: "3D Rendering",
     price: "AED 1,098.00",
     priceRange: "AED 1,098.00 – AED 1,466.00",
-    glbSrc: "/models/Chaos_Corona_Renderer.glb",
+    glbSrc: "/models/Chaos_Corona_Renderer_NEW.glb",
   },
   {
     name: "Revit 2026 — BIM Software",
@@ -61,21 +61,21 @@ const popularProducts: PopularProduct[] = [
     price: "AED 6,607.00",
     badge: "Enterprise",
     badgeColor: "bg-crimson/20 text-crimson",
-    glbSrc: "/models/Revit_2026_BIM_Software.glb",
+    glbSrc: "/models/Revit_2026_BIM_Software_NEW.glb",
   },
   {
     name: "Microsoft SQL Server 2025 Standard",
     category: "SQL Server",
     price: "AED 4,403.33",
     mfr: "AAA-03701-CCF",
-    glbSrc: "/models/SQL_Server_2025_Standard.glb",
+    glbSrc: "/models/SQL_Server_2025_Standard_NEW.glb",
   },
   {
     name: "Windows 11 Enterprise",
     category: "Microsoft Windows",
     price: "AED 499.00",
     mfr: "FQC-10572",
-    glbSrc: "/models/Windows_11_Enterprise.glb",
+    glbSrc: "/models/Windows_11_Enterprise_NEW.glb",
   },
   {
     name: "Adobe Creative Cloud All Apps",
@@ -85,14 +85,14 @@ const popularProducts: PopularProduct[] = [
     badge: "-38%",
     badgeColor: "bg-crimson/20 text-crimson",
     rating: 5,
-    glbSrc: "/models/Adobe_Creative_Cloud_1yr.glb",
+    glbSrc: "/models/Adobe_Creative_Cloud_NEW.glb",
   },
   {
     name: "Microsoft 365 Business Premium",
     category: "Microsoft Office 365",
     price: "AED 2,934.33",
     mfr: "T5D-03489",
-    glbSrc: "/models/Microsoft_365_Business_Premium.glb",
+    glbSrc: "/models/Microsoft_365_Business_Premium_NEW.glb",
   },
   {
     name: "Planner and Project Plan 3",
@@ -101,7 +101,7 @@ const popularProducts: PopularProduct[] = [
     oldPrice: "AED 1,299.00",
     badge: "-15%",
     badgeColor: "bg-gold/20 text-gold",
-    glbSrc: "/models/MS_Project_Plan_3.glb",
+    glbSrc: "/models/Planner_Project_Plan_3_NEW.glb",
   },
   {
     name: "Microsoft 365 E3 (100 Users)",
@@ -110,7 +110,7 @@ const popularProducts: PopularProduct[] = [
     badge: "Volume",
     badgeColor: "bg-azure/20 text-azure",
     mfr: "CFQ7TTC0LF8R-0020",
-    glbSrc: "/models/Microsoft_365_E3_100_Users.glb",
+    glbSrc: "/models/Microsoft_365_E3_100_Users_NEW.glb",
   },
   {
     name: "Microsoft 365 E5 Subscription",
@@ -119,7 +119,7 @@ const popularProducts: PopularProduct[] = [
     badge: "Premium",
     badgeColor: "bg-gold/20 text-gold",
     mfr: "AAD-34688-PKG-12MO",
-    glbSrc: "/models/Microsoft_365_E5_Subscription.glb",
+    glbSrc: "/models/Microsoft_365_E5_Subscription_NEW.glb",
   },
 ];
 
@@ -235,7 +235,7 @@ const PopularProducts = () => {
               Browse Our Collection
             </span>
             <h2 className="font-serif text-4xl md:text-5xl text-[#FEFEFE] tracking-tight">
-              Popular Products
+              Product Catalogue
             </h2>
           </div>
           <a

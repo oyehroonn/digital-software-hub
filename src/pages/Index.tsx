@@ -6,6 +6,7 @@ import RoleGrid from "@/components/RoleGrid";
 import StatsStatement from "@/components/StatsStatement";
 import EditorialSpotlight from "@/components/EditorialSpotlight";
 import TopProducts from "@/components/TopProducts";
+import PopularProducts from "@/components/PopularProducts";
 import WhyDSM from "@/components/WhyDSM";
 import BrandSpotlight from "@/components/BrandSpotlight";
 import TrustSection from "@/components/TrustSection";
@@ -27,6 +28,7 @@ const Index = () => {
         <TopProducts />
         <WhyDSM />
         <BrandSpotlight />
+        <PopularProducts />
         <TrustSection />
       </main>
       <Footer />
