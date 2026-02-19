@@ -39,7 +39,12 @@ const Header = () => {
             </button>
 
             {/* Mega Menu */}
-            <div className="mega-menu fixed left-4 right-4 top-16 max-w-[1200px] mx-auto bg-surface-card/95 backdrop-blur-2xl border border-theme shadow-premium-lg rounded-b-lg pt-8 pb-12 px-8 md:px-12 z-50 origin-top overflow-auto max-h-[80vh]">
+            <div 
+              className="mega-menu fixed left-4 right-4 top-16 max-w-[1200px] mx-auto backdrop-blur-2xl border border-white/[0.1] shadow-premium-lg rounded-b-lg pt-8 pb-12 px-8 md:px-12 z-50 origin-top overflow-auto max-h-[80vh]" 
+              style={{ 
+                background: "linear-gradient(180deg, rgba(20,10,15,0.15) 0%, rgba(60,20,30,0.12) 50%, rgba(20,10,15,0.18) 100%)",
+                boxShadow: "inset 0 0 80px rgba(200,50,70,0.06), 0 25px 50px -12px rgba(0,0,0,0.5)"
+              }}>
               <div className="grid grid-cols-12 gap-8">
                 {/* Categories */}
                 <div className="col-span-3 border-r border-white/[0.06]">
