@@ -5,13 +5,11 @@ import LogoStrip from "@/components/LogoStrip";
 import RoleGrid from "@/components/RoleGrid";
 import StatsStatement from "@/components/StatsStatement";
 import EditorialSpotlight from "@/components/EditorialSpotlight";
-import ProductGrid from "@/components/ProductGrid";
+import TopProducts from "@/components/TopProducts";
 import WhyDSM from "@/components/WhyDSM";
 import BrandSpotlight from "@/components/BrandSpotlight";
-import PopularProducts from "@/components/PopularProducts";
 import TrustSection from "@/components/TrustSection";
 import Footer from "@/components/Footer";
-import FloatingChatButton from "@/components/FloatingChatButton";
 import GrainOverlay from "@/components/GrainOverlay";
 
 const Index = () => {
@@ -26,14 +24,12 @@ const Index = () => {
         <RoleGrid />
         <StatsStatement />
         <EditorialSpotlight />
-        <ProductGrid />
+        <TopProducts />
         <WhyDSM />
         <BrandSpotlight />
-        <PopularProducts />
         <TrustSection />
       </main>
       <Footer />
-      <FloatingChatButton />
     </>
   );
 };

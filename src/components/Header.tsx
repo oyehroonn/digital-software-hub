@@ -1,4 +1,6 @@
-import { Search, User, ShoppingBag, ChevronDown, ArrowRight, LayoutGrid, PenTool, Box, ShieldCheck } from "lucide-react";
+import { User, ShoppingBag, ChevronDown, ArrowRight, LayoutGrid, PenTool, Box, ShieldCheck } from "lucide-react";
+import SearchBar from "./SearchBar";
+import { Link } from "react-router-dom";
 
 const categories = [
   { name: "Operating Systems", active: false },
@@ -20,10 +22,10 @@ const Header = () => {
     <header className="fixed top-0 left-0 w-full z-50 transition-all duration-500 border-b border-white/[0.04] bg-[#060708]/85 backdrop-blur-2xl">
       <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between relative">
         {/* Logo */}
-        <a href="#" className="font-serif text-xl tracking-tight z-50 font-medium relative group text-[#FEFEFE]">
+        <Link to="/" className="font-serif text-xl tracking-tight z-50 font-medium relative group text-[#FEFEFE]">
           DSM<span className="text-crimson">.</span>
           <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-crimson transition-all duration-500 group-hover:w-full" />
-        </a>
+        </Link>
 
         {/* Desktop Menu */}
         <nav className="hidden lg:flex items-center gap-8 h-full overflow-visible">
@@ -92,14 +94,17 @@ const Header = () => {
             </div>
           </div>
 
+          <Link to="/store" className="text-sm font-medium text-[#B1B2B3] hover:text-crimson transition-colors duration-300">Store</Link>
           <a href="#" className="text-sm font-medium text-[#B1B2B3] hover:text-crimson transition-colors duration-300">Enterprise</a>
           <a href="#" className="text-sm font-medium text-[#B1B2B3] hover:text-crimson transition-colors duration-300">Support</a>
           <a href="#" className="text-sm font-medium text-[#B1B2B3] hover:text-crimson transition-colors duration-300">About</a>
         </nav>
 
-        {/* Icons */}
-        <div className="flex items-center gap-5">
-          <button className="text-[#B1B2B3] hover:text-crimson transition-colors duration-300"><Search className="w-5 h-5" strokeWidth={1.5} /></button>
+        {/* Search & Icons */}
+        <div className="flex items-center gap-4">
+          <div className="hidden md:block w-64">
+            <SearchBar />
+          </div>
           <a href="#" className="text-[#B1B2B3] hover:text-crimson transition-colors duration-300"><User className="w-5 h-5" strokeWidth={1.5} /></a>
           <a href="#" className="relative text-[#B1B2B3] hover:text-crimson transition-colors duration-300">
             <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
