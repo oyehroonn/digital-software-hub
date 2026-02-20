@@ -1,25 +1,75 @@
-import { User, ShoppingBag, ChevronDown, ArrowRight, LayoutGrid, PenTool, Box, ShieldCheck } from "lucide-react";
+import { User, ShoppingBag, ChevronDown, ArrowRight, LayoutGrid, PenTool, Box, ShieldCheck, Monitor, Cpu } from "lucide-react";
 import SearchBar from "./SearchBar";
+import ProductModelViewer from "./ProductModelViewer";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 const categories = [
-  { name: "Operating Systems", active: false },
-  { name: "Productivity & Office", active: true },
-  { name: "Design & Creativity", active: false },
-  { name: "CAD & Engineering", active: false },
-  { name: "Security & Utility", active: false },
+  "Operating Systems",
+  "Productivity & Office",
+  "Design & Creativity",
+  "CAD & Engineering",
+  "Security & Utility",
 ];
 
-const brands = [
-  { name: "Microsoft", desc: "Windows, Office, Server", icon: LayoutGrid },
-  { name: "Adobe", desc: "Creative Cloud, Acrobat", icon: PenTool },
-  { name: "Autodesk", desc: "AutoCAD, Revit, Maya", icon: Box },
-  { name: "Kaspersky", desc: "Total Security, VPN", icon: ShieldCheck },
-];
+const categoryBrands: Record<string, { name: string; desc: string; icon: typeof LayoutGrid }[]> = {
+  "Operating Systems": [
+    { name: "Microsoft", desc: "Windows 10, 11, Server 2022/2025", icon: Monitor },
+    { name: "VMware", desc: "Workstation, Fusion Pro", icon: Cpu },
+  ],
+  "Productivity & Office": [
+    { name: "Microsoft", desc: "Office 365, Project, Visio", icon: LayoutGrid },
+    { name: "Adobe", desc: "Acrobat Pro, Sign", icon: PenTool },
+    { name: "Corel", desc: "WordPerfect, PDF Fusion", icon: LayoutGrid },
+  ],
+  "Design & Creativity": [
+    { name: "Adobe", desc: "Creative Cloud, Photoshop, Illustrator", icon: PenTool },
+    { name: "Corel", desc: "CorelDRAW, Painter, Photo-Paint", icon: PenTool },
+    { name: "Maxon", desc: "Cinema 4D, ZBrush, Red Giant", icon: Box },
+  ],
+  "CAD & Engineering": [
+    { name: "Autodesk", desc: "AutoCAD, Revit, Civil 3D, Inventor", icon: Box },
+    { name: "Chaos", desc: "V-Ray, Corona, Enscape", icon: Box },
+    { name: "SketchUp", desc: "Pro, Studio, LayOut", icon: Box },
+  ],
+  "Security & Utility": [
+    { name: "Kaspersky", desc: "Total Security, VPN, Endpoint", icon: ShieldCheck },
+    { name: "Microsoft", desc: "Defender, Intune, Azure AD", icon: ShieldCheck },
+    { name: "Acronis", desc: "Cyber Protect, Backup", icon: ShieldCheck },
+  ],
+};
+
+const categoryFeaturedModel: Record<string, { glb: string; title: string; desc: string }> = {
+  "Operating Systems": {
+    glb: "/models/Windows_11_Enterprise_FIXED.glb",
+    title: "Windows 11 Enterprise",
+    desc: "The most secure Windows for business and enterprise.",
+  },
+  "Productivity & Office": {
+    glb: "/models/Microsoft_365_Business_Premium_FIXED.glb",
+    title: "Microsoft 365 Business Premium",
+    desc: "Complete productivity suite for modern teams.",
+  },
+  "Design & Creativity": {
+    glb: "/models/Adobe_Creative_Cloud_FIXED.glb",
+    title: "Adobe Creative Cloud",
+    desc: "Industry-leading creative tools for designers.",
+  },
+  "CAD & Engineering": {
+    glb: "/models/AutoCAD_2026_FIXED.glb",
+    title: "AutoCAD 2026",
+    desc: "Industry-standard CAD software for professionals.",
+  },
+  "Security & Utility": {
+    glb: "/models/SQL_Server_2025_Standard_FIXED.glb",
+    title: "SQL Server 2025 Standard",
+    desc: "Enterprise database management and security.",
+  },
+};
 
 const Header = () => {
   const [isOverLightSection, setIsOverLightSection] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("Productivity & Office");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -74,28 +124,28 @@ const Header = () => {
                   <span className="text-[10px] font-semibold text-[#B1B2B3]/60 uppercase tracking-[0.14em] mb-6 block">Categories</span>
                   <ul className="space-y-3">
                     {categories.map((cat) => (
-                      <li key={cat.name}>
-                        <a
-                          href="#"
-                          className={`text-sm flex items-center justify-between transition-colors duration-300 ${
-                            cat.active
+                      <li key={cat}>
+                        <button
+                          onClick={() => setActiveCategory(cat)}
+                          className={`w-full text-left text-sm flex items-center justify-between transition-colors duration-300 ${
+                            activeCategory === cat
                               ? "text-crimson font-medium"
                               : "text-[#B1B2B3] hover:text-crimson group/link"
                           }`}
                         >
-                          {cat.name}
-                          <ArrowRight className={`w-3 h-3 ${cat.active ? "text-crimson" : "opacity-0 group-hover/link:opacity-100 transition-all -translate-x-2 group-hover/link:translate-x-0"}`} />
-                        </a>
+                          {cat}
+                          <ArrowRight className={`w-3 h-3 ${activeCategory === cat ? "text-crimson" : "opacity-0 group-hover/link:opacity-100 transition-all -translate-x-2 group-hover/link:translate-x-0"}`} />
+                        </button>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                {/* Partner Showroom */}
+                {/* Partner Showroom - Dynamic based on category */}
                 <div className="col-span-5 px-8">
                   <span className="text-[10px] font-semibold text-[#B1B2B3]/60 uppercase tracking-[0.14em] mb-6 block">Official Partner Showroom</span>
                   <div className="grid grid-cols-2 gap-4">
-                    {brands.map((brand) => (
+                    {categoryBrands[activeCategory]?.map((brand) => (
                       <a key={brand.name} href="#" className="p-4 bg-white/[0.03] border border-white/[0.04] rounded-md hover:bg-white/[0.06] hover:border-crimson/20 transition-all duration-300 group/brand">
                         <div className="flex items-center gap-2 mb-2">
                           <brand.icon className="w-4 h-4 text-[#B1B2B3] group-hover/brand:text-crimson transition-colors duration-300" />
@@ -107,18 +157,35 @@ const Header = () => {
                   </div>
                 </div>
 
-                {/* Editorial Feature */}
-                <div className="col-span-4 relative group cursor-pointer overflow-hidden rounded-md bg-surface-dark text-foreground-primary p-6 flex flex-col justify-end h-64 border border-theme">
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#060708] via-[#060708]/60 to-transparent z-10" />
-                  <img
-                    src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop"
-                    className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700 ease-out z-0"
-                    alt="Creative workspace"
-                  />
-                  <div className="relative z-20">
+                {/* Featured Product - Dynamic GLB based on category */}
+                <div className="col-span-4 relative group cursor-pointer overflow-hidden rounded-md bg-gradient-to-br from-[#0a0b0c] to-[#060708] border border-white/[0.06] h-64">
+                  {/* 3D Model */}
+                  <div className="absolute inset-0 z-0">
+                    <ProductModelViewer
+                      key={activeCategory}
+                      glbSrc={categoryFeaturedModel[activeCategory]?.glb}
+                      fallbackIcon={
+                        <div className="w-16 h-16 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                          <span className="text-xl font-bold text-white/20">
+                            {activeCategory.charAt(0)}
+                          </span>
+                        </div>
+                      }
+                    />
+                  </div>
+                  
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#060708] via-[#060708]/40 to-transparent z-10 pointer-events-none" />
+                  
+                  {/* Content */}
+                  <div className="absolute bottom-0 left-0 right-0 p-5 z-20">
                     <span className="inline-block px-2 py-1 bg-crimson/20 backdrop-blur text-[10px] uppercase tracking-[0.14em] font-semibold mb-2 rounded-sm text-crimson">Featured</span>
-                    <h4 className="font-serif text-lg leading-tight mb-1 text-[#FEFEFE]">The Creative Suite 2025</h4>
-                    <p className="text-xs text-[#B1B2B3] mb-3 line-clamp-2">Upgrade your workflow with the latest tools from Adobe.</p>
+                    <h4 className="font-serif text-lg leading-tight mb-1 text-[#FEFEFE]">
+                      {categoryFeaturedModel[activeCategory]?.title}
+                    </h4>
+                    <p className="text-xs text-[#B1B2B3] mb-3 line-clamp-2">
+                      {categoryFeaturedModel[activeCategory]?.desc}
+                    </p>
                     <span className="text-xs border-b border-crimson/40 pb-0.5 inline-block text-crimson hover:border-crimson transition-colors">Explore Collection</span>
                   </div>
                 </div>
