@@ -1,0 +1,18 @@
+{
+  "name": "DSM Online",
+  "short_name": "DSM",
+  "description": "Premium Software Licensing — Official Microsoft, Adobe, Autodesk & more.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/dsm.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

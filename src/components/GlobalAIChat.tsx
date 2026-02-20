@@ -1,12 +1,14 @@
-import { MessageCircle, X, Send, Minimize2, Sparkles, ExternalLink } from 'lucide-react';
+import { MessageCircle, X, Send, Minimize2, Sparkles, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { aiChat, AIChatResponse, Product } from '@/lib/api';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { ScrollArea } from './ui/scroll-area';
+// Using native scroll instead of Radix ScrollArea for reliable scrolling
 import ProductModelViewer from './ProductModelViewer';
 import { Badge } from './ui/badge';
+import FormattedMessage from './FormattedMessage';
+import TypingIndicator from './TypingIndicator';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -17,22 +19,22 @@ interface ChatMessage {
 
 const WELCOME_MESSAGE = "Hello! I'm your DSM concierge. I can help you find products, answer questions, or navigate the store. How can I assist you today?";
 
-// Product Card Component for Chat
-function ProductChatCard({ product, onSelect }: { product: Product; onSelect?: () => void }) {
+// Product Card Component for Chat — compact for horizontal slider
+function ProductChatCard({ product, onSelect, onAIChat }: { product: Product; onSelect?: () => void; onAIChat?: () => void }) {
   return (
     <div
       onClick={onSelect}
-      className="w-full max-w-[280px] bg-surface-card border border-theme rounded-lg overflow-hidden cursor-pointer hover:border-crimson/30 transition-all group"
+      className="w-[220px] min-w-[220px] bg-surface-card border border-theme rounded-lg overflow-hidden cursor-pointer hover:border-crimson/30 transition-all group flex-shrink-0 snap-start"
     >
-      {/* 3D Model Preview */}
-      <div className="relative h-48 bg-white/[0.02] overflow-hidden">
+      {/* 3D Model Preview — pointer-events disabled so slider drag works */}
+      <div className="relative h-36 bg-white/[0.02] overflow-hidden pointer-events-none select-none">
         {product.link ? (
           <ProductModelViewer
             glbSrc={product.link}
             fallbackIcon={
               <div className="w-full h-full flex items-center justify-center">
-                <div className="w-16 h-16 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
-                  <span className="text-xl font-serif text-foreground-primary/30">
+                <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                  <span className="text-lg font-serif text-foreground-primary/30">
                     {product.name.charAt(0)}
                   </span>
                 </div>
@@ -41,8 +43,8 @@ function ProductChatCard({ product, onSelect }: { product: Product; onSelect?: (
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <div className="w-16 h-16 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
-              <span className="text-xl font-serif text-foreground-primary/30">
+            <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+              <span className="text-lg font-serif text-foreground-primary/30">
                 {product.name.charAt(0)}
               </span>
             </div>
@@ -51,45 +53,120 @@ function ProductChatCard({ product, onSelect }: { product: Product; onSelect?: (
       </div>
       
       {/* Product Info */}
-      <div className="p-3 space-y-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-sm text-foreground-primary line-clamp-2 group-hover:text-crimson transition-colors">
-              {product.name}
-            </h4>
-            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-              {product.description}
-            </p>
-          </div>
-        </div>
+      <div className="p-2.5 space-y-1.5">
+        <h4 className="font-medium text-xs text-foreground-primary line-clamp-2 leading-tight group-hover:text-crimson transition-colors">
+          {product.name}
+        </h4>
         
-        <div className="flex items-center justify-between">
-          <div className="flex flex-wrap gap-1">
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-              {product.brand}
-            </Badge>
-            <Badge className="bg-crimson/10 text-crimson text-[10px] px-1.5 py-0">
-              {product.category}
-            </Badge>
-          </div>
+        <div className="flex items-center gap-1">
+          <Badge variant="outline" className="text-[9px] px-1 py-0 leading-tight">
+            {product.brand}
+          </Badge>
+          <Badge className="bg-crimson/10 text-crimson text-[9px] px-1 py-0 leading-tight">
+            {product.category}
+          </Badge>
         </div>
         
         <div className="flex items-center justify-between pt-1 border-t border-theme">
-          <span className="font-serif text-sm font-medium text-foreground-primary">
+          <span className="font-serif text-xs font-medium text-foreground-primary">
             {product.price}
           </span>
-          <button className="text-xs text-crimson hover:text-crimson-dark flex items-center gap-1">
-            View Details
-            <ExternalLink className="w-3 h-3" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            {onAIChat && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onAIChat(); }}
+                className="text-[10px] text-muted-foreground hover:text-crimson flex items-center gap-0.5 transition-colors"
+                title="Ask AI about this product"
+              >
+                <Sparkles className="w-2.5 h-2.5" />
+              </button>
+            )}
+            <button className="text-[10px] text-crimson hover:text-crimson-dark flex items-center gap-0.5">
+              View
+              <ExternalLink className="w-2.5 h-2.5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
+// Horizontal product slider with scroll arrows
+function ProductSlider({ products, onSelect, onAIChat }: { 
+  products: Product[]; 
+  onSelect: (product: Product) => void;
+  onAIChat: (product: Product) => void;
+}) {
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollButtons = () => {
+    if (!sliderRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = sliderRef.current;
+    setCanScrollLeft(scrollLeft > 4);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    updateScrollButtons();
+    const el = sliderRef.current;
+    if (el) el.addEventListener('scroll', updateScrollButtons, { passive: true });
+    return () => { if (el) el.removeEventListener('scroll', updateScrollButtons); };
+  }, [products]);
+
+  const scroll = (dir: 'left' | 'right') => {
+    if (!sliderRef.current) return;
+    const amount = 230; // card width + gap
+    sliderRef.current.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="relative">
+      {/* Left arrow — always visible when scrollable */}
+      {canScrollLeft && (
+        <button
+          onClick={() => scroll('left')}
+          className="absolute -left-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-crimson text-white shadow-lg flex items-center justify-center hover:bg-crimson-dark hover:scale-110 transition-all"
+          aria-label="Scroll left"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+      )}
+      
+      {/* Slider — touch-action horizontal only to allow vertical page scroll */}
+      <div
+        ref={sliderRef}
+        className="flex gap-2.5 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar px-1"
+        style={{ touchAction: 'pan-x' }}
+      >
+        {products.map((product) => (
+          <ProductChatCard
+            key={`${product.id}-${product.name}`}
+            product={product}
+            onSelect={() => onSelect(product)}
+            onAIChat={() => onAIChat(product)}
+          />
+        ))}
+      </div>
+
+      {/* Right arrow — always visible when scrollable */}
+      {canScrollRight && (
+        <button
+          onClick={() => scroll('right')}
+          className="absolute -right-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-crimson text-white shadow-lg flex items-center justify-center hover:bg-crimson-dark hover:scale-110 transition-all"
+          aria-label="Scroll right"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function GlobalAIChat() {
-  const { applyAIAction, state, openProduct } = useApp();
+  const { applyAIAction, state, openProduct, openProductAIChat } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   
@@ -129,9 +206,15 @@ export default function GlobalAIChat() {
     localStorage.setItem('dsm-chat-state', JSON.stringify({ isOpen, isMinimized }));
   }, [isOpen, isMinimized]);
 
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    requestAnimationFrame(() => {
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      }
+    });
+  }, [messages, isLoading]);
 
   useEffect(() => {
     if (isOpen && !isMinimized) {
@@ -259,7 +342,11 @@ export default function GlobalAIChat() {
       {!isMinimized && (
         <>
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4">
+          <div
+            ref={chatContainerRef}
+            className="flex-1 overflow-y-auto overscroll-contain p-4"
+            style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+          >
             <div className="space-y-4">
               {messages.map((msg, i) => (
                 <div key={i} className="space-y-3">
@@ -267,46 +354,40 @@ export default function GlobalAIChat() {
                     className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                      className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                         msg.role === 'user'
                           ? 'bg-crimson/20 text-[#FEFEFE]'
                           : 'bg-white/[0.04] text-[#B1B2B3]'
                       }`}
                     >
-                      {msg.content}
+                      {msg.role === 'assistant' ? (
+                        <FormattedMessage content={msg.content} className="text-sm" />
+                      ) : (
+                        msg.content
+                      )}
                     </div>
                   </div>
                   
-                  {/* Product Cards */}
+                  {/* Product Cards — Horizontal Slider */}
                   {msg.products && msg.products.length > 0 && (
-                    <div className="flex flex-wrap gap-3">
-                      {msg.products.map((product) => (
-                        <ProductChatCard
-                          key={`${product.id}-${product.name}`}
-                          product={product}
-                          onSelect={() => {
-                            try {
-                              openProduct(product);
-                            } catch (error) {
-                              console.error('Error opening product:', error);
-                            }
-                          }}
-                        />
-                      ))}
-                    </div>
+                    <ProductSlider
+                      products={msg.products}
+                      onSelect={(product) => {
+                        try {
+                          openProduct(product);
+                        } catch (error) {
+                          console.error('Error opening product:', error);
+                        }
+                      }}
+                      onAIChat={(product) => openProductAIChat(product)}
+                    />
                   )}
                 </div>
               ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-white/[0.04] rounded-lg px-3 py-2 text-sm text-[#B1B2B3]">
-                    Thinking...
-                  </div>
-                </div>
-              )}
+              {isLoading && <TypingIndicator variant="global" />}
               <div ref={chatEndRef} />
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Input */}
           <div className="p-4 border-t border-white/[0.06] space-y-2">

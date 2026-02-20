@@ -8,13 +8,123 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Filter, Grid, List, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Filter, Grid, List, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
-const BRANDS = ['Microsoft', 'Adobe', 'Autodesk', 'Chaos', 'SketchUp', 'Kaspersky'];
-const CATEGORIES = ['Office', 'CAD & Engineering', 'Design & Creativity', 'Operating Systems', 'Security & Utility'];
-const LICENSE_TYPES = ['Subscription', 'Lifetime', 'MAK', 'Device CAL'];
+const BRANDS = ['Microsoft', 'Autodesk', 'Adobe'];
+
+// Hierarchical category tree matching the real website
+interface CategoryNode {
+  name: string;
+  filter: string; // value sent to API
+  children?: CategoryNode[];
+}
+
+const CATEGORY_TREE: CategoryNode[] = [
+  {
+    name: 'Adobe', filter: 'Adobe',
+  },
+  {
+    name: 'Autodesk', filter: 'Autodesk', children: [
+      { name: 'Autodesk 2026', filter: 'Autodesk 2026' },
+      { name: 'Autodesk 2025', filter: 'Autodesk 2025' },
+      { name: 'Autodesk 2024', filter: 'Autodesk 2024' },
+      { name: 'Autodesk 2023', filter: 'Autodesk 2023' },
+      { name: 'Autodesk 2022', filter: 'Autodesk 2022' },
+      { name: '3ds Max', filter: '3ds Max' },
+      { name: 'AutoCAD', filter: 'AutoCAD' },
+      { name: 'Civil 3D', filter: 'Civil 3D' },
+      { name: 'Fusion 360', filter: 'Fusion 360' },
+      { name: 'Inventor', filter: 'Inventor' },
+      { name: 'Maya', filter: 'Maya' },
+      { name: 'Navisworks', filter: 'Naviswork' },
+      { name: 'Revit', filter: 'Revit' },
+      { name: 'AEC Collection 2025', filter: 'AEC Collection 2025' },
+      { name: 'Infodrainage', filter: 'Infodrainage' },
+    ],
+  },
+  {
+    name: 'Agencies & Freelancers Software', filter: 'Agencies & Freelancers Software',
+  },
+  {
+    name: 'Architecture and Engineer', filter: 'Architecture and Engineer',
+  },
+  {
+    name: 'Corporate IT Teams Software', filter: 'Corporate IT Teams Software',
+  },
+  {
+    name: 'Dynamics 365', filter: 'Dynamics 365',
+  },
+  {
+    name: 'Microsoft Office', filter: 'Microsoft Office', children: [
+      { name: 'Microsoft Office 2013', filter: 'Microsoft Office 2013' },
+      { name: 'Microsoft Office 2016', filter: 'Microsoft Office 2016' },
+      { name: 'Microsoft Office 2019', filter: 'Microsoft Office 2019' },
+      { name: 'Microsoft Office 2021', filter: 'Microsoft Office 2021' },
+      { name: 'Microsoft Office 365', filter: 'Microsoft Office 365' },
+      { name: 'Microsoft Office For MAC', filter: 'Microsoft Office For MAC' },
+      { name: 'Microsoft Office 2024', filter: 'Microsoft Office 2024' },
+    ],
+  },
+  {
+    name: 'Microsoft Power BI', filter: 'Microsoft Power BI',
+  },
+  {
+    name: 'Microsoft Project', filter: 'Microsoft Project', children: [
+      { name: 'Microsoft Project 2024 Pro', filter: 'Microsoft Project 2024 Pro' },
+    ],
+  },
+  {
+    name: 'Microsoft Servers', filter: 'Microsoft Servers', children: [
+      { name: 'Exchange Server', filter: 'Exchange Server' },
+      { name: 'Share Point Server', filter: 'Share Point Server' },
+      { name: 'SQL Server', filter: 'SQL Server' },
+      { name: 'Windows Server 2012', filter: 'Windows Server 2012' },
+      { name: 'Windows Server 2016', filter: 'Windows Server 2016' },
+      { name: 'Windows Server 2019', filter: 'Windows Server 2019' },
+      { name: 'Windows Server 2022', filter: 'Windows Server 2022' },
+      { name: 'Windows Server 2025', filter: 'Windows Server 2025' },
+    ],
+  },
+  {
+    name: 'Microsoft Visio', filter: 'Microsoft Visio', children: [
+      { name: 'Microsoft Visio 2024 Pro', filter: 'Microsoft Visio 2024 Pro' },
+    ],
+  },
+  {
+    name: 'Microsoft Volume Licensing', filter: 'Microsoft Volume Licensing',
+  },
+  {
+    name: 'Office Applications', filter: 'Office Applications', children: [
+      { name: 'Microsoft Project', filter: 'Microsoft Project' },
+      { name: 'Microsoft Visio', filter: 'Microsoft Visio' },
+      { name: 'Microsoft Visual Studio', filter: 'Microsoft Visual Studio' },
+    ],
+  },
+  {
+    name: 'SketchUp & V-Ray', filter: 'SketchUp & V-Ray',
+  },
+  {
+    name: 'SQL Server', filter: 'SQL Server', children: [
+      { name: 'SQL Server 2017', filter: 'SQL Server 2017' },
+      { name: 'SQL Server 2019', filter: 'SQL Server 2019' },
+      { name: 'SQL Server 2022', filter: 'SQL Server 2022' },
+      { name: 'SQL Server 2025', filter: 'SQL Server 2025' },
+    ],
+  },
+  {
+    name: 'Small Business', filter: 'small business',
+  },
+  {
+    name: 'Windows', filter: 'Windows', children: [
+      { name: 'Microsoft Windows 10', filter: 'Microsoft Windows 10' },
+      { name: 'Microsoft Windows 11', filter: 'Microsoft Windows 11' },
+    ],
+  },
+];
+
+const LICENSE_TYPES = ['Subscription', 'Lifetime', 'Variable', 'MAK', 'Device CAL'];
 const SORT_OPTIONS = [
   { value: 'popular', label: 'Popular' },
   { value: 'price-low', label: 'Price: Low to High' },
@@ -293,6 +403,75 @@ export default function Storefront() {
   );
 }
 
+// ── Collapsible Category Node ──
+function CategoryFilterNode({
+  node,
+  filters,
+  onFilterChange,
+}: {
+  node: CategoryNode;
+  filters: string[];
+  onFilterChange: (value: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hasChildren = node.children && node.children.length > 0;
+  const isChecked = filters.includes(node.filter);
+
+  // Auto-expand if any child is checked
+  const childChecked = hasChildren && node.children!.some((c) => filters.includes(c.filter));
+  const isExpanded = expanded || childChecked;
+
+  return (
+    <div>
+      <div className="flex items-center gap-1.5">
+        {hasChildren && (
+          <button
+            onClick={() => setExpanded(!isExpanded)}
+            className="p-0.5 text-[#B1B2B3]/50 hover:text-[#FEFEFE] transition-colors"
+          >
+            <ChevronDown
+              className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`}
+            />
+          </button>
+        )}
+        <label
+          className={`flex items-center gap-2 cursor-pointer group ${hasChildren ? '' : 'ml-[18px]'}`}
+        >
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={() => onFilterChange(node.filter)}
+            className="w-3.5 h-3.5 rounded border-white/[0.06] bg-white/[0.02] text-crimson focus:ring-crimson/20"
+          />
+          <span className={`text-xs group-hover:text-[#FEFEFE] transition-colors ${isChecked ? 'text-[#FEFEFE] font-medium' : 'text-[#B1B2B3]'}`}>
+            {node.name}
+          </span>
+        </label>
+      </div>
+      {hasChildren && isExpanded && (
+        <div className="ml-5 mt-1 space-y-1 border-l border-white/[0.04] pl-3">
+          {node.children!.map((child) => (
+            <label
+              key={child.filter}
+              className="flex items-center gap-2 cursor-pointer group"
+            >
+              <input
+                type="checkbox"
+                checked={filters.includes(child.filter)}
+                onChange={() => onFilterChange(child.filter)}
+                className="w-3 h-3 rounded border-white/[0.06] bg-white/[0.02] text-crimson focus:ring-crimson/20"
+              />
+              <span className={`text-[11px] group-hover:text-[#FEFEFE] transition-colors ${filters.includes(child.filter) ? 'text-[#FEFEFE]' : 'text-[#B1B2B3]/80'}`}>
+                {child.name}
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Filter Panel Component
 function FilterPanel({
   filters,
@@ -336,7 +515,7 @@ function FilterPanel({
                 onChange={() => onFilterChange('brand', brand)}
                 className="w-4 h-4 rounded border-white/[0.06] bg-white/[0.02] text-crimson focus:ring-crimson/20"
               />
-              <span className="text-sm text-[#B1B2B3] group-hover:text-[#FEFEFE] transition-colors">
+              <span className={`text-sm group-hover:text-[#FEFEFE] transition-colors ${filters.brand.includes(brand) ? 'text-[#FEFEFE] font-medium' : 'text-[#B1B2B3]'}`}>
                 {brand}
               </span>
             </label>
@@ -344,27 +523,19 @@ function FilterPanel({
         </div>
       </div>
 
-      {/* Category */}
+      {/* Product Categories — hierarchical tree */}
       <div>
         <h3 className="text-xs font-medium text-[#B1B2B3] uppercase tracking-wider mb-3">
-          Category
+          Product Categories
         </h3>
-        <div className="space-y-2">
-          {CATEGORIES.map((category) => (
-            <label
-              key={category}
-              className="flex items-center gap-2 cursor-pointer group"
-            >
-              <input
-                type="checkbox"
-                checked={filters.category.includes(category)}
-                onChange={() => onFilterChange('category', category)}
-                className="w-4 h-4 rounded border-white/[0.06] bg-white/[0.02] text-crimson focus:ring-crimson/20"
-              />
-              <span className="text-sm text-[#B1B2B3] group-hover:text-[#FEFEFE] transition-colors">
-                {category}
-              </span>
-            </label>
+        <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1 scrollbar-thin">
+          {CATEGORY_TREE.map((node) => (
+            <CategoryFilterNode
+              key={node.filter}
+              node={node}
+              filters={filters.category}
+              onFilterChange={(val) => onFilterChange('category', val)}
+            />
           ))}
         </div>
       </div>
@@ -386,7 +557,7 @@ function FilterPanel({
                 onChange={() => onFilterChange('licenseType', license)}
                 className="w-4 h-4 rounded border-white/[0.06] bg-white/[0.02] text-crimson focus:ring-crimson/20"
               />
-              <span className="text-sm text-[#B1B2B3] group-hover:text-[#FEFEFE] transition-colors">
+              <span className={`text-sm group-hover:text-[#FEFEFE] transition-colors ${filters.licenseType.includes(license) ? 'text-[#FEFEFE] font-medium' : 'text-[#B1B2B3]'}`}>
                 {license}
               </span>
             </label>

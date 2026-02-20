@@ -189,6 +189,15 @@
   .light ::-webkit-scrollbar-thumb:hover {
     background: hsl(4 65% 54% / 0.35);
   }
+
+  /* Hide scrollbar utility */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* ── Film grain ─────────────────────────────────────── */
