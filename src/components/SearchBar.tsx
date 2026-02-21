@@ -7,9 +7,10 @@ import { useNavigate } from 'react-router-dom';
 interface SearchBarProps {
   className?: string;
   onProductSelect?: (product: Product) => void;
+  darkText?: boolean;
 }
 
-export default function SearchBar({ className = '', onProductSelect }: SearchBarProps) {
+export default function SearchBar({ className = '', onProductSelect, darkText = false }: SearchBarProps) {
   const { setSearchQuery, openProduct } = useApp();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -102,7 +103,7 @@ export default function SearchBar({ className = '', onProductSelect }: SearchBar
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <form onSubmit={handleSubmit} className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B1B2B3]/50" />
+        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-300 ${darkText ? 'text-[#666666]/70' : 'text-[#B1B2B3]/50'}`} />
         <input
           ref={inputRef}
           type="text"
@@ -110,7 +111,11 @@ export default function SearchBar({ className = '', onProductSelect }: SearchBar
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.trim() && setIsOpen(true)}
           placeholder="Search products, brands, or ask AI..."
-          className="w-full pl-10 pr-10 py-2.5 bg-white/[0.02] border border-white/[0.06] rounded-sm text-sm text-[#FEFEFE] placeholder:text-[#B1B2B3]/50 focus:outline-none focus:border-crimson/50 focus:bg-white/[0.04] transition-all"
+          className={`w-full pl-10 pr-10 py-2.5 rounded-sm text-sm transition-all duration-300 focus:outline-none focus:border-crimson/50 ${
+            darkText 
+              ? 'bg-black/[0.04] border border-black/[0.1] text-[#1a1a1a] placeholder:text-[#666666]/70 focus:bg-black/[0.06]' 
+              : 'bg-white/[0.02] border border-white/[0.06] text-[#FEFEFE] placeholder:text-[#B1B2B3]/50 focus:bg-white/[0.04]'
+          }`}
         />
         {isLoading && (
           <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-crimson animate-spin" />
@@ -122,7 +127,7 @@ export default function SearchBar({ className = '', onProductSelect }: SearchBar
               setQuery('');
               setIsOpen(false);
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B1B2B3]/50 hover:text-[#FEFEFE]"
+            className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors duration-300 ${darkText ? 'text-[#666666]/70 hover:text-[#1a1a1a]' : 'text-[#B1B2B3]/50 hover:text-[#FEFEFE]'}`}
           >
             ×
           </button>

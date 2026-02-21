@@ -2,7 +2,7 @@ import { User, ShoppingBag, ChevronDown, ChevronRight, ArrowRight, Box, Monitor,
 import SearchBar from "./SearchBar";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "@google/model-viewer";
 
 // ── API base for model URLs ──
@@ -130,6 +130,12 @@ const autodeskSections: NavSection[] = [
   },
 ];
 
+// ── Premium mega-menu style ──
+const MEGA_MENU_STYLE = {
+  background: "linear-gradient(180deg, rgba(20,10,15,0.15) 0%, rgba(60,20,30,0.12) 50%, rgba(20,10,15,0.18) 100%)",
+  boxShadow: "inset 0 0 80px rgba(200,50,70,0.06), 0 25px 50px -12px rgba(0,0,0,0.5)",
+};
+
 // ── Inline 3D Model Card ──
 function NavModelCard({ model, onClick }: { model: FeaturedModel; onClick: () => void }) {
   const src = `${API_BASE}/models/${model.id}/${model.folder}/model.glb`;
@@ -175,6 +181,28 @@ const Header = () => {
   const navigate = useNavigate();
   const { setFilters, setSearchQuery, openProduct } = useApp();
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [isOverLightSection, setIsOverLightSection] = useState(false);
+
+  // Detect when header is over a light section for search bar styling
+  useEffect(() => {
+    const handleScroll = () => {
+      const lightSections = document.querySelectorAll('.section-light');
+      const headerHeight = 64;
+      
+      for (const section of lightSections) {
+        const rect = section.getBoundingClientRect();
+        if (rect.top < headerHeight && rect.bottom > 0) {
+          setIsOverLightSection(true);
+          return;
+        }
+      }
+      setIsOverLightSection(false);
+    };
+    
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleCategoryClick = (filter: string) => {
     setFilters({ category: [filter], brand: [], licenseType: [] });
@@ -222,7 +250,10 @@ const Header = () => {
             </button>
 
             {activeMenu === 'microsoft' && (
-              <div className="fixed left-4 right-4 top-16 max-w-[1200px] mx-auto bg-surface-card/98 backdrop-blur-2xl border border-theme shadow-premium-lg rounded-b-lg pt-6 pb-8 px-8 z-50 origin-top">
+              <div
+                className="fixed left-4 right-4 top-16 max-w-[1200px] mx-auto backdrop-blur-2xl border border-white/[0.1] shadow-premium-lg rounded-b-lg pt-6 pb-8 px-8 z-50 origin-top overflow-auto max-h-[80vh]"
+                style={MEGA_MENU_STYLE}
+              >
                 <div className="flex gap-8">
                   {/* Categories — left side */}
                   <div className="flex-1 grid grid-cols-3 gap-x-8 gap-y-6">
@@ -241,9 +272,9 @@ const Header = () => {
                                 <ChevronRight className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-all -translate-x-2 group-hover/link:translate-x-0 text-crimson" />
                                 {sub.name}
                               </button>
-                      </li>
-                    ))}
-                  </ul>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     ))}
                   </div>
@@ -290,7 +321,10 @@ const Header = () => {
             </button>
 
             {activeMenu === 'autodesk' && (
-              <div className="fixed left-4 right-4 top-16 max-w-[1100px] mx-auto bg-surface-card/98 backdrop-blur-2xl border border-theme shadow-premium-lg rounded-b-lg pt-6 pb-8 px-8 z-50 origin-top">
+              <div
+                className="fixed left-4 right-4 top-16 max-w-[1100px] mx-auto backdrop-blur-2xl border border-white/[0.1] shadow-premium-lg rounded-b-lg pt-6 pb-8 px-8 z-50 origin-top overflow-auto max-h-[80vh]"
+                style={MEGA_MENU_STYLE}
+              >
                 <div className="flex gap-8">
                   {/* Categories */}
                   <div className="flex-1 grid grid-cols-3 gap-x-8 gap-y-6">
@@ -312,7 +346,7 @@ const Header = () => {
                             </li>
                           ))}
                         </ul>
-                        </div>
+                      </div>
                     ))}
                   </div>
 
@@ -358,7 +392,10 @@ const Header = () => {
             </button>
 
             {activeMenu === 'more' && (
-              <div className="fixed left-1/2 -translate-x-1/2 top-16 w-[420px] bg-surface-card/98 backdrop-blur-2xl border border-theme shadow-premium-lg rounded-b-lg pt-5 pb-6 px-6 z-50 origin-top">
+              <div
+                className="fixed left-1/2 -translate-x-1/2 top-16 w-[480px] backdrop-blur-2xl border border-white/[0.1] shadow-premium-lg rounded-b-lg pt-5 pb-6 px-6 z-50 origin-top overflow-auto max-h-[80vh]"
+                style={MEGA_MENU_STYLE}
+              >
                 <div className="flex gap-6">
                   {/* Links */}
                   <div className="flex-1">
@@ -409,7 +446,7 @@ const Header = () => {
         {/* Search & Icons */}
         <div className="flex items-center gap-4">
           <div className="hidden md:block w-64">
-            <SearchBar />
+            <SearchBar darkText={isOverLightSection} />
           </div>
           <a href="#" className="text-[#B1B2B3] hover:text-crimson transition-colors duration-300"><User className="w-5 h-5" strokeWidth={1.5} /></a>
           <a href="#" className="relative text-[#B1B2B3] hover:text-crimson transition-colors duration-300">

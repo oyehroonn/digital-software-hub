@@ -196,7 +196,7 @@ export default function Storefront() {
   return (
     <div className="min-h-screen bg-surface-dark">
       <Header />
-      <main className="max-w-[1600px] mx-auto px-6 py-12">
+      <main className="max-w-[1600px] mx-auto px-6 pt-24 pb-12">
         {/* Header Section */}
         <div className="mb-8">
           <h1 className="font-serif text-4xl text-[#FEFEFE] mb-4">Store</h1>

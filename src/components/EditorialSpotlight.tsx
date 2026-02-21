@@ -1,5 +1,5 @@
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
-const windows11Bg = "https://images.unsplash.com/photo-1624571409412-1f253e1ecc89?q=80&w=2000&auto=format&fit=crop";
+import ProductModelViewer from "./ProductModelViewer";
 
 const EditorialSpotlight = () => {
   const fadeRight = useScrollAnimation("animate-fade-right");
@@ -30,19 +30,34 @@ const EditorialSpotlight = () => {
         </div>
 
         <div ref={scaleIn.ref} className={`order-1 lg:order-2 relative ${scaleIn.className}`}>
-          <div className="aspect-[4/5] relative bg-gradient-to-br from-[#0a0b0c] to-[#060708] rounded-lg overflow-hidden shadow-premium-lg border border-white/[0.06]">
-            <div className="absolute inset-0">
-              <img src={windows11Bg} alt="Windows 11 background" className="w-full h-full object-cover blur-xl scale-110 opacity-80" />
+          <div className="aspect-[5/6] relative bg-gradient-to-br from-[#0a0b0c] to-[#060708] rounded-lg overflow-hidden shadow-premium-lg border border-white/[0.06]">
+            {/* Layer 1: 3D Model (rotating in background) */}
+            <div className="absolute inset-0 scale-110">
+              <ProductModelViewer
+                glbSrc="/models/8165.glb"
+                fallbackIcon={
+                  <div className="w-24 h-24 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                    <span className="text-3xl font-bold text-white/20">W</span>
+                  </div>
+                }
+              />
             </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <svg viewBox="0 0 88 88" className="w-28 h-28 relative z-10 drop-shadow-2xl" fill="white">
+            
+            {/* Layer 2: Frosted glass blur overlay */}
+            <div className="absolute inset-0 backdrop-blur-md bg-gradient-to-br from-[#0078d4]/15 via-[#0a0b0c]/30 to-[#0078d4]/10 z-10" />
+            
+            {/* Layer 3: Windows Logo (crisp, on top of blur) */}
+            <div className="absolute inset-0 flex items-center justify-center z-20">
+              <svg viewBox="0 0 88 88" className="w-28 h-28 drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]" fill="white">
                 <path d="M0 12.402l35.687-4.86.016 34.423-35.67.203zm35.67 33.529l.028 34.453L.028 75.48.026 45.7zm4.326-39.025L87.314 0v41.527l-47.318.376zm47.329 39.349l-.011 41.34-47.318-6.678-.066-34.739z" />
               </svg>
             </div>
-            <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/[0.06] backdrop-blur-md border border-crimson/[0.1] rounded-md flex justify-between items-center">
+            
+            {/* Layer 4: Retail License card */}
+            <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/[0.08] backdrop-blur-md border border-white/[0.1] rounded-md flex justify-between items-center z-30">
               <div>
                 <p className="text-xs font-semibold text-[#FEFEFE]">Retail License</p>
-                <p className="text-[10px] text-[#B1B2B3]">Lifetime Validity</p>
+                <p className="text-[10px] text-crimson font-medium">Lifetime Validity</p>
               </div>
               <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
             </div>
