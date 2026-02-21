@@ -1,9 +1,9 @@
 /**
  * API Client for DSM-3D Backend
- * Base URL: https://3dmodels.digitalsoftwaremarket.online (or set VITE_API_BASE env var)
+ * Base URL: https://aidsm.techrealm.ai (or set VITE_API_BASE env var)
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://3dmodels.digitalsoftwaremarket.online';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://aidsm.techrealm.ai';
 
 export interface Product {
   id: string | number;

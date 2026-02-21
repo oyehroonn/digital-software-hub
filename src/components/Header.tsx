@@ -6,7 +6,7 @@ import { useState } from "react";
 import "@google/model-viewer";
 
 // ── API base for model URLs ──
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://3dmodels.digitalsoftwaremarket.online';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://aidsm.techrealm.ai';
 
 // ── Real navigation categories matching the product catalog ──
 
