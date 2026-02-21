@@ -1,53 +1,52 @@
-import { ArrowRight, CheckCircle, Star, Search, X } from "lucide-react";
+import { ArrowRight, CheckCircle, Search, X } from "lucide-react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import ProductModelViewer from "./ProductModelViewer";
-import catalogueProducts from "@/data/catalogueProducts.json";
+import { useApp } from "@/contexts/AppContext";
+import { getProducts, Product } from "@/lib/api";
 
 const AnimatedCard = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   const { ref, className: animClass } = useScrollAnimation();
   return <div ref={ref} className={`${animClass} ${className ?? ""}`}>{children}</div>;
 };
 
-interface CatalogueProduct {
-  id: number;
-  name: string;
-  category: string;
-  price: string;
-  oldPrice?: string;
-  folder: string;
-}
-
-const ProductCard = ({ product }: { product: CatalogueProduct }) => {
-  const glbSrc = `/models/${product.id}.glb`;
-  
+const ProductCard = ({ product, onClick }: { product: Product; onClick: () => void }) => {
   return (
-    <div className="group relative">
+    <div className="group relative cursor-pointer" onClick={onClick}>
       <div 
         className="relative aspect-[3/4] bg-white/[0.02] border border-white/[0.06] rounded-lg overflow-hidden mb-4 transition-all duration-500 group-hover:border-crimson/30 group-hover:bg-white/[0.04] group-hover:shadow-[0_0_40px_rgba(200,50,50,0.08)]"
         style={{ perspective: "1000px" }}
       >
         <div className="absolute top-3 left-3 z-10">
           <span className="px-2.5 py-1 bg-crimson/20 text-crimson text-[10px] uppercase font-semibold tracking-[0.08em] rounded-sm backdrop-blur-sm">
-            {product.category.length > 20 ? product.category.slice(0, 20) + '...' : product.category}
+            {product.brand}
           </span>
         </div>
 
-        <ProductModelViewer
-          glbSrc={glbSrc}
-          fallbackIcon={
+        {product.link ? (
+          <ProductModelViewer
+            glbSrc={product.link}
+            fallbackIcon={
+              <div className="w-20 h-20 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                <span className="text-2xl font-bold text-[#FEFEFE]/20">{product.name.charAt(0)}</span>
+              </div>
+            }
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-secondary">
             <div className="w-20 h-20 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
               <span className="text-2xl font-bold text-[#FEFEFE]/20">{product.name.charAt(0)}</span>
             </div>
-          }
-        />
+          </div>
+        )}
 
         <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-[#060708]/95 via-[#060708]/80 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-400 ease-out flex flex-col gap-3 z-20">
           <div className="flex items-center gap-2 text-[10px] text-[#B1B2B3]/70">
             <CheckCircle className="w-3 h-3 text-emerald-500" /> Official Partner
           </div>
           <button className="btn-magnetic w-full py-2.5 bg-crimson text-[#FEFEFE] text-xs font-medium tracking-wide rounded-sm hover:bg-crimson-dark transition-all duration-300">
-            Add to Cart
+            View Details
           </button>
         </div>
       </div>
@@ -63,12 +62,7 @@ const ProductCard = ({ product }: { product: CatalogueProduct }) => {
         </div>
         
         <div className="flex items-center justify-end">
-          <div className="text-right">
-            {product.oldPrice && (
-              <span className="text-xs text-[#B1B2B3]/40 line-through mr-2">{product.oldPrice}</span>
-            )}
-            <span className="font-serif text-sm text-[#FEFEFE]">{product.price}</span>
-          </div>
+          <span className="font-serif text-sm text-[#FEFEFE]">{product.price}</span>
         </div>
       </div>
     </div>
@@ -79,10 +73,19 @@ const PRODUCTS_PER_PAGE = 8;
 
 const PopularProducts = () => {
   const headingAnim = useScrollAnimation();
+  const navigate = useNavigate();
+  const { openProduct } = useApp();
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(PRODUCTS_PER_PAGE);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const allProducts = catalogueProducts as CatalogueProduct[];
+  useEffect(() => {
+    getProducts({ limit: 200 })
+      .then((data) => setAllProducts(data.products))
+      .catch((err) => console.error("Failed to load products:", err))
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const filteredProducts = useMemo(() => {
     if (!searchQuery.trim()) return allProducts;
@@ -90,7 +93,8 @@ const PopularProducts = () => {
     return allProducts.filter(
       (p) =>
         p.name.toLowerCase().includes(query) ||
-        p.category.toLowerCase().includes(query)
+        p.category.toLowerCase().includes(query) ||
+        p.brand.toLowerCase().includes(query)
     );
   }, [searchQuery, allProducts]);
 
@@ -134,13 +138,13 @@ const PopularProducts = () => {
               Product Catalogue
             </h2>
           </div>
-          <a
-            href="#"
+          <button
+            onClick={() => navigate('/store')}
             className="inline-flex items-center gap-2 text-xs font-medium text-[#B1B2B3]/50 uppercase tracking-[0.12em] border-b border-white/[0.06] pb-1 hover:text-crimson hover:border-crimson transition-all duration-300 group"
           >
             View Full Catalog
             <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-          </a>
+          </button>
         </div>
 
         {/* Search Bar */}
@@ -171,11 +175,24 @@ const PopularProducts = () => {
         </div>
 
         {/* Product Grid */}
-        {displayedProducts.length > 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-[3/4] bg-white/[0.04] rounded-lg mb-4" />
+                <div className="h-4 bg-white/[0.04] rounded w-3/4 mb-2" />
+                <div className="h-3 bg-white/[0.04] rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : displayedProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10 stagger-children">
             {displayedProducts.map((product) => (
               <AnimatedCard key={product.id}>
-                <ProductCard product={product} />
+                <ProductCard
+                  product={product}
+                  onClick={() => openProduct(String(product.id))}
+                />
               </AnimatedCard>
             ))}
           </div>
