@@ -1,9 +1,9 @@
 /**
  * API Client for DSM-3D Backend
- * Base URL: http://localhost:5051 (or set VITE_API_BASE env var)
+ * Base URL: https://3dmodels.digitalsoftwaremarket.online (or set VITE_API_BASE env var)
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5051';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://3dmodels.digitalsoftwaremarket.online';
 
 export interface Product {
   id: string | number;

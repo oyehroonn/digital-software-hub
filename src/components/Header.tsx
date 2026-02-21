@@ -6,7 +6,7 @@ import { useState } from "react";
 import "@google/model-viewer";
 
 // ── API base for model URLs ──
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5051';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://3dmodels.digitalsoftwaremarket.online';
 
 // ── Real navigation categories matching the product catalog ──
 
@@ -241,9 +241,9 @@ const Header = () => {
                                 <ChevronRight className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-all -translate-x-2 group-hover/link:translate-x-0 text-crimson" />
                                 {sub.name}
                               </button>
-                            </li>
-                          ))}
-                        </ul>
+                      </li>
+                    ))}
+                  </ul>
                       </div>
                     ))}
                   </div>
@@ -312,7 +312,7 @@ const Header = () => {
                             </li>
                           ))}
                         </ul>
-                      </div>
+                        </div>
                     ))}
                   </div>
 
