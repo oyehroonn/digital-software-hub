@@ -1,4 +1,4 @@
-import { Instagram, Twitter, Linkedin } from "lucide-react";
+import { Instagram, Facebook, Linkedin, Youtube } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -19,9 +19,10 @@ const Footer = () => {
               The premier digital showroom for genuine software licensing. Empowering creators and enterprises since 1994.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"><Instagram className="w-5 h-5" /></a>
-              <a href="#" className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"><Twitter className="w-5 h-5" /></a>
-              <a href="#" className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"><Linkedin className="w-5 h-5" /></a>
+              <a href="https://www.facebook.com/DigitalSoftwareMarket" target="_blank" rel="noopener noreferrer" className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"><Facebook className="w-5 h-5" /></a>
+              <a href="https://linkedin.com/company/digitalsoftwaremarket" target="_blank" rel="noopener noreferrer" className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"><Linkedin className="w-5 h-5" /></a>
+              <a href="https://www.instagram.com/digitalsoftwaremarket/?hl=en" target="_blank" rel="noopener noreferrer" className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"><Instagram className="w-5 h-5" /></a>
+              <a href="https://www.youtube.com/@digitalsoftwaremarket" target="_blank" rel="noopener noreferrer" className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"><Youtube className="w-5 h-5" /></a>
             </div>
           </div>
 
@@ -59,7 +60,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-white/[0.04] pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-xs text-[#B1B2B3]/50">&copy; 2024 Digital Software Market. All rights reserved.</p>
+          <p className="text-xs text-[#B1B2B3]/50">&copy; 2026 Digital Software Market. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <div className="h-6 w-10 bg-white/[0.03] border border-white/[0.05] rounded flex items-center justify-center text-[10px] text-[#B1B2B3]/40">VISA</div>
             <div className="h-6 w-10 bg-white/[0.03] border border-white/[0.05] rounded flex items-center justify-center text-[10px] text-[#B1B2B3]/40">MC</div>

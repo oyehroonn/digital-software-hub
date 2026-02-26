@@ -1,9 +1,9 @@
 /**
  * API Client for DSM-3D Backend
- * Base URL: http://localhost:5051 (or set VITE_API_BASE env var)
+ * Base URL: https://aidsm.techrealm.ai (or set VITE_API_BASE env var)
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5051';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://aidsm.techrealm.ai';
 
 export interface Product {
   id: string | number;
@@ -13,15 +13,30 @@ export interface Product {
   link: string;
   viewer: string;
   category: string;
+  categories?: string[];
   brand: string;
   licenseType: string;
   price: string;
   description: string;
+  fullDescription?: string;
   tags: string[];
+  sku?: string;
+  stockStatus?: string;
   status: string;
   whatsIncluded?: string[];
   platform?: string;
   validity?: string;
+}
+
+export interface FilterOption {
+  name: string;
+  count: number;
+}
+
+export interface FiltersResponse {
+  brands: FilterOption[];
+  categories: FilterOption[];
+  licenseTypes: FilterOption[];
 }
 
 export interface ProductsResponse {
@@ -58,6 +73,12 @@ export interface AIAction {
 }
 
 // ── API Client Functions ───────────────────────────────────────────────────
+
+export async function getFilters(): Promise<FiltersResponse> {
+  const res = await fetch(`${API_BASE}/filters`);
+  if (!res.ok) throw new Error('Failed to fetch filters');
+  return res.json();
+}
 
 export async function getTopProducts(limit = 10): Promise<ProductsResponse> {
   const res = await fetch(`${API_BASE}/products/top?limit=${limit}`);

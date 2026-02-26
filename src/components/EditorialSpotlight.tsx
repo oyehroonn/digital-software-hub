@@ -1,6 +1,8 @@
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import ProductModelViewer from "./ProductModelViewer";
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://aidsm.techrealm.ai';
+
 const EditorialSpotlight = () => {
   const fadeRight = useScrollAnimation("animate-fade-right");
   const scaleIn = useScrollAnimation("animate-scale-in");
@@ -34,7 +36,7 @@ const EditorialSpotlight = () => {
             {/* Layer 1: 3D Model (rotating in background) */}
             <div className="absolute inset-0 scale-110">
               <ProductModelViewer
-                glbSrc="/models/8165.glb"
+                glbSrc={`${API_BASE}/models/8384/8384_Windows_11_Pro/model.glb`}
                 fallbackIcon={
                   <div className="w-24 h-24 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
                     <span className="text-3xl font-bold text-white/20">W</span>

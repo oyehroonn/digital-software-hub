@@ -11,11 +11,12 @@ import NotFound from "./pages/NotFound";
 import ProductModalWrapper from "./components/ProductModalWrapper";
 import GlobalAIChat from "./components/GlobalAIChat";
 import SettingsPanel from "./components/SettingsPanel";
+import ProductAIChatPopup from "./components/ProductAIChatPopup";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const { state, setNavigate } = useApp();
+  const { state, setNavigate, closeProductAIChat } = useApp();
   const navigate = useNavigate();
   
   // Set navigate function in AppContext so AI actions can use it
@@ -29,6 +30,12 @@ const AppContent = () => {
       <div className="fixed inset-0 bg-background">
         <GlobalAIChat />
         <SettingsPanel />
+        {state.productForAIChat && (
+          <ProductAIChatPopup
+            product={state.productForAIChat}
+            onClose={() => closeProductAIChat()}
+          />
+        )}
       </div>
     );
   }
@@ -44,6 +51,12 @@ const AppContent = () => {
       <ProductModalWrapper />
       <GlobalAIChat />
       <SettingsPanel />
+      {state.productForAIChat && (
+        <ProductAIChatPopup
+          product={state.productForAIChat}
+          onClose={() => closeProductAIChat()}
+        />
+      )}
     </>
   );
 };

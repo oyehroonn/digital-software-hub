@@ -4,6 +4,7 @@ import { Product } from '@/lib/api';
 
 interface AppState {
   selectedProduct: Product | null;
+  productForAIChat: Product | null;
   searchQuery: string;
   filters: {
     brand: string[];
@@ -19,6 +20,8 @@ interface AppContextType {
   state: AppState;
   openProduct: (product: Product | string | number) => Promise<void>;
   closeProduct: () => void;
+  openProductAIChat: (product: Product) => void;
+  closeProductAIChat: () => void;
   setSearchQuery: (query: string) => void;
   setFilters: (filters: Partial<AppState['filters']>) => void;
   setSortBy: (sort: string) => void;
@@ -57,6 +60,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [state, setState] = useState<AppState>({
     selectedProduct: null,
+    productForAIChat: null,
     searchQuery: '',
     filters: {
       brand: [],
@@ -117,6 +121,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const url = new URL(window.location.href);
     url.searchParams.delete('product');
     window.history.replaceState({}, '', url);
+  }, []);
+
+  const openProductAIChat = useCallback((product: Product) => {
+    setState(prev => ({ ...prev, productForAIChat: product }));
+  }, []);
+
+  const closeProductAIChat = useCallback(() => {
+    setState(prev => ({ ...prev, productForAIChat: null }));
   }, []);
 
   const setSearchQuery = useCallback((query: string) => {
@@ -187,6 +199,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         state,
         openProduct,
         closeProduct,
+        openProductAIChat,
+        closeProductAIChat,
         setSearchQuery,
         setFilters,
         setSortBy,
