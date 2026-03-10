@@ -126,7 +126,7 @@ const Header = () => {
             <img 
               src="/dsm.png" 
               alt="DSM" 
-              className={`h-8 w-auto transition-all duration-300 group-hover:opacity-80 ${isOverLightSection ? 'brightness-0' : ''}`}
+              className="h-8 w-auto transition-all duration-300 group-hover:opacity-80"
             />
             <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-crimson transition-all duration-500 group-hover:w-full" />
           </Link>

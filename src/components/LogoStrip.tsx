@@ -2,7 +2,7 @@ const LogoStrip = () => {
   return (
     <div className="section-light border-y border-[hsl(40_8%_88%)] py-14">
       <div className="max-w-[1600px] mx-auto px-6">
-        <p className="text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(220_3%_52%)] mb-8">
+        <p className="text-center text-xs md:text-sm font-semibold uppercase tracking-[0.14em] text-[hsl(220_3%_52%)] mb-8">
           Authorized Global Partner For
         </p>
         <div className="flex flex-wrap justify-center items-center gap-12 md:gap-20 opacity-40 grayscale hover:grayscale-0 hover:opacity-60 transition-all duration-700">

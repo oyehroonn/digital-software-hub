@@ -42,8 +42,14 @@ const Hero = () => {
       <div ref={ref} className="relative z-10 w-full max-w-5xl mx-auto px-6 flex flex-col items-center text-center">
         {/* Trust Badge */}
         <div className="hero-reveal mb-10 flex justify-center">
-          <span className="inline-flex items-center gap-2.5 px-4 py-2 border border-white/20 rounded-full bg-white/[0.06] backdrop-blur-sm text-xs font-medium text-white uppercase tracking-[0.12em]">
-            <span className="w-1.5 h-1.5 bg-crimson rounded-full animate-pulse" />
+          <span
+            className={`inline-flex items-center gap-2.5 px-4 py-2 border rounded-full backdrop-blur-sm text-xs font-medium uppercase tracking-[0.12em] transition-colors duration-300 ${
+              meshAccent === "azure"
+                ? "border-azure/40 bg-[#05070b]/70 text-gold"
+                : "border-white/20 bg-white/[0.06] text-white"
+            }`}
+          >
+            <span className="w-1.5 h-1.5 bg-azure rounded-full animate-pulse" />
             Official Certified Reseller
           </span>
         </div>
@@ -54,7 +60,7 @@ const Hero = () => {
         </div>
 
         {/* Subheadline */}
-        <div className="hero-reveal text-base md:text-lg font-light text-[#B1B2B3]/80 max-w-2xl mx-auto leading-relaxed mb-14">
+        <div className="hero-reveal text-base md:text-lg font-medium text-[#FEFEFE] max-w-2xl mx-auto leading-relaxed mb-14 [text-shadow:0_1px_10px_rgba(0,0,0,0.45)]">
           <MagnifyText text="The premium destination for genuine software licensing. Instant delivery, concierge support, and enterprise-grade security for teams of all sizes." />
         </div>
 
@@ -72,7 +78,7 @@ const Hero = () => {
           </a>
           <a
             href="#"
-            className="text-xs font-medium text-[#B1B2B3]/60 uppercase tracking-[0.14em] hover:text-crimson flex items-center gap-1.5 group transition-colors duration-300"
+            className="text-xs font-medium text-[#FEFEFE]/85 uppercase tracking-[0.14em] hover:text-crimson flex items-center gap-1.5 group transition-colors duration-300"
           >
             Shop Licenses
             <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
@@ -80,10 +86,10 @@ const Hero = () => {
         </div>
 
         {/* Trust indicators */}
-        <div className="hero-reveal mt-14 flex items-center gap-6 text-xs text-[#B1B2B3]/50 justify-center">
-          <span className="flex items-center gap-1.5"><Check className="w-3 h-3 text-crimson/60" /> 100% Genuine</span>
-          <span className="flex items-center gap-1.5"><Zap className="w-3 h-3 text-crimson/60" /> Instant Digital Delivery</span>
-          <span className="flex items-center gap-1.5"><Shield className="w-3 h-3 text-crimson/60" /> Lifetime Warranty</span>
+        <div className="hero-reveal mt-14 flex items-center gap-6 text-xs text-[#FEFEFE]/85 justify-center">
+          <span className="flex items-center gap-1.5"><Check className="w-3 h-3 text-crimson" /> 100% Genuine</span>
+          <span className="flex items-center gap-1.5"><Zap className="w-3 h-3 text-crimson" /> Instant Digital Delivery</span>
+          <span className="flex items-center gap-1.5"><Shield className="w-3 h-3 text-crimson" /> Lifetime Warranty</span>
         </div>
       </div>
 

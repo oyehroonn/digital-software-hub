@@ -43,7 +43,7 @@ const StatCard = ({ stat, index, started }: { stat: StatItem; index: number; sta
 
   return (
     <div
-      className="group relative text-center px-6 py-10 transition-all duration-500"
+      className="group relative text-center px-6 py-10 rounded-lg border border-white/[0.04] cursor-pointer transition-all duration-500 hover:border-crimson/30 hover:shadow-crimson-glow"
       style={{ animationDelay: `${index * 120}ms` }}
     >
       {/* Hover glow */}
@@ -104,7 +104,7 @@ const StatsStatement = () => {
       <div className="relative z-10 max-w-[1200px] mx-auto px-6">
         {/* Headline */}
         <div className="text-center mb-20">
-          <span className="inline-block text-[10px] font-semibold text-crimson uppercase tracking-[0.2em] mb-6">
+          <span className="inline-block text-2xl md:text-4xl lg:text-5xl font-semibold text-crimson uppercase tracking-[0.12em] mb-6">
             Our Impact
           </span>
           <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#FEFEFE] leading-[1] tracking-tight mb-6">
@@ -118,11 +118,9 @@ const StatsStatement = () => {
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-0 border border-white/[0.04] rounded-lg overflow-hidden">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {STATS.map((stat, i) => (
-            <div key={stat.label} className={`${i < STATS.length - 1 ? "md:border-r md:border-white/[0.04]" : ""} ${i < 2 ? "border-b md:border-b-0 border-white/[0.04]" : ""}`}>
-              <StatCard stat={stat} index={i} started={started} />
-            </div>
+            <StatCard key={stat.label} stat={stat} index={i} started={started} />
           ))}
         </div>
       </div>

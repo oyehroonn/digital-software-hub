@@ -33,6 +33,30 @@ const propositions = [
   },
 ];
 
+const accentClasses = {
+  crimson: {
+    cardHover: "hover:border-crimson/20 hover:shadow-[0_0_40px_hsl(var(--crimson)/0.06)]",
+    iconText: "text-crimson",
+    iconHover: "group-hover:border-crimson/30 group-hover:bg-crimson/[0.06]",
+    linkBase: "text-crimson/70",
+    linkHover: "group-hover:text-crimson",
+  },
+  gold: {
+    cardHover: "hover:border-gold/20 hover:shadow-[0_0_40px_hsl(var(--gold)/0.06)]",
+    iconText: "text-gold",
+    iconHover: "group-hover:border-gold/30 group-hover:bg-gold/[0.06]",
+    linkBase: "text-gold/70",
+    linkHover: "group-hover:text-gold",
+  },
+  azure: {
+    cardHover: "hover:border-azure/20 hover:shadow-[0_0_40px_hsl(var(--azure)/0.06)]",
+    iconText: "text-azure",
+    iconHover: "group-hover:border-azure/30 group-hover:bg-azure/[0.06]",
+    linkBase: "text-azure/70",
+    linkHover: "group-hover:text-azure",
+  },
+} as const;
+
 const WhyDSM = () => {
   const headingAnim = useScrollAnimation();
 
@@ -40,12 +64,13 @@ const WhyDSM = () => {
     <section className="py-32 md:py-40 bg-surface-dark relative overflow-hidden">
       {/* Ambient */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, hsl(4 65% 54% / 0.04) 0%, transparent 70%)" }} />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[320px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, hsl(4 65% 54% / 0.06) 0%, transparent 72%)" }} />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, hsl(204 61% 51% / 0.04) 0%, transparent 70%)" }} />
 
       <div className="max-w-[1200px] mx-auto px-6 relative z-10">
         {/* Section header */}
         <div ref={headingAnim.ref} className={`text-center mb-20 ${headingAnim.className}`}>
-          <span className="inline-block text-[10px] font-semibold text-crimson uppercase tracking-[0.2em] mb-6">
+          <span className="inline-block text-2xl md:text-4xl lg:text-5xl font-semibold text-crimson uppercase tracking-[0.12em] mb-6">
             The DSM Difference
           </span>
           <h2 className="font-serif text-4xl md:text-5xl text-[#FEFEFE] leading-[1.05] tracking-tight mb-6">
@@ -58,9 +83,11 @@ const WhyDSM = () => {
 
         {/* Value proposition cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 stagger-children">
-          {propositions.map((item) => (
+          {propositions.map((item) => {
+            const accent = accentClasses[item.accent as keyof typeof accentClasses];
+            return (
             <AnimatedCard key={item.number} className="group relative">
-              <div className={`relative h-full p-8 md:p-10 rounded-lg border border-white/[0.04] bg-gradient-to-b ${item.gradient} backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-${item.accent}/20 hover:shadow-[0_0_40px_hsl(var(--${item.accent})/0.06)]`}>
+              <div className={`relative h-full p-8 md:p-10 rounded-lg border border-white/[0.04] bg-gradient-to-b ${item.gradient} backdrop-blur-sm overflow-hidden transition-all duration-500 ${accent.cardHover}`}>
                 {/* Hover shimmer */}
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
@@ -71,7 +98,7 @@ const WhyDSM = () => {
 
                 <div className="relative z-10">
                   {/* Icon */}
-                  <div className={`w-12 h-12 rounded-full border border-white/[0.06] flex items-center justify-center mb-8 text-${item.accent} group-hover:border-${item.accent}/30 group-hover:bg-${item.accent}/[0.06] transition-all duration-500`}>
+                  <div className={`w-12 h-12 rounded-full border border-white/[0.06] flex items-center justify-center mb-8 transition-all duration-500 ${accent.iconText} ${accent.iconHover}`}>
                     <item.icon className="w-5 h-5" strokeWidth={1.5} />
                   </div>
 
@@ -84,14 +111,14 @@ const WhyDSM = () => {
                   </p>
 
                   {/* Learn more link */}
-                  <a href="#" className={`inline-flex items-center gap-2 text-xs font-medium text-${item.accent}/70 uppercase tracking-[0.1em] group-hover:text-${item.accent} transition-colors duration-300`}>
+                  <a href="#" className={`inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.1em] transition-colors duration-300 ${accent.linkBase} ${accent.linkHover}`}>
                     Learn More
                     <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                   </a>
                 </div>
               </div>
             </AnimatedCard>
-          ))}
+          )})}
         </div>
       </div>
     </section>
