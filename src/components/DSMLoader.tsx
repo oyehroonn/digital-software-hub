@@ -75,11 +75,11 @@ const LOADER_HTML = `<!DOCTYPE html>
                 <span class="animate-pulse" style="animation-delay: 0.4s">MARKET</span>
             </div>
 
-            <!-- System Status -->
+            <!-- System Status with Dynamic Loading Phrases -->
             <div class="flex items-center gap-3 px-4 py-2 rounded-full bg-zinc-900/80 border border-zinc-800/80 backdrop-blur-md shadow-2xl">
                 <i data-lucide="loader-2" class="text-zinc-400 w-4 h-4 animate-spin" stroke-width="1.5"></i>
-                <span class="text-xs font-normal text-zinc-300 tracking-wide">
-                    Initializing Volumetric Data
+                <span id="loading-phrase" class="text-xs font-normal text-zinc-300 tracking-wide" style="transition: opacity 0.3s ease;">
+                    Compiling your creative dreams...
                 </span>
             </div>
         </div>
@@ -363,6 +363,38 @@ const LOADER_HTML = `<!DOCTYPE html>
             renderer.setSize(window.innerWidth, window.innerHeight);
             labelRenderer.setSize(window.innerWidth, window.innerHeight);
         }, false);
+    <\/script>
+
+    <!-- Loading Phrases Script (non-blocking) -->
+    <script>
+        const loadingPhrases = [
+            "Compiling your creative dreams...",
+            "Syncing with the Adobe gods...",
+            "Brewing conversion potions...",
+            "Polishing your ROI crystals...",
+            "Downloading marketing superpowers...",
+            "Mixing the perfect color palette...",
+            "Convincing fonts to cooperate...",
+            "Bribing the loading bar...",
+            "Waking up the creative hamsters..."
+        ];
+        
+        let currentIndex = 0;
+        
+        function cyclePhrase() {
+            const el = document.getElementById('loading-phrase');
+            if (!el) return;
+            
+            el.style.opacity = '0';
+            
+            setTimeout(() => {
+                currentIndex = (currentIndex + 1) % loadingPhrases.length;
+                el.textContent = loadingPhrases[currentIndex];
+                el.style.opacity = '1';
+            }, 300);
+        }
+        
+        setInterval(cyclePhrase, 1500);
     <\/script>
 
 </body></html>`;
