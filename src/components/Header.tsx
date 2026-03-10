@@ -97,13 +97,20 @@ const Header = () => {
   }, []);
 
   // Dynamic text color based on background
+  // When over light section: dark text
+  // When scrolled (over dark content with blur): bright white for readability
+  // Default (at top, no scroll): gray
   const navTextColor = isOverLightSection 
     ? 'text-[#1a1a1a] hover:text-crimson' 
-    : 'text-[#B1B2B3] hover:text-crimson';
+    : hasScrolled 
+      ? 'text-white hover:text-crimson'
+      : 'text-[#B1B2B3] hover:text-crimson';
   
   const iconColor = isOverLightSection 
     ? 'text-[#1a1a1a] hover:text-crimson' 
-    : 'text-[#B1B2B3] hover:text-crimson';
+    : hasScrolled
+      ? 'text-white hover:text-crimson'
+      : 'text-[#B1B2B3] hover:text-crimson';
 
   return (
     <>
