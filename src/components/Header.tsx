@@ -124,7 +124,7 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="z-50 relative group flex items-center">
             <img 
-              src="/dsm.png" 
+              src={isOverLightSection ? "/dsm.png" : "/dsm-white.png"} 
               alt="DSM" 
               className="h-8 w-auto transition-all duration-300 group-hover:opacity-80"
             />
