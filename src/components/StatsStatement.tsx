@@ -110,7 +110,7 @@ const StatsStatement = () => {
           <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#FEFEFE] leading-[1] tracking-tight mb-6">
             We Don't Just Sell Software
             <br />
-            <span className="text-[#B1B2B3]/40 italic font-light">We Power Businesses.</span>
+            <span className="font-serif text-[#B1B2B3]/40 italic font-light">We Power Businesses.</span>
           </h2>
           <p className="text-base text-[#B1B2B3]/60 font-light max-w-xl mx-auto leading-relaxed">
             Since 1994, DSM has helped over 15,000 businesses secure genuine Microsoft, Autodesk, and Adobe licenses — faster, smarter, and with confidence.

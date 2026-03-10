@@ -1,4 +1,4 @@
-import { Instagram, Twitter, Linkedin } from "lucide-react";
+import { Instagram, Twitter, Linkedin, Youtube } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -19,9 +19,42 @@ const Footer = () => {
               The premier digital showroom for genuine software licensing. Empowering creators and enterprises since 1994.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"><Instagram className="w-5 h-5" /></a>
-              <a href="#" className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"><Twitter className="w-5 h-5" /></a>
-              <a href="#" className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"><Linkedin className="w-5 h-5" /></a>
+              <a
+                href="https://www.instagram.com/digitalsoftwaremarket/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"
+                aria-label="DSM Instagram"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
+              <a
+                href="https://x.com/digitalsoftwaremarket"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"
+                aria-label="DSM X (Twitter)"
+              >
+                <Twitter className="w-5 h-5" />
+              </a>
+              <a
+                href="https://www.linkedin.com/company/digitalsoftwaremarket"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"
+                aria-label="DSM LinkedIn"
+              >
+                <Linkedin className="w-5 h-5" />
+              </a>
+              <a
+                href="https://www.youtube.com/@digitalsoftwaremarket"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#B1B2B3]/60 hover:text-crimson transition-all duration-300 hover:scale-110"
+                aria-label="DSM YouTube"
+              >
+                <Youtube className="w-5 h-5" />
+              </a>
             </div>
           </div>
 

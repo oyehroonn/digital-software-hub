@@ -85,7 +85,7 @@ const BrandSpotlight = () => {
             </span>
             <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#FEFEFE] leading-[0.95] tracking-tight mb-6">
               Autodesk<br />
-              <span className="text-[#B1B2B3]/40 italic font-light">2026 Collection</span>
+              <span className="font-serif text-[#B1B2B3]/40 italic font-light">2026 Collection</span>
             </h2>
             <p className="text-base text-[#B1B2B3]/60 font-light leading-relaxed mb-8 max-w-md">
               The complete AEC toolkit for architecture, engineering, and construction professionals. AutoCAD, Revit, Civil 3D, and more — all with exclusive DSM pricing and instant deployment.
