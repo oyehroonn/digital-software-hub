@@ -2,6 +2,7 @@ import { CheckCircle, Star } from "lucide-react";
 import { useState } from "react";
 import ProductModelViewer from "./ProductModelViewer";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { useApp } from "@/contexts/AppContext";
 
 const AnimatedCard = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   const { ref, className: animClass } = useScrollAnimation();
@@ -138,6 +139,7 @@ const filters = ["All", "Office", "Security", "Design"];
 
 const ProductGrid = () => {
   const [activeFilter, setActiveFilter] = useState("All");
+  const { addToCart } = useApp();
 
   const filteredProducts = activeFilter === "All" ? products : products.filter((p) => p.category === activeFilter);
 
@@ -192,7 +194,18 @@ const ProductGrid = () => {
                   <div className="flex items-center gap-2 text-[10px] text-[hsl(220_3%_52%)]">
                     <CheckCircle className="w-3 h-3 text-green-600" /> {product.hoverLabel}
                   </div>
-                  <button className="btn-magnetic w-full py-2 bg-crimson text-[#FEFEFE] text-xs font-medium rounded-sm hover:bg-crimson-dark transition-all duration-300">
+                  <button
+                    className="btn-magnetic w-full py-2 bg-crimson text-[#FEFEFE] text-xs font-medium rounded-sm hover:bg-crimson-dark transition-all duration-300"
+                    onClick={() =>
+                      addToCart({
+                        id: product.name.toLowerCase().replace(/\s+/g, "-"),
+                        name: product.name,
+                        price: product.priceRange || product.price,
+                        category: product.category,
+                        glbSrc: product.glbSrc,
+                      })
+                    }
+                  >
                     {product.hoverAction}
                   </button>
                 </div>

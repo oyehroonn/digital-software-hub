@@ -72,7 +72,7 @@ const QUICK_PROMPTS = [
 ];
 
 export default function ProductModal({ product }: ProductModalProps) {
-  const { closeProduct } = useApp();
+  const { closeProduct, addToCart } = useApp();
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -245,7 +245,20 @@ export default function ProductModal({ product }: ProductModalProps) {
 
                 {/* CTAs */}
                 <div className="flex gap-3 pt-4">
-                  <Button className="flex-1 bg-crimson hover:bg-crimson-dark text-[#FEFEFE]">
+                  <Button
+                    className="flex-1 bg-crimson hover:bg-crimson-dark text-[#FEFEFE]"
+                    onClick={() =>
+                      addToCart({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        category: product.category,
+                        brand: product.brand,
+                        licenseType: product.licenseType,
+                        link: product.link,
+                      })
+                    }
+                  >
                     Add to Cart
                   </Button>
                   <Button variant="outline" className="flex-1 border-white/[0.06] text-[#FEFEFE]">

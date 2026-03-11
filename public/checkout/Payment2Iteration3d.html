@@ -1,0 +1,745 @@
+<html lang="en" class="antialiased"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premium Payment Experience</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<!-- Include Three.js for 3D Cards -->
+<script src="https://unpkg.com/three@0.150.1/build/three.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+body {
+font-family: 'Inter', sans-serif;
+background-color: #050505;
+color: #ededed;
+overflow-x: hidden;
+}
+/* Subtle Grid Background */
+.bg-grid {
+background-size: 40px 40px;
+background-image:
+linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+mask-image: radial-gradient(circle at center, black, transparent 80%);
+-webkit-mask-image: radial-gradient(circle at center, black, transparent 80%);
+}
+/* View Transitions */
+.view-layer {
+transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.view-hidden {
+opacity: 0;
+pointer-events: none;
+transform: translateY(20px) scale(0.98);
+position: absolute;
+inset: 0;
+}
+.view-active {
+opacity: 1;
+pointer-events: auto;
+transform: translateY(0) scale(1);
+position: relative;
+}
+/* Custom Input Autofill fix for dark mode */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active{
+-webkit-box-shadow: 0 0 0 30px #121212 inset !important;
+-webkit-text-fill-color: white !important;
+transition: background-color 5000s ease-in-out 0s;
+}
+/* Hold Button Progress */
+.hold-progress {
+clip-path: circle(0% at center);
+transition: clip-path 0.1s linear;
+}
+/* Ambient Glow Behind Wallet */
+.ambient-glow {
+transition: background-color 0.8s ease, box-shadow 0.8s ease;
+background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+}
+/* Success Prism Animation */
+@keyframes drawCheck {
+0% { stroke-dashoffset: 50; opacity: 0; }
+100% { stroke-dashoffset: 0; opacity: 1; }
+}
+.check-path {
+stroke-dasharray: 50;
+stroke-dashoffset: 50;
+}
+.animate-check {
+animation: drawCheck 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards 0.2s;
+}
+@keyframes shimmer {
+0% { transform: translateX(-100%) skewX(-15deg); }
+100% { transform: translateX(200%) skewX(-15deg); }
+}
+</style></head>
+<body class="min-h-screen flex items-center justify-center relative selection:bg-white/20">
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 bg-grid pointer-events-none z-0"></div>
+    <div class="fixed inset-0 bg-gradient-to-b from-transparent via-black/50 to-black pointer-events-none z-0"></div>
+
+    <!-- Main Application Container -->
+    <main class="w-full max-w-5xl mx-auto px-6 py-12 relative z-10 flex items-center justify-center min-h-[600px]">
+
+        <!-- VIEW 1: Initial Checkout Trigger -->
+        <section id="view-checkout" class="view-layer view-active w-full max-w-md">
+            <div class="bg-white/[0.02] border border-white/5 backdrop-blur-xl rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
+                <div class="absolute inset-0 bg-gradient-to-br from-white/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                
+                <div class="flex flex-col items-center text-center space-y-6">
+                    <div class="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-2 shadow-inner">
+                        <i data-lucide="shopping-bag" class="text-zinc-400 w-6 h-6" stroke-width="1.5"></i>
+                    </div>
+                    
+                    <div>
+                        <p class="text-base text-zinc-400 font-medium mb-1">Total to Pay</p>
+                        <h1 id="checkout-total" class="text-4xl tracking-tight font-semibold text-white">$1,499.00</h1>
+                        <p id="checkout-item" class="text-sm text-zinc-500 mt-2">Apple MacBook Pro 14"</p>
+                    </div>
+
+                    <div class="w-full pt-8">
+                        <button id="btn-init-pay" class="relative w-full h-14 rounded-2xl bg-white text-black font-medium text-lg overflow-hidden flex items-center justify-center transition-transform active:scale-[0.98] cursor-pointer select-none border border-transparent hover:border-white/20">
+                            <!-- Progress Fill -->
+                            <div id="init-progress" class="absolute inset-0 bg-zinc-200 hold-progress z-0"></div>
+                            
+                            <!-- Button Content -->
+                            <span class="relative z-10 flex items-center gap-2 mix-blend-difference text-white">
+                                <i data-lucide="fingerprint" class="w-5 h-5" stroke-width="1.5"></i>
+                                Press &amp; Hold to Pay
+                            </span>
+                        </button>
+                        <p class="text-xs text-zinc-500 mt-4 text-center">Secure, encrypted transaction.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: Payment Scene (Wallet & Form) -->
+        <section id="view-payment" class="view-layer view-hidden w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20 items-center">
+            
+            <!-- Left: Context & Methods -->
+            <div class="flex flex-col space-y-8 order-2 md:order-1 relative z-20">
+                <div>
+                    <h2 class="text-3xl tracking-tight font-semibold text-white mb-2">Complete Payment</h2>
+                    <p id="checkout-copy" class="text-base text-zinc-400">Enter your card details to securely process your order of $1,499.00.</p>
+                </div>
+
+                <!-- Input Form -->
+                <div class="space-y-4">
+                    <div class="relative">
+                        <label class="block text-xs font-medium text-zinc-500 mb-1 ml-1 uppercase tracking-widest">Card Number</label>
+                        <div class="relative">
+                            <input type="text" id="card-input" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full bg-[#121212] border border-white/10 rounded-xl px-4 py-3.5 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-wider">
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2" id="brand-icon-container">
+                                <i data-lucide="credit-card" class="w-5 h-5 text-zinc-500" stroke-width="1.5"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-zinc-500 mb-1 ml-1 uppercase tracking-widest">Expiry</label>
+                            <input type="text" id="expiry-input" placeholder="MM/YY" maxlength="5" class="w-full bg-[#121212] border border-white/10 rounded-xl px-4 py-3.5 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-wider">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-zinc-500 mb-1 ml-1 uppercase tracking-widest">CVC</label>
+                            <input type="password" id="cvc-input" placeholder="•••" maxlength="4" class="w-full bg-[#121212] border border-white/10 rounded-xl px-4 py-3.5 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-wider">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-zinc-500 mb-1 ml-1 uppercase tracking-widest">Cardholder Name</label>
+                        <input type="text" id="name-input" placeholder="Name on card" class="w-full bg-[#121212] border border-white/10 rounded-xl px-4 py-3.5 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all uppercase">
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button id="btn-authorize" class="relative w-full h-14 rounded-xl bg-white/10 text-white font-medium text-lg overflow-hidden flex items-center justify-center transition-all hover:bg-white/15 active:scale-[0.98] border border-white/10 opacity-50 cursor-not-allowed">
+                        <span class="relative z-10 flex items-center gap-2">
+                            <i data-lucide="lock" class="w-4 h-4 text-zinc-400" stroke-width="1.5"></i>
+                            <span id="auth-text">Enter card to continue</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: 3D Holographic Wallet -->
+            <div class="relative h-[450px] flex items-center justify-center order-1 md:order-2 w-full">
+                <!-- Ambient Backdrop -->
+                <div id="wallet-ambient" class="absolute inset-0 ambient-glow opacity-40 blur-3xl pointer-events-none z-0"></div>
+                <!-- Three.js Container -->
+                <div id="three-container" class="absolute inset-0 z-10 w-full h-full cursor-grab active:cursor-grabbing"></div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: Success -->
+        <section id="view-success" class="view-layer view-hidden w-full max-w-md">
+            <div class="bg-white/[0.02] border border-white/5 backdrop-blur-xl rounded-3xl p-10 shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
+                <!-- Shimmer Sweep -->
+                <div class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent w-[200%] animate-[shimmer_2s_ease-in-out_forwards]"></div>
+                
+                <div class="w-20 h-20 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(255,255,255,0.1)] relative">
+                    <svg class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path class="check-path opacity-0 animate-check" d="M20 6L9 17l-5-5"></path>
+                    </svg>
+                </div>
+
+                <h2 class="text-2xl tracking-tight font-semibold text-white mb-2">Payment Successful</h2>
+                <p class="text-base text-zinc-400 mb-8">Your order is being processed.</p>
+
+                <div class="w-full bg-black/40 rounded-xl p-5 border border-white/5 space-y-3 mb-8 text-left">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-zinc-500">Amount</span>
+                        <span id="receipt-amount" class="text-base text-white font-medium">$1,499.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-zinc-500">Method</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs bg-white/10 px-2 py-0.5 rounded text-zinc-300 tracking-wider" id="receipt-brand">VISA</span>
+                            <span class="text-base text-white font-mono" id="receipt-digits">•• 4242</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="location.reload()" class="w-full h-12 rounded-xl bg-white text-black font-medium text-base hover:bg-zinc-200 transition-colors">
+                    Back to Order
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // --------------------------------------------------------
+        // View Management & Checkout Hold Logic
+        // --------------------------------------------------------
+        const views = {
+            checkout: document.getElementById('view-checkout'),
+            payment: document.getElementById('view-payment'),
+            success: document.getElementById('view-success')
+        };
+
+        function switchView(viewName) {
+            Object.values(views).forEach(v => {
+                v.classList.remove('view-active');
+                v.classList.add('view-hidden');
+            });
+            views[viewName].classList.remove('view-hidden');
+            views[viewName].classList.add('view-active');
+        }
+
+        // Optional embed mode: skip initial "press & hold" view and jump straight to card details
+        const checkoutParams = new URLSearchParams(window.location.search);
+        const skipHold = checkoutParams.get('skipHold') === '1';
+        const checkoutAmount = checkoutParams.get('amount') || '$1,499.00';
+        const checkoutItem = checkoutParams.get('item') || 'Apple MacBook Pro 14"';
+
+        const checkoutTotalEl = document.getElementById('checkout-total');
+        const checkoutItemEl = document.getElementById('checkout-item');
+        const checkoutCopyEl = document.getElementById('checkout-copy');
+        const receiptAmountEl = document.getElementById('receipt-amount');
+
+        if (checkoutTotalEl) checkoutTotalEl.textContent = checkoutAmount;
+        if (checkoutItemEl) checkoutItemEl.textContent = checkoutItem;
+        if (checkoutCopyEl) {
+            checkoutCopyEl.textContent = `Enter your card details to securely process your order of ${checkoutAmount}.`;
+        }
+        if (receiptAmountEl) receiptAmountEl.textContent = checkoutAmount;
+
+        if (skipHold) {
+            switchView('payment');
+            // Initialize 3D immediately in embed checkout mode
+            requestAnimationFrame(() => init3D());
+        }
+
+        const btnInitPay = document.getElementById('btn-init-pay');
+        const initProgress = document.getElementById('init-progress');
+        let initProgressVal = 0;
+        let isInitHolding = false;
+
+        function updateInitProgress() {
+            if (isInitHolding && initProgressVal < 100) {
+                initProgressVal += 2;
+                initProgress.style.clipPath = `circle(${initProgressVal}% at center)`;
+                requestAnimationFrame(updateInitProgress);
+            } else if (initProgressVal >= 100) {
+                btnInitPay.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    switchView('payment');
+                    init3D(); // Initialize 3D when view becomes visible
+                    initProgressVal = 0;
+                    initProgress.style.clipPath = `circle(0% at center)`;
+                    btnInitPay.style.transform = 'scale(1)';
+                }, 300);
+            }
+        }
+
+        btnInitPay.addEventListener('mousedown', () => { isInitHolding = true; requestAnimationFrame(updateInitProgress); });
+        btnInitPay.addEventListener('touchstart', (e) => { e.preventDefault(); isInitHolding = true; requestAnimationFrame(updateInitProgress); });
+
+        const resetInitHold = () => {
+            isInitHolding = false;
+            if(initProgressVal < 100) {
+                initProgressVal = 0;
+                initProgress.style.clipPath = `circle(0% at center)`;
+            }
+        };
+
+        window.addEventListener('mouseup', resetInitHold);
+        window.addEventListener('touchend', resetInitHold);
+
+        // --------------------------------------------------------
+        // Form Interaction & 3D Synchronization
+        // --------------------------------------------------------
+        const cardInput = document.getElementById('card-input');
+        const nameInput = document.getElementById('name-input');
+        const expiryInput = document.getElementById('expiry-input');
+        const cvcInput = document.getElementById('cvc-input');
+        const btnAuthorize = document.getElementById('btn-authorize');
+        const authText = document.getElementById('auth-text');
+        
+        let cardState = {
+            brand: 'visa',
+            number: '•••• •••• •••• ••••',
+            name: 'CARDHOLDER NAME',
+            expiry: 'MM/YY',
+            cvc: '',
+            isFlipped: false
+        };
+
+        // Format Card Input and Detect Brand
+        cardInput.addEventListener('input', (e) => {
+            let val = e.target.value.replace(/\D/g, '');
+            let formatted = val.match(/.{1,4}/g)?.join(' ') || '';
+            e.target.value = formatted;
+            
+            if (val.startsWith('4')) cardState.brand = 'visa';
+            else if (val.startsWith('5')) cardState.brand = 'mastercard';
+            else if (val.startsWith('3')) cardState.brand = 'amex';
+            else cardState.brand = 'visa';
+
+            cardState.number = formatted || (cardState.brand === 'amex' ? '•••• •••••• •••••' : '•••• •••• •••• ••••');
+            
+            updateCardTexture(cardState.brand);
+            setActiveCard(cardState.brand);
+            validateForm();
+        });
+
+        nameInput.addEventListener('input', (e) => {
+            cardState.name = e.target.value.toUpperCase() || 'CARDHOLDER NAME';
+            updateCardTexture(cardState.brand);
+            validateForm();
+        });
+
+        expiryInput.addEventListener('input', (e) => {
+            let val = e.target.value.replace(/\D/g, '');
+            if (val.length >= 2) val = val.slice(0,2) + '/' + val.slice(2,4);
+            e.target.value = val;
+            cardState.expiry = val || 'MM/YY';
+            updateCardTexture(cardState.brand);
+            validateForm();
+        });
+
+        cvcInput.addEventListener('input', (e) => {
+            cardState.cvc = e.target.value;
+            validateForm();
+        });
+
+        // Flip Card on CVC Focus
+        cvcInput.addEventListener('focus', () => { cardState.isFlipped = true; });
+        cvcInput.addEventListener('blur', () => { cardState.isFlipped = false; });
+
+        function validateForm() {
+            const isValid = cardInput.value.length >= 16 && nameInput.value.length > 2 && expiryInput.value.length === 5 && cvcInput.value.length >= 3;
+            if(isValid) {
+                btnAuthorize.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnAuthorize.classList.add('hover:bg-white', 'hover:text-black', 'text-white', 'bg-white/20');
+                authText.innerText = `Authorize ${checkoutAmount}`;
+            } else {
+                btnAuthorize.classList.add('opacity-50', 'cursor-not-allowed');
+                btnAuthorize.classList.remove('hover:bg-white', 'hover:text-black', 'bg-white/20');
+                authText.innerText = "Enter card to continue";
+            }
+        }
+
+        btnAuthorize.addEventListener('click', () => {
+            if(!btnAuthorize.classList.contains('cursor-not-allowed')) {
+                btnAuthorize.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Processing...`;
+                lucide.createIcons();
+                setTimeout(() => {
+                    document.getElementById('receipt-brand').innerText = cardState.brand.toUpperCase();
+                    document.getElementById('receipt-digits').innerText = '•• ' + cardInput.value.slice(-4);
+                    switchView('success');
+                }, 1500);
+            }
+        });
+
+        // --------------------------------------------------------
+        // Three.js 3D Holographic Card Setup
+        // --------------------------------------------------------
+        const container = document.getElementById('three-container');
+        let scene, camera, renderer;
+        let cardModels = {};
+        let activeBrand = 'visa';
+        let mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+        let studioLights = [];
+        let animationFrameId;
+
+        // Card physical dimensions (Standard Credit Card Ratio)
+        const C_WIDTH = 3.375 * 1.2;
+        const C_HEIGHT = 2.125 * 1.2;
+        const C_THICKNESS = 0.04;
+        const C_RADIUS = 0.18;
+
+        function init3D() {
+            if(renderer) return; // Prevent double init
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 0, 6.5);
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Lighting setup for Holographic Iridescence
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+
+            const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            mainLight.position.set(2, 5, 4);
+            scene.add(mainLight);
+
+            // Colored point lights to create shifting holographic reflections
+            const colors = [0x00ffff, 0xff00ff, 0xffff00];
+            colors.forEach((color, i) => {
+                const light = new THREE.PointLight(color, 1.5, 10);
+                light.position.set(Math.cos(i) * 3, Math.sin(i) * 3, 2);
+                scene.add(light);
+                studioLights.push({ light, offset: i * Math.PI });
+            });
+
+            // Create 3D Models
+            cardModels.visa = create3DCardModel('visa', -0.1);
+            cardModels.mastercard = create3DCardModel('mastercard', -0.2);
+            cardModels.amex = create3DCardModel('amex', -0.3);
+
+            scene.add(cardModels.visa);
+            scene.add(cardModels.mastercard);
+            scene.add(cardModels.amex);
+
+            // Mouse tracking for parallax
+            container.addEventListener('mousemove', (e) => {
+                const rect = container.getBoundingClientRect();
+                mouse.targetX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.targetY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            });
+            
+            container.addEventListener('mouseleave', () => {
+                mouse.targetX = 0; mouse.targetY = 0;
+            });
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                if(!container.clientWidth) return;
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+
+            // Initial texture update
+            updateCardTexture('visa');
+            updateCardTexture('mastercard');
+            updateCardTexture('amex');
+            
+            setActiveCard('visa');
+            animate3D();
+        }
+
+        // Create fully 3D Card (Core + Front Foil + Back Strip)
+        function create3DCardModel(brand, zOffset) {
+            const group = new THREE.Group();
+            group.position.z = zOffset;
+
+            // 1. Create Core Extrusion (The plastic body)
+            const shape = new THREE.Shape();
+            shape.moveTo(-C_WIDTH/2 + C_RADIUS, -C_HEIGHT/2);
+            shape.lineTo(C_WIDTH/2 - C_RADIUS, -C_HEIGHT/2);
+            shape.quadraticCurveTo(C_WIDTH/2, -C_HEIGHT/2, C_WIDTH/2, -C_HEIGHT/2 + C_RADIUS);
+            shape.lineTo(C_WIDTH/2, C_HEIGHT/2 - C_RADIUS);
+            shape.quadraticCurveTo(C_WIDTH/2, C_HEIGHT/2, C_WIDTH/2 - C_RADIUS, C_HEIGHT/2);
+            shape.lineTo(-C_WIDTH/2 + C_RADIUS, C_HEIGHT/2);
+            shape.quadraticCurveTo(-C_WIDTH/2, C_HEIGHT/2, -C_WIDTH/2, C_HEIGHT/2 - C_RADIUS);
+            shape.lineTo(-C_WIDTH/2, -C_HEIGHT/2 + C_RADIUS);
+            shape.quadraticCurveTo(-C_WIDTH/2, -C_HEIGHT/2, -C_WIDTH/2 + C_RADIUS, -C_HEIGHT/2);
+
+            const coreGeo = new THREE.ExtrudeGeometry(shape, {
+                depth: C_THICKNESS,
+                bevelEnabled: true,
+                bevelSegments: 2,
+                steps: 1,
+                bevelSize: 0.005,
+                bevelThickness: 0.005
+            });
+            coreGeo.center();
+
+            const coreMat = new THREE.MeshStandardMaterial({ 
+                color: 0x111111, 
+                roughness: 0.4, 
+                metalness: 0.8 
+            });
+            const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+            group.add(coreMesh);
+
+            // 2. Create Front Foil (Plane slightly elevated)
+            const planeGeo = new THREE.PlaneGeometry(C_WIDTH - 0.01, C_HEIGHT - 0.01);
+            
+            // Render textures via Canvas
+            const frontCanvas = document.createElement('canvas');
+            frontCanvas.width = 1024; frontCanvas.height = 645;
+            const frontTex = new THREE.CanvasTexture(frontCanvas);
+            frontTex.anisotropy = renderer?.capabilities.getMaxAnisotropy() || 4;
+
+            const backCanvas = document.createElement('canvas');
+            backCanvas.width = 1024; backCanvas.height = 645;
+            const backTex = new THREE.CanvasTexture(backCanvas);
+            backTex.anisotropy = renderer?.capabilities.getMaxAnisotropy() || 4;
+
+            // Iridescent Holographic Material for Front
+            const frontMat = new THREE.MeshPhysicalMaterial({
+                map: frontTex,
+                transparent: true,
+                roughness: 0.15,
+                metalness: 0.9,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.1,
+                iridescence: 1.0,
+                iridescenceIOR: 1.8,
+                iridescenceThicknessRange: [100, 400],
+                side: THREE.FrontSide
+            });
+
+            const frontMesh = new THREE.Mesh(planeGeo, frontMat);
+            frontMesh.position.z = C_THICKNESS / 2 + 0.006;
+            group.add(frontMesh);
+
+            // Material for Back
+            const backMat = new THREE.MeshStandardMaterial({
+                map: backTex,
+                transparent: true,
+                roughness: 0.5,
+                metalness: 0.2,
+                side: THREE.BackSide
+            });
+
+            const backMesh = new THREE.Mesh(planeGeo, backMat);
+            backMesh.position.z = -C_THICKNESS / 2 - 0.006;
+            // Flip back texture horizontally so it reads correctly when rotated
+            backMesh.rotation.y = Math.PI; 
+            group.add(backMesh);
+
+            // Store references for dynamic updates
+            group.userData = { brand, frontCanvas, frontTex, backCanvas, backTex, targetY: 0, targetZ: 0, targetRotX: 0, targetRotY: 0 };
+            return group;
+        }
+
+        // Draw the 2D UI for the 3D textures
+        function updateCardTexture(brand) {
+            if(!cardModels[brand]) return;
+            const data = cardModels[brand].userData;
+            
+            // Draw Front
+            const ctxF = data.frontCanvas.getContext('2d');
+            ctxF.clearRect(0, 0, 1024, 645);
+            
+            // Background Base
+            const grad = ctxF.createLinearGradient(0, 0, 1024, 645);
+            if(brand === 'visa') { grad.addColorStop(0, '#1a1b26'); grad.addColorStop(1, '#0d0f17'); }
+            else if(brand === 'mastercard') { grad.addColorStop(0, '#171717'); grad.addColorStop(1, '#0a0a0a'); }
+            else { grad.addColorStop(0, '#111827'); grad.addColorStop(1, '#030712'); }
+            
+            // Rounded clipping
+            ctxF.fillStyle = grad;
+            ctxF.beginPath();
+            ctxF.roundRect(0, 0, 1024, 645, 40);
+            ctxF.fill();
+            ctxF.clip();
+
+            // Hologram overlay simulation (subtle noise/lines)
+            ctxF.strokeStyle = 'rgba(255,255,255,0.03)';
+            ctxF.lineWidth = 2;
+            for(let i=0; i<1024; i+=20) {
+                ctxF.beginPath(); ctxF.moveTo(i, 0); ctxF.lineTo(i-300, 645); ctxF.stroke();
+            }
+
+            // Draw Chip
+            ctxF.fillStyle = '#d4af37'; // Gold
+            ctxF.beginPath(); ctxF.roundRect(90, 240, 100, 80, 12); ctxF.fill();
+            ctxF.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctxF.lineWidth = 3;
+            ctxF.strokeRect(90, 240, 100, 80);
+            ctxF.beginPath(); ctxF.moveTo(90, 280); ctxF.lineTo(190, 280); ctxF.stroke();
+            ctxF.beginPath(); ctxF.moveTo(140, 240); ctxF.lineTo(140, 320); ctxF.stroke();
+
+            // Contactless Icon
+            ctxF.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctxF.lineWidth = 5;
+            ctxF.lineCap = 'round';
+            for(let i=1; i<=3; i++) {
+                ctxF.beginPath(); ctxF.arc(240, 280, 10 + i*15, -Math.PI/4, Math.PI/4); ctxF.stroke();
+            }
+
+            // Logos
+            if (brand === 'visa') {
+                ctxF.fillStyle = '#ffffff';
+                ctxF.font = 'italic 700 90px sans-serif';
+                ctxF.fillText('VISA', 780, 120);
+            } else if (brand === 'mastercard') {
+                ctxF.globalCompositeOperation = 'screen';
+                ctxF.fillStyle = 'rgba(239, 68, 68, 0.9)';
+                ctxF.beginPath(); ctxF.arc(820, 90, 55, 0, Math.PI*2); ctxF.fill();
+                ctxF.fillStyle = 'rgba(249, 115, 22, 0.9)';
+                ctxF.beginPath(); ctxF.arc(890, 90, 55, 0, Math.PI*2); ctxF.fill();
+                ctxF.globalCompositeOperation = 'source-over';
+            } else if (brand === 'amex') {
+                ctxF.fillStyle = '#38bdf8';
+                ctxF.font = '700 70px sans-serif';
+                ctxF.fillText('AMEX', 780, 110);
+            }
+
+            // Card Number (Embossed look)
+            const numStr = (brand === activeBrand) ? cardState.number : (brand==='amex'?'•••• •••••• •••••':'•••• •••• •••• ••••');
+            ctxF.fillStyle = 'rgba(0,0,0,0.5)';
+            ctxF.font = '500 65px monospace';
+            ctxF.fillText(numStr, 82, 452); // shadow
+            ctxF.fillStyle = 'rgba(255,255,255,0.9)';
+            ctxF.fillText(numStr, 80, 450);
+
+            // Name & Expiry
+            const nameStr = (brand === activeBrand) ? cardState.name : 'CARDHOLDER';
+            const expStr = (brand === activeBrand) ? cardState.expiry : 'MM/YY';
+            
+            ctxF.fillStyle = 'rgba(255,255,255,0.5)';
+            ctxF.font = '500 24px sans-serif';
+            ctxF.fillText('CARDHOLDER', 80, 540);
+            ctxF.fillText('EXPIRES', 840, 540);
+            
+            ctxF.fillStyle = 'rgba(255,255,255,0.9)';
+            ctxF.font = '400 36px monospace';
+            ctxF.fillText(nameStr, 80, 590);
+            ctxF.fillText(expStr, 840, 590);
+
+            data.frontTex.needsUpdate = true;
+
+            // Draw Back (Magnetic Stripe & CVC)
+            const ctxB = data.backCanvas.getContext('2d');
+            ctxB.clearRect(0, 0, 1024, 645);
+            ctxB.fillStyle = grad; // Same base
+            ctxB.beginPath(); ctxB.roundRect(0, 0, 1024, 645, 40); ctxB.fill(); ctxB.clip();
+
+            // Magnetic Stripe
+            ctxB.fillStyle = '#050505';
+            ctxB.fillRect(0, 80, 1024, 120);
+
+            // Signature Panel
+            ctxB.fillStyle = '#e5e5e5';
+            ctxB.fillRect(60, 250, 700, 80);
+
+            // CVC
+            const cvcStr = (brand === activeBrand && cardState.cvc) ? cardState.cvc : '•••';
+            ctxB.fillStyle = '#000000';
+            ctxB.font = 'italic 500 40px monospace';
+            ctxB.fillText(cvcStr, 680, 305);
+
+            ctxB.fillStyle = 'rgba(255,255,255,0.3)';
+            ctxB.font = '400 24px sans-serif';
+            ctxB.fillText('Authorized Signature - Not Valid Unless Signed', 60, 360);
+
+            data.backTex.needsUpdate = true;
+        }
+
+        // Set Target Positions for Animation
+        function setActiveCard(brand) {
+            activeBrand = brand;
+            const brands = ['visa', 'mastercard', 'amex'];
+            let inactiveCount = 0;
+
+            brands.forEach(b => {
+                const data = cardModels[b].userData;
+                if(b === brand) {
+                    // Active Card (Brought to front)
+                    data.targetZ = 1.0;
+                    data.targetY = 0.2;
+                    data.targetRotX = 0;
+                } else {
+                    // Inactive Cards (Stacked behind)
+                    inactiveCount++;
+                    data.targetZ = -0.5 - (inactiveCount * 0.4);
+                    data.targetY = -0.8 - (inactiveCount * 0.2);
+                    data.targetRotX = 0.2;
+                }
+            });
+        }
+
+        // Render Loop
+        function animate3D() {
+            animationFrameId = requestAnimationFrame(animate3D);
+
+            // Smooth Mouse
+            mouse.x += (mouse.targetX - mouse.x) * 0.1;
+            mouse.y += (mouse.targetY - mouse.y) * 0.1;
+
+            // Rotate Studio Lights for Hologram shift
+            const time = Date.now() * 0.001;
+            studioLights.forEach(sl => {
+                sl.light.position.x = Math.cos(time + sl.offset) * 4;
+                sl.light.position.y = Math.sin(time + sl.offset) * 4;
+            });
+
+            // Update Cards
+            Object.values(cardModels).forEach(model => {
+                const data = model.userData;
+                
+                // Position Lerp
+                model.position.z += (data.targetZ - model.position.z) * 0.08;
+                model.position.y += (data.targetY - model.position.y) * 0.08;
+
+                // Rotation Logic
+                let finalRotX = data.targetRotX;
+                let finalRotY = data.targetRotY;
+
+                if (data.brand === activeBrand) {
+                    // Add Parallax to active card
+                    finalRotX += mouse.y * 0.2;
+                    finalRotY += mouse.x * 0.3;
+                    
+                    // Handle CVC Flip
+                    if(cardState.isFlipped) {
+                        finalRotY += Math.PI;
+                    }
+                }
+
+                // Rotation Lerp
+                model.rotation.x += (finalRotX - model.rotation.x) * 0.08;
+                
+                // Use a smart angular lerp for Y to prevent spinning the wrong way
+                let diffY = finalRotY - model.rotation.y;
+                while(diffY < -Math.PI) diffY += Math.PI * 2;
+                while(diffY > Math.PI) diffY -= Math.PI * 2;
+                model.rotation.y += diffY * 0.08;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+    </script>
+
+</body></html>

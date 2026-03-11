@@ -3,6 +3,7 @@ import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import { useState, useMemo } from "react";
 import ProductModelViewer from "./ProductModelViewer";
 import catalogueProducts from "@/data/catalogueProducts.json";
+import { useApp } from "@/contexts/AppContext";
 
 const AnimatedCard = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   const { ref, className: animClass } = useScrollAnimation();
@@ -18,7 +19,13 @@ interface CatalogueProduct {
   folder: string;
 }
 
-const ProductCard = ({ product }: { product: CatalogueProduct }) => {
+const ProductCard = ({
+  product,
+  onAddToCart,
+}: {
+  product: CatalogueProduct;
+  onAddToCart: (product: CatalogueProduct) => void;
+}) => {
   const glbSrc = `/models/${product.id}.glb`;
   
   return (
@@ -46,7 +53,10 @@ const ProductCard = ({ product }: { product: CatalogueProduct }) => {
           <div className="flex items-center gap-2 text-[10px] text-[#B1B2B3]/70">
             <CheckCircle className="w-3 h-3 text-emerald-500" /> Official Partner
           </div>
-          <button className="btn-magnetic w-full py-2.5 bg-crimson text-[#FEFEFE] text-xs font-medium tracking-wide rounded-sm hover:bg-crimson-dark transition-all duration-300">
+          <button
+            className="btn-magnetic w-full py-2.5 bg-crimson text-[#FEFEFE] text-xs font-medium tracking-wide rounded-sm hover:bg-crimson-dark transition-all duration-300"
+            onClick={() => onAddToCart(product)}
+          >
             Add to Cart
           </button>
         </div>
@@ -79,6 +89,7 @@ const PRODUCTS_PER_PAGE = 8;
 
 const PopularProducts = () => {
   const headingAnim = useScrollAnimation();
+  const { addToCart } = useApp();
   const [visibleCount, setVisibleCount] = useState(PRODUCTS_PER_PAGE);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -175,7 +186,18 @@ const PopularProducts = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10 stagger-children">
             {displayedProducts.map((product) => (
               <AnimatedCard key={product.id}>
-                <ProductCard product={product} />
+                <ProductCard
+                  product={product}
+                  onAddToCart={(p) =>
+                    addToCart({
+                      id: p.id,
+                      name: p.name,
+                      price: p.price,
+                      category: p.category,
+                      glbSrc: `/models/${p.id}.glb`,
+                    })
+                  }
+                />
               </AnimatedCard>
             ))}
           </div>

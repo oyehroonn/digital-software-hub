@@ -3,6 +3,7 @@ import SearchBar from "./SearchBar";
 import ProductModelViewer from "./ProductModelViewer";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useApp } from "@/contexts/AppContext";
 
 const categories = [
   "Operating Systems",
@@ -68,6 +69,7 @@ const categoryFeaturedModel: Record<string, { glb: string; title: string; desc: 
 };
 
 const Header = () => {
+  const { cartItemCount } = useApp();
   const [isOverLightSection, setIsOverLightSection] = useState(false);
   const [activeCategory, setActiveCategory] = useState("Productivity & Office");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -156,10 +158,14 @@ const Header = () => {
               <SearchBar darkText={isOverLightSection} />
             </div>
             <a href="#" className={`transition-colors duration-300 ${iconColor}`}><User className="w-5 h-5" strokeWidth={1.5} /></a>
-            <a href="#" className={`relative transition-colors duration-300 ${iconColor}`}>
+            <Link to="/cart" className={`relative transition-colors duration-300 ${iconColor}`}>
               <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-crimson rounded-full" />
-            </a>
+              {cartItemCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-crimson text-[#FEFEFE] text-[10px] font-semibold leading-[18px] text-center">
+                  {cartItemCount > 99 ? "99+" : cartItemCount}
+                </span>
+              )}
+            </Link>
           </div>
         </div>
       </header>

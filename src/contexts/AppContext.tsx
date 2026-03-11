@@ -1,9 +1,9 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Product } from '@/lib/api';
 
 interface AppState {
   selectedProduct: Product | null;
+  cartItems: CartItem[];
   searchQuery: string;
   filters: {
     brand: string[];
@@ -15,6 +15,29 @@ interface AppState {
   theme: 'light' | 'dark';
 }
 
+export interface CartItem {
+  id: string | number;
+  name: string;
+  price: string;
+  unitPrice: number;
+  quantity: number;
+  category?: string;
+  brand?: string;
+  licenseType?: string;
+  glbSrc: string;
+}
+
+type CartInputItem = {
+  id: string | number;
+  name: string;
+  price: string;
+  category?: string;
+  brand?: string;
+  licenseType?: string;
+  glbSrc?: string;
+  link?: string;
+};
+
 interface AppContextType {
   state: AppState;
   openProduct: (product: Product | string | number) => Promise<void>;
@@ -22,6 +45,12 @@ interface AppContextType {
   setSearchQuery: (query: string) => void;
   setFilters: (filters: Partial<AppState['filters']>) => void;
   setSortBy: (sort: string) => void;
+  addToCart: (item: CartInputItem) => void;
+  removeFromCart: (productId: string | number) => void;
+  updateCartQuantity: (productId: string | number, quantity: number) => void;
+  clearCart: () => void;
+  cartItemCount: number;
+  cartTotal: number;
   applyAIAction: (action: { type: string; payload: any }) => void;
   setMarketingMode: (enabled: boolean) => void;
   setTheme: (theme: 'light' | 'dark') => void;
@@ -55,8 +84,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const preferences = loadPreferences();
 
+  const loadCart = useCallback((): CartItem[] => {
+    try {
+      const saved = localStorage.getItem('dsm-cart');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      // Ignore parse errors
+    }
+    return [];
+  }, []);
+
   const [state, setState] = useState<AppState>({
     selectedProduct: null,
+    cartItems: loadCart(),
     searchQuery: '',
     filters: {
       brand: [],
@@ -87,6 +130,73 @@ export function AppProvider({ children }: { children: ReactNode }) {
       theme: state.theme,
     }));
   }, [state.marketingMode, state.theme]);
+
+  // Save cart to localStorage
+  useEffect(() => {
+    localStorage.setItem('dsm-cart', JSON.stringify(state.cartItems));
+  }, [state.cartItems]);
+
+  const parsePriceToNumber = useCallback((priceText: string): number => {
+    const clean = priceText.replace(/,/g, '');
+    const match = clean.match(/(\d+(?:\.\d+)?)/);
+    if (!match) return 0;
+    const parsed = Number.parseFloat(match[1]);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }, []);
+
+  const addToCart = useCallback((item: CartInputItem) => {
+    setState(prev => {
+      const existingIdx = prev.cartItems.findIndex(p => String(p.id) === String(item.id));
+      if (existingIdx >= 0) {
+        const updated = [...prev.cartItems];
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          quantity: updated[existingIdx].quantity + 1,
+        };
+        return { ...prev, cartItems: updated };
+      }
+
+      const nextItem: CartItem = {
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        unitPrice: parsePriceToNumber(item.price),
+        quantity: 1,
+        category: item.category,
+        brand: item.brand,
+        licenseType: item.licenseType,
+        glbSrc: item.glbSrc || item.link || `/models/${item.id}.glb`,
+      };
+
+      return { ...prev, cartItems: [...prev.cartItems, nextItem] };
+    });
+  }, [parsePriceToNumber]);
+
+  const removeFromCart = useCallback((productId: string | number) => {
+    setState(prev => ({
+      ...prev,
+      cartItems: prev.cartItems.filter(item => String(item.id) !== String(productId)),
+    }));
+  }, []);
+
+  const updateCartQuantity = useCallback((productId: string | number, quantity: number) => {
+    setState(prev => ({
+      ...prev,
+      cartItems: prev.cartItems
+        .map(item =>
+          String(item.id) === String(productId)
+            ? { ...item, quantity: Math.max(1, quantity) }
+            : item
+        ),
+    }));
+  }, []);
+
+  const clearCart = useCallback(() => {
+    setState(prev => ({ ...prev, cartItems: [] }));
+  }, []);
+
+  const cartItemCount = state.cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const cartTotal = state.cartItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
 
   const openProduct = useCallback(async (product: Product | string | number) => {
     if (typeof product === 'object') {
@@ -190,6 +300,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setSearchQuery,
         setFilters,
         setSortBy,
+        addToCart,
+        removeFromCart,
+        updateCartQuantity,
+        clearCart,
+        cartItemCount,
+        cartTotal,
         applyAIAction,
         setMarketingMode,
         setTheme,

@@ -8,6 +8,8 @@ import { useEffect } from "react";
 import Index from "./pages/Index";
 import Storefront from "./pages/Storefront";
 import Marketing from "./pages/Marketing";
+import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
 import ProductModalWrapper from "./components/ProductModalWrapper";
 import GlobalAIChat from "./components/GlobalAIChat";
@@ -41,6 +43,8 @@ const AppContent = () => {
         <Route path="/" element={<Index />} />
         <Route path="/store" element={<Storefront />} />
         <Route path="/marketing" element={<Marketing />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <ProductModalWrapper />
