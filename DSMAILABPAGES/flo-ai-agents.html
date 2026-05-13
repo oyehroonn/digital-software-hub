@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flo AI Agents | DSM × TechRealm</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    :root { --line:#18181b; --bg:#fafafa; --muted:#71717a; --paper:rgba(255,255,255,.92); }
+    *,*::before,*::after { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:#09090b; margin:0; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+    .font-mono { font-family:'JetBrains Mono',monospace; }
+    .sketch-grid {
+      position:fixed; inset:0;
+      background-image:linear-gradient(rgba(0,0,0,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.028) 1px,transparent 1px);
+      background-size:40px 40px; pointer-events:none; z-index:0;
+    }
+    #flo-progress { position:fixed; top:0; left:0; width:3px; height:0; background:var(--line); z-index:50; transition:height .05s linear; }
+    .flo-wire {
+      background:var(--paper); backdrop-filter:blur(12px);
+      border:1px solid var(--line); border-radius:1.25rem;
+      box-shadow:8px 8px 0 rgba(0,0,0,.04);
+      transition:box-shadow .4s ease, transform .4s cubic-bezier(.23,1,.32,1);
+    }
+    .flo-wire:hover { box-shadow:12px 12px 0 rgba(0,0,0,.06); transform:translate(-2px,-2px); }
+    .flo-pill {
+      display:inline-flex; align-items:center; gap:.45rem;
+      border:1px solid var(--line); border-radius:9999px; padding:.28rem .75rem;
+      font-family:'JetBrains Mono',monospace; font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; background:#fff;
+    }
+    .flo-beam { stroke:var(--line); stroke-width:1.2; fill:none; stroke-dasharray:6 10; animation:floBeam 2.2s linear infinite; opacity:.45; }
+    @keyframes floBeam { to { stroke-dashoffset:-32; } }
+    .flo-reveal { opacity:0; transform:translateY(28px); }
+    .flo-hero-copy, .flo-hero-art { opacity:0; transform:translateY(20px); }
+    .flo-hero-draw { stroke-dasharray:1200; stroke-dashoffset:1200; }
+    @media (prefers-reduced-motion:reduce) {
+      .flo-beam { animation:none; }
+      .flo-reveal { opacity:1; transform:none; }
+      .flo-hero-copy, .flo-hero-art { opacity:1; transform:none; }
+      .flo-wire:hover { transform:none; }
+      .flo-hero-draw { stroke-dashoffset:0 !important; }
+    }
+  </style>
+</head>
+<body class="relative z-10">
+  <svg class="hidden" aria-hidden="true"><defs>
+    <filter id="hand-drawn" x="-3%" y="-3%" width="106%" height="106%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035 0.035" numOctaves="3" seed="2" stitchTiles="stitch" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.2" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs></svg>
+
+  <div class="sketch-grid" aria-hidden="true"></div>
+  <div id="flo-progress" aria-hidden="true"></div>
+
+  <header class="fixed top-0 left-0 right-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center pointer-events-none">
+    <a href="offerings.html" class="pointer-events-auto flo-pill text-[10px] tracking-[.18em] hover:bg-zinc-900 hover:text-white transition-colors duration-300">
+      <i data-lucide="arrow-left" class="w-3 h-3" stroke-width="1.5"></i> Offerings
+    </a>
+    <span class="pointer-events-auto font-mono text-[9px] tracking-[.35em] text-zinc-400 uppercase hidden sm:block">Flo · Agents</span>
+  </header>
+
+  <main class="relative z-10">
+    <!-- Hero -->
+    <section class="min-h-[100svh] flex flex-col justify-center px-6 md:px-12 pt-24 pb-16 max-w-7xl mx-auto">
+      <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div>
+          <div class="flo-hero-copy">
+            <div class="flo-pill mb-6"><i data-lucide="sparkles" class="w-3.5 h-3.5" stroke-width="1.5"></i> Deck intelligence</div>
+            <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight text-zinc-900 leading-[1.05] mb-6">
+              Flo AI<br><span class="text-zinc-400">Agents.</span>
+            </h1>
+            <p class="text-base md:text-lg text-zinc-500 font-light max-w-md leading-relaxed border-l border-zinc-300 pl-5">
+              Executive-ready narratives and agent-assisted slide intelligence — governed, brand-safe, and fast from outline to delivery.
+            </p>
+            <div class="mt-10 flex flex-wrap gap-3">
+              <a href="#pipeline" class="font-mono text-[10px] uppercase tracking-[.2em] border border-zinc-900 bg-zinc-900 text-white px-5 py-2.5 rounded hover:bg-white hover:text-zinc-900 transition-colors duration-300">View pipeline</a>
+              <a href="#governance" class="font-mono text-[10px] uppercase tracking-[.2em] border border-zinc-300 text-zinc-600 px-5 py-2.5 rounded hover:border-zinc-900 hover:text-zinc-900 transition-colors">Governance</a>
+            </div>
+          </div>
+        </div>
+        <div class="flo-hero-art relative min-h-[280px] md:min-h-[360px]">
+          <svg class="w-full h-full max-w-lg mx-auto" viewBox="0 0 400 360" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g filter="url(#hand-drawn)">
+              <rect class="flo-hero-draw" x="48" y="40" width="304" height="200" rx="4" stroke="#18181b" stroke-width="1"/>
+              <rect class="flo-hero-draw" x="64" y="72" width="272" height="12" rx="1" stroke="#a1a1aa" stroke-width="0.75"/>
+              <rect class="flo-hero-draw" x="64" y="96" width="200" height="8" rx="1" stroke="#d4d4d8" stroke-width="0.75"/>
+              <rect class="flo-hero-draw" x="64" y="118" width="240" height="8" rx="1" stroke="#d4d4d8" stroke-width="0.75"/>
+              <rect class="flo-hero-draw" x="64" y="148" width="160" height="8" rx="1" stroke="#d4d4d8" stroke-width="0.75"/>
+              <path class="flo-hero-draw" d="M64 178 L336 178" stroke="#e4e4e7" stroke-width="0.75" stroke-dasharray="4 4"/>
+              <circle class="flo-hero-draw" cx="200" cy="258" r="36" stroke="#18181b" stroke-width="1"/>
+              <path class="flo-hero-draw" d="M200 232 L200 284 M172 258 L228 258" stroke="#18181b" stroke-width="1"/>
+            </g>
+            <text x="200" y="330" text-anchor="middle" class="font-mono" fill="#a1a1aa" font-size="9" letter-spacing="0.2em">AGENT_ORCHESTRATION</text>
+          </svg>
+          <div class="absolute bottom-4 right-4 font-mono text-[8px] tracking-[.25em] text-zinc-400 uppercase">Sketch · v1</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- The gap -->
+    <section class="px-6 md:px-12 py-20 md:py-28 max-w-5xl mx-auto border-t border-dashed border-zinc-200">
+      <div class="flo-reveal max-w-2xl">
+        <p class="font-mono text-[10px] uppercase tracking-[.28em] text-zinc-400 mb-4">The gap</p>
+        <h2 class="text-3xl md:text-4xl font-medium text-zinc-900 tracking-tight mb-6">Decks drift. Narratives splinter. Review cycles balloon.</h2>
+        <p class="text-zinc-500 font-light leading-relaxed text-sm md:text-base">
+          Static templates and one-off copy do not scale when every stakeholder needs a different slice of truth. Flo agents sit in the workflow — not beside it — so structure, tone, and compliance stay aligned from the first outline to the final slide.
+        </p>
+      </div>
+    </section>
+
+    <!-- Pillars -->
+    <section class="px-6 md:px-12 py-12 max-w-7xl mx-auto">
+      <div class="flo-reveal text-center mb-14 md:mb-16">
+        <div class="flo-pill inline-flex mb-4"><i data-lucide="layers" class="w-3 h-3" stroke-width="1.5"></i> Product surface</div>
+        <h2 class="text-3xl md:text-5xl font-medium tracking-tight text-zinc-900">What Flo delivers</h2>
+      </div>
+      <div class="grid sm:grid-cols-2 gap-6 md:gap-8">
+        <article class="flo-reveal flo-wire p-6 md:p-8 flex flex-col gap-4">
+          <div class="w-11 h-11 border border-zinc-900 rounded-md flex items-center justify-center bg-white"><i data-lucide="book-open" class="w-5 h-5" stroke-width="1.2"></i></div>
+          <h3 class="font-mono text-[11px] uppercase tracking-[.15em] text-zinc-500">Narrative intelligence</h3>
+          <p class="text-sm text-zinc-600 font-light leading-relaxed">Story arcs, section logic, and executive tone — suggested and refined with your reviewers in the loop.</p>
+        </article>
+        <article class="flo-reveal flo-wire p-6 md:p-8 flex flex-col gap-4">
+          <div class="w-11 h-11 border border-zinc-900 rounded-md flex items-center justify-center bg-white"><i data-lucide="shield-check" class="w-5 h-5" stroke-width="1.2"></i></div>
+          <h3 class="font-mono text-[11px] uppercase tracking-[.15em] text-zinc-500">Brand-safe output</h3>
+          <p class="text-sm text-zinc-600 font-light leading-relaxed">Guardrails for terminology, disclosure, and visual language — fewer surprises before legal sees the deck.</p>
+        </article>
+        <article class="flo-reveal flo-wire p-6 md:p-8 flex flex-col gap-4">
+          <div class="w-11 h-11 border border-zinc-900 rounded-md flex items-center justify-center bg-white"><i data-lucide="users" class="w-5 h-5" stroke-width="1.2"></i></div>
+          <h3 class="font-mono text-[11px] uppercase tracking-[.15em] text-zinc-500">Human-in-the-loop</h3>
+          <p class="text-sm text-zinc-600 font-light leading-relaxed">Accept, edit, or reject at every layer. Agents accelerate; humans decide what ships.</p>
+        </article>
+        <article class="flo-reveal flo-wire p-6 md:p-8 flex flex-col gap-4">
+          <div class="w-11 h-11 border border-zinc-900 rounded-md flex items-center justify-center bg-white"><i data-lucide="zap" class="w-5 h-5" stroke-width="1.2"></i></div>
+          <h3 class="font-mono text-[11px] uppercase tracking-[.15em] text-zinc-500">Velocity</h3>
+          <p class="text-sm text-zinc-600 font-light leading-relaxed">Shorter paths from outline → narrative → layout-ready slides, without sacrificing quality bar.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Pipeline -->
+    <section id="pipeline" class="px-6 md:px-12 py-20 md:py-28 max-w-6xl mx-auto border-t border-dashed border-zinc-200 scroll-mt-24">
+      <div class="flo-reveal text-center mb-12">
+        <p class="font-mono text-[10px] uppercase tracking-[.28em] text-zinc-400 mb-3">Pipeline</p>
+        <h2 class="text-3xl md:text-4xl font-medium text-zinc-900 tracking-tight">Outline → story → slides</h2>
+      </div>
+      <div class="flo-reveal relative">
+        <svg class="w-full h-auto mb-8 md:mb-0 md:absolute md:inset-0 pointer-events-none hidden md:block" viewBox="0 0 900 120" fill="none" aria-hidden="true">
+          <path class="flo-beam" d="M80 60 H220" />
+          <path class="flo-beam" d="M300 60 H420" style="animation-delay:-.4s"/>
+          <path class="flo-beam" d="M500 60 H620" style="animation-delay:-.8s"/>
+          <path class="flo-beam" d="M700 60 H820" style="animation-delay:-1.2s"/>
+        </svg>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
+          <div class="flo-wire p-5 text-center md:text-left">
+            <span class="font-mono text-[9px] text-zinc-400 tracking-widest">01</span>
+            <p class="font-mono text-xs uppercase tracking-[.12em] mt-2 text-zinc-800">Outline</p>
+            <p class="text-xs text-zinc-500 font-light mt-2">Intent, audience, and section scaffold.</p>
+          </div>
+          <div class="flo-wire p-5 text-center md:text-left">
+            <span class="font-mono text-[9px] text-zinc-400 tracking-widest">02</span>
+            <p class="font-mono text-xs uppercase tracking-[.12em] mt-2 text-zinc-800">Narrate</p>
+            <p class="text-xs text-zinc-500 font-light mt-2">Copy and flow that match voice & policy.</p>
+          </div>
+          <div class="flo-wire p-5 text-center md:text-left">
+            <span class="font-mono text-[9px] text-zinc-400 tracking-widest">03</span>
+            <p class="font-mono text-xs uppercase tracking-[.12em] mt-2 text-zinc-800">Layout</p>
+            <p class="text-xs text-zinc-500 font-light mt-2">Slide-ready structure and emphasis.</p>
+          </div>
+          <div class="flo-wire p-5 text-center md:text-left">
+            <span class="font-mono text-[9px] text-zinc-400 tracking-widest">04</span>
+            <p class="font-mono text-xs uppercase tracking-[.12em] mt-2 text-zinc-800">Review</p>
+            <p class="text-xs text-zinc-500 font-light mt-2">Diffs, approvals, audit trail.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Governance -->
+    <section id="governance" class="px-6 md:px-12 py-20 md:py-28 max-w-5xl mx-auto scroll-mt-24">
+      <div class="flo-reveal flo-wire p-8 md:p-12 relative overflow-hidden">
+        <svg class="absolute top-0 right-0 w-32 h-32 opacity-[0.07] pointer-events-none" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+          <path d="M50 10 L90 30 L90 70 L50 90 L10 70 L10 30 Z" stroke="#18181b" stroke-width="0.75"/>
+        </svg>
+        <div class="relative z-10">
+          <div class="flo-pill mb-6"><i data-lucide="lock" class="w-3 h-3" stroke-width="1.5"></i> Governance</div>
+          <h2 class="text-2xl md:text-3xl font-medium text-zinc-900 tracking-tight mb-4">No silent drift</h2>
+          <p class="text-sm text-zinc-500 font-light max-w-xl leading-relaxed mb-8">
+            Policies, roles, and version history are first-class — so agents amplify your process instead of bypassing it. Built for teams who need auditability without killing speed.
+          </p>
+          <ul class="space-y-3 font-mono text-[10px] uppercase tracking-[.14em] text-zinc-600">
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-zinc-900"></span> Role-scoped actions</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-zinc-900"></span> Traceable edits & approvals</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-zinc-900"></span> Brand & compliance hooks</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="px-6 md:px-12 py-24 md:py-32 max-w-4xl mx-auto text-center border-t border-dashed border-zinc-200">
+      <div class="flo-reveal">
+        <i data-lucide="pen-tool" class="w-10 h-10 mx-auto text-zinc-900 mb-6 opacity-80" stroke-width="1"></i>
+        <h2 class="text-3xl md:text-5xl font-medium tracking-tight text-zinc-900 mb-4">Draft your next deck with Flo</h2>
+        <p class="text-zinc-500 font-light max-w-md mx-auto text-sm mb-10">DSM TechRealm engineers the systems around Flo — integrations, workflows, and production guardrails.</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <a href="offerings.html" class="font-mono text-[10px] uppercase tracking-[.2em] border border-zinc-900 bg-zinc-900 text-white px-8 py-3 rounded hover:bg-white hover:text-zinc-900 transition-colors duration-300">Back to offerings</a>
+          <a href="offerings.html" class="font-mono text-[10px] uppercase tracking-[.2em] text-zinc-500 border-b border-dashed border-zinc-400 hover:text-zinc-900 hover:border-zinc-900 transition-colors pb-0.5">Full DSM experience</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="relative z-10 px-6 py-12 text-center border-t border-zinc-200">
+    <p class="font-mono text-[9px] tracking-[.35em] uppercase text-zinc-400">DSM Techrealm Systems © 2025</p>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+    gsap.registerPlugin(ScrollTrigger);
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!reduced) {
+      gsap.to('.flo-hero-draw', {
+        strokeDashoffset: 0,
+        duration: 2.2,
+        ease: 'power2.inOut',
+        stagger: 0.08,
+        delay: 0.2
+      });
+      gsap.to('.flo-hero-copy', { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', delay: 0.15 });
+      gsap.to('.flo-hero-art', { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', delay: 0.28 });
+
+      gsap.utils.toArray('.flo-reveal').forEach(function(el) {
+        gsap.to(el, {
+          scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' },
+          opacity: 1,
+          y: 0,
+          duration: 0.85,
+          ease: 'power3.out'
+        });
+      });
+
+      ScrollTrigger.create({
+        trigger: document.body,
+        start: 'top top',
+        end: 'bottom bottom',
+        onUpdate: function(self) {
+          const bar = document.getElementById('flo-progress');
+          if (bar) bar.style.height = (self.progress * 100) + '%';
+        }
+      });
+    } else {
+      document.querySelectorAll('.flo-reveal').forEach(function(el) {
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+      });
+    }
+  </script>
+</body>
+</html>

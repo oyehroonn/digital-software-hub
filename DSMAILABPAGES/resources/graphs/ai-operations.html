@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Operational Efficiency — DSM Research</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#FCFCF6;color:#090908;font-family:'JetBrains Mono',monospace;-webkit-font-smoothing:antialiased;padding:3rem 1.5rem;display:flex;justify-content:center;align-items:center;min-height:100vh}
+        .poster{max-width:900px;width:100%;background:#FDFDFA;border:1px solid rgba(0,0,0,.08);box-shadow:0 1px 3px rgba(0,0,0,.04);padding:3.5rem 3rem;position:relative}
+        .poster::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#325B39,#6D8B71,#325B39)}
+        .label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#71717a}
+        .title{font-family:'Inter',sans-serif;font-size:1.65rem;font-weight:600;line-height:1.25;margin:.75rem 0 .25rem;color:#090908}
+        .subtitle{font-size:11px;color:#71717a;max-width:560px;line-height:1.6}
+        .dashboard{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2.5rem}
+        .panel{background:#FAFAF8;border:1px solid #e5e5e5;border-radius:4px;padding:1.5rem;position:relative}
+        .panel-label{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#71717a;margin-bottom:1rem}
+        .big-number{font-family:'Inter',sans-serif;font-size:2rem;font-weight:600;color:#325B39;line-height:1}
+        .big-unit{font-size:.9rem;color:#71717a;font-weight:400}
+        .change{display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;border-radius:3px;margin-left:.5rem}
+        .change.good{background:#325B39;color:#fff}
+        .change.neutral{background:#f4f4f5;color:#71717a}
+        .mini-chart{margin-top:1rem}
+        .axis-label{font-size:8px;fill:#a1a1aa;letter-spacing:.08em}
+        .grid-line{stroke:#e5e5e5;stroke-width:.5}
+        .bar-group{margin-top:.75rem;display:flex;flex-direction:column;gap:.5rem}
+        .bar-row{display:flex;align-items:center;gap:.5rem}
+        .bar-name{font-size:9px;color:#71717a;width:60px;text-align:right;flex-shrink:0}
+        .bar-track{flex:1;height:12px;background:#f0f0ec;border-radius:2px;overflow:hidden}
+        .bar-fill{height:100%;border-radius:2px}
+        .bar-value{font-size:9px;font-weight:600;color:#394547;width:36px;flex-shrink:0}
+        .summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:2rem;padding:1.25rem;background:#FAFAF8;border:1px solid #e5e5e5;border-radius:4px}
+        .summary-item{text-align:center}
+        .summary-val{font-size:1rem;font-weight:600;color:#090908}
+        .summary-lbl{font-size:8px;color:#a1a1aa;margin-top:.15rem;letter-spacing:.1em;text-transform:uppercase}
+        .footer-note{font-size:9px;color:#a1a1aa;margin-top:2rem;line-height:1.6;border-top:1px solid #e5e5e5;padding-top:1rem;display:flex;justify-content:space-between}
+        @media(max-width:640px){.poster{padding:2rem 1.25rem}.title{font-size:1.25rem}.dashboard{grid-template-columns:1fr}.summary-strip{grid-template-columns:repeat(2,1fr)}}
+        @media print{body{padding:0}.poster{box-shadow:none;border:none}}
+    </style>
+</head>
+<body>
+    <div class="poster">
+        <div class="label">DSM × TechRealm Research · Operational Dashboard</div>
+        <h1 class="title">AI Operational Efficiency Gains</h1>
+        <p class="subtitle">Real-time operational metrics comparing baseline performance against AI-augmented systems across four key dimensions. Data from production deployments.</p>
+
+        <div class="dashboard">
+            <!-- Panel 1: Response Time -->
+            <div class="panel">
+                <div class="panel-label">Avg. Response Time</div>
+                <div class="big-number">142<span class="big-unit">ms</span><span class="change good">−68%</span></div>
+                <div class="mini-chart">
+                    <svg viewBox="0 0 300 80" width="100%" style="overflow:visible">
+                        <!-- Sparkline background -->
+                        <line x1="0" y1="75" x2="300" y2="75" class="grid-line"/>
+                        <line x1="0" y1="50" x2="300" y2="50" class="grid-line"/>
+                        <line x1="0" y1="25" x2="300" y2="25" class="grid-line"/>
+                        <!-- Area -->
+                        <path d="M0,65 L30,60 L60,55 L90,48 L120,42 L150,38 L180,30 L210,25 L240,20 L270,16 L300,14 L300,75 L0,75Z" fill="#325B39" opacity=".1"/>
+                        <!-- Line -->
+                        <polyline points="0,65 30,60 60,55 90,48 120,42 150,38 180,30 210,25 240,20 270,16 300,14" fill="none" stroke="#325B39" stroke-width="1.5"/>
+                        <circle cx="300" cy="14" r="2.5" fill="#325B39"/>
+                        <!-- Labels -->
+                        <text x="0" y="74" class="axis-label">Jan</text>
+                        <text x="150" y="74" class="axis-label">Jun</text>
+                        <text x="290" y="74" class="axis-label" text-anchor="end">Dec</text>
+                    </svg>
+                </div>
+                <div style="font-size:9px;color:#a1a1aa;margin-top:.5rem">Baseline: 440ms · Target: &lt;200ms</div>
+            </div>
+
+            <!-- Panel 2: Error Rate -->
+            <div class="panel">
+                <div class="panel-label">System Error Rate</div>
+                <div class="big-number">0.12<span class="big-unit">%</span><span class="change good">−84%</span></div>
+                <div class="mini-chart">
+                    <svg viewBox="0 0 300 80" width="100%" style="overflow:visible">
+                        <line x1="0" y1="75" x2="300" y2="75" class="grid-line"/>
+                        <line x1="0" y1="50" x2="300" y2="50" class="grid-line"/>
+                        <line x1="0" y1="25" x2="300" y2="25" class="grid-line"/>
+                        <path d="M0,20 L30,25 L60,30 L90,35 L120,42 L150,50 L180,55 L210,60 L240,64 L270,67 L300,69 L300,75 L0,75Z" fill="#325B39" opacity=".1"/>
+                        <polyline points="0,20 30,25 60,30 90,35 120,42 150,50 180,55 210,60 240,64 270,67 300,69" fill="none" stroke="#325B39" stroke-width="1.5"/>
+                        <circle cx="300" cy="69" r="2.5" fill="#325B39"/>
+                        <text x="0" y="15" style="font-size:8px;fill:#c0504d;font-weight:600">0.75%</text>
+                        <text x="290" y="66" style="font-size:8px;fill:#325B39;font-weight:600" text-anchor="end">0.12%</text>
+                    </svg>
+                </div>
+                <div style="font-size:9px;color:#a1a1aa;margin-top:.5rem">Baseline: 0.75% · SLA target: &lt;0.25%</div>
+            </div>
+
+            <!-- Panel 3: Throughput -->
+            <div class="panel">
+                <div class="panel-label">Processing Throughput</div>
+                <div class="big-number">14.2<span class="big-unit">k/hr</span><span class="change good">+340%</span></div>
+                <div class="bar-group">
+                    <div class="bar-row">
+                        <span class="bar-name">Before</span>
+                        <div class="bar-track"><div class="bar-fill" style="width:23%;background:#394547"></div></div>
+                        <span class="bar-value">3.2k</span>
+                    </div>
+                    <div class="bar-row">
+                        <span class="bar-name">After</span>
+                        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#325B39"></div></div>
+                        <span class="bar-value">14.2k</span>
+                    </div>
+                    <div class="bar-row">
+                        <span class="bar-name">Peak</span>
+                        <div class="bar-track"><div class="bar-fill" style="width:78%;background:#6D8B71"></div></div>
+                        <span class="bar-value">18.7k</span>
+                    </div>
+                </div>
+                <div style="font-size:9px;color:#a1a1aa;margin-top:.75rem">Transactions per hour · sustained load test</div>
+            </div>
+
+            <!-- Panel 4: Cost Per Transaction -->
+            <div class="panel">
+                <div class="panel-label">Cost Per Transaction</div>
+                <div class="big-number">$0.003<span class="change good">−71%</span></div>
+                <div class="bar-group">
+                    <div class="bar-row">
+                        <span class="bar-name">Compute</span>
+                        <div class="bar-track"><div class="bar-fill" style="width:35%;background:#325B39"></div></div>
+                        <span class="bar-value">$0.001</span>
+                    </div>
+                    <div class="bar-row">
+                        <span class="bar-name">Storage</span>
+                        <div class="bar-track"><div class="bar-fill" style="width:18%;background:#6D8B71"></div></div>
+                        <span class="bar-value">$0.0006</span>
+                    </div>
+                    <div class="bar-row">
+                        <span class="bar-name">Network</span>
+                        <div class="bar-track"><div class="bar-fill" style="width:22%;background:#8FA98F"></div></div>
+                        <span class="bar-value">$0.0007</span>
+                    </div>
+                    <div class="bar-row">
+                        <span class="bar-name">AI Infra</span>
+                        <div class="bar-track"><div class="bar-fill" style="width:25%;background:#A7CCD1"></div></div>
+                        <span class="bar-value">$0.0008</span>
+                    </div>
+                </div>
+                <div style="font-size:9px;color:#a1a1aa;margin-top:.75rem">Baseline: $0.0103/txn · blended across tiers</div>
+            </div>
+        </div>
+
+        <!-- Summary strip -->
+        <div class="summary-strip">
+            <div class="summary-item">
+                <div class="summary-val" style="color:#325B39">99.97%</div>
+                <div class="summary-lbl">Uptime SLA</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-val" style="color:#325B39">2.1M</div>
+                <div class="summary-lbl">Daily Transactions</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-val" style="color:#325B39">47</div>
+                <div class="summary-lbl">Active Deployments</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-val" style="color:#325B39">$1.2M</div>
+                <div class="summary-lbl">Annual Savings</div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            <span>DSM Research · Q1 2026 · production metrics across 47 deployments</span>
+            <span>monitoring: real-time telemetry, 30-day rolling averages</span>
+        </div>
+    </div>
+</body>
+</html>

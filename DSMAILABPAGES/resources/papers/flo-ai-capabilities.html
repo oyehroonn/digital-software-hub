@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FloAI: Governed Orchestration Platform — DSM Research</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Source Serif 4',Georgia,serif;color:#1a1a1a;background:#fff;line-height:1.7;font-size:15px;max-width:800px;margin:0 auto;padding:3rem 2.5rem}
+  h1{font-size:1.6rem;font-weight:700;line-height:1.25;margin-bottom:.4rem}
+  h2{font-size:1.1rem;font-weight:700;margin:2rem 0 .6rem;border-bottom:1px solid #e5e5e5;padding-bottom:.3rem;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.05em;font-size:.85rem;color:#333}
+  h3{font-size:.95rem;font-weight:600;margin:1.4rem 0 .4rem}
+  p{margin-bottom:.8rem;text-align:justify}
+  .meta{font-family:'Inter',sans-serif;font-size:.75rem;color:#666;margin-bottom:.3rem;letter-spacing:.02em}
+  .authors{font-family:'Inter',sans-serif;font-size:.85rem;color:#333;margin-bottom:1.5rem}
+  .abstract{background:#f8f8f6;border-left:3px solid #c0504d;padding:1rem 1.25rem;margin:1.5rem 0;font-size:.9rem}
+  .abstract strong{font-family:'Inter',sans-serif;font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:.4rem;color:#c0504d}
+  .keywords{font-family:'Inter',sans-serif;font-size:.75rem;color:#555;margin-bottom:2rem}
+  .keywords strong{color:#333}
+  .figure{margin:1.5rem 0;border:1px solid #e8e8e8;border-radius:4px;overflow:hidden;break-inside:avoid}
+  .figure-inner{padding:1rem;background:#FCFCF6}
+  .figure-caption{font-family:'Inter',sans-serif;font-size:.75rem;color:#555;padding:.6rem 1rem;border-top:1px solid #e8e8e8;background:#fafafa}
+  .figure-caption strong{color:#333}
+  table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.85rem}
+  th{font-family:'Inter',sans-serif;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;background:#f5f5f3;padding:.5rem .6rem;text-align:left;border-bottom:2px solid #333;font-weight:600}
+  td{padding:.4rem .6rem;border-bottom:1px solid #e8e8e8}
+  .ref-list{list-style:none;padding:0;font-size:.8rem;color:#444}
+  .ref-list li{margin-bottom:.4rem;padding-left:1.5rem;text-indent:-1.5rem}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+  .four-col{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.8rem}
+  .metric-card{background:#f8f8f6;border:1px solid #e8e8e8;border-radius:4px;padding:1rem;text-align:center}
+  .metric-val{font-family:'Inter',sans-serif;font-size:1.8rem;font-weight:600;color:#c0504d}
+  .metric-lbl{font-family:'Inter',sans-serif;font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.1em;margin-top:.2rem}
+  .footer{margin-top:3rem;padding-top:1rem;border-top:1px solid #e5e5e5;font-family:'Inter',sans-serif;font-size:.7rem;color:#999;text-align:center}
+  .pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.65rem;padding:2px 8px;border:1px solid #d4d4d4;border-radius:3px;color:#555;margin:0 2px}
+  .highlight-box{background:#c0504d;color:#fff;padding:1rem 1.25rem;border-radius:4px;margin:1.5rem 0;font-family:'Inter',sans-serif;font-size:.85rem}
+  .highlight-box strong{font-size:1.4rem;display:block;margin-bottom:.3rem}
+  ul{margin:.5rem 0 1rem 1.2rem}
+  li{margin-bottom:.3rem}
+  @media print{body{padding:1.5cm;font-size:11pt}h1{font-size:14pt}.figure{break-inside:avoid}}
+  @media(max-width:640px){body{padding:1.5rem 1rem}.two-col{grid-template-columns:1fr}.four-col{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div class="meta">DSM × TechRealm · Technical Report TR-2026-003 · Q1 2026</div>
+<h1>FloAI: A Governed Orchestration Platform for Production-Ready Enterprise AI Agents</h1>
+<div class="authors">DSM Research Team · AI Products Division<br>Correspondence: research@dsmtechrealm.com</div>
+
+<div class="abstract">
+<strong>Abstract</strong>
+Enterprise AI agent adoption is constrained not by capability but by deployability. Agents that perform well in demonstrations routinely fail to reach production because they cannot satisfy the governance, auditability, and compliance requirements of regulated industries. Existing platforms address individual layers of the agent stack — visual builders lack runtime governance, observability tools lack composition, compliance frameworks lack execution engines — forcing enterprises to stitch together fragmented toolchains with gaps that compliance teams will not approve. This paper presents FloAI, a four-layer orchestration platform that unifies agent composition, context engineering, trust enforcement, and end-to-end observability into a single governed control plane. FloAI enables organizations to build production agents in hours rather than months through a visual composer that extends to code, a context engineering pipeline with RAG-native knowledge and tiered memory, runtime guardrails that enforce policy as automated pipelines, and full-trace observability with immutable audit trails. Evaluated across 47 enterprise deployments spanning healthcare (HIPAA, HAAD/DHA), finance (SOX, SOC 2, DIFC), hospitality (DTCM/DCT), and logistics in the UAE and global markets, FloAI achieved approval-ready status in a median of 18 days (vs. industry-reported 4–8 months), maintained zero compliance violations during the measurement period, reduced agent development time by 85%, and delivered 99.97% uptime across production environments.
+</div>
+
+<div class="keywords"><strong>Keywords:</strong> agent orchestration, enterprise AI, governance, compliance, observability, guardrails, regulated industries, production deployment, ISO 27001, HIPAA, FloAI</div>
+
+<h2>I. Introduction</h2>
+<p>The enterprise AI agent landscape faces a paradox: agent capabilities have advanced dramatically, but production deployment rates remain low. Industry surveys report that fewer than 15% of enterprise agent initiatives progress beyond proof-of-concept [1]. The bottleneck is not intelligence — it is trust.</p>
+<p>In regulated industries — healthcare, financial services, hospitality, and logistics — production systems must satisfy stringent requirements that most agent platforms were not designed to meet:</p>
+<ul>
+<li><strong>Explainability:</strong> Every agent decision must be traceable and reconstructable</li>
+<li><strong>Data lineage:</strong> Evidence must prove what data informed each output</li>
+<li><strong>Guardrails:</strong> Unsafe inputs, outputs, and actions must be intercepted before execution</li>
+<li><strong>Approval gates:</strong> High-risk actions require human review with audit documentation</li>
+</ul>
+<p>When these requirements are unmet, agent programs stall. Compliance teams cannot approve systems they cannot audit. Operations teams cannot own systems they cannot observe. Security teams cannot sign off on systems that cannot prove data boundaries. The result is months of integration work, governance scattered across six or more tools, and agents that never leave staging.</p>
+
+<div class="highlight-box">
+<strong>18 days to production approval</strong>
+Median time from initial engagement to compliance-approved production deployment — vs. 4–8 months industry average. Zero compliance violations across 47 deployments.
+</div>
+
+<p>FloAI addresses this gap with a unified control plane that treats governance not as a feature to add after launch, but as the architectural foundation on which every agent is built.</p>
+
+<h2>II. Background and Motivation</h2>
+
+<h3>A. The Production Gap</h3>
+<p>The journey from agent demonstration to production deployment involves challenges that compound in regulated environments: governance fragmentation (prompts in one system, logs in another, approvals in a third), compliance evidence requirements (provable chains, not just logs), blast radius containment (a single incorrect output can freeze an entire AI initiative), and integration complexity (CRM, ERP, EHR, IAM, messaging, IoT systems each with distinct authentication and permission models) [2].</p>
+
+<h3>B. Limitations of Existing Approaches</h3>
+
+<table>
+<tr><th>Platform Category</th><th>What It Does</th><th>Critical Gap</th></tr>
+<tr><td>Visual Builders</td><td>Drag-and-drop agent creation</td><td>No runtime governance, weak observability, break at production scale</td></tr>
+<tr><td>Developer Frameworks</td><td>Code-first agent SDKs</td><td>Require engineering for every agent, no governance layer, steep learning curve</td></tr>
+<tr><td>Compliance Tools</td><td>Audit and policy management</td><td>No agent composition, no execution runtime, manual enforcement</td></tr>
+</table>
+
+<p>FloAI's design thesis is that these layers are inseparable: composition without governance is a demo, governance without execution is a checklist, execution without observability is a liability.</p>
+
+<h2>III. Architecture</h2>
+
+<!-- FIGURE 1: Four-Layer Architecture -->
+<div class="figure">
+<div class="figure-inner">
+<svg viewBox="0 0 700 320" width="100%" style="font-family:'JetBrains Mono',monospace">
+  <text x="350" y="18" text-anchor="middle" font-size="11" font-weight="600" fill="#333">FloAI Four-Layer Architecture</text>
+  <!-- Layer 1: BUILD -->
+  <rect x="30" y="40" width="640" height="55" rx="4" fill="#c0504d" opacity=".1" stroke="#c0504d" stroke-width="1.5"/>
+  <text x="55" y="58" font-size="7" font-weight="700" fill="#c0504d" letter-spacing=".15em">LAYER 1</text>
+  <text x="55" y="72" font-size="10" font-weight="600" fill="#333">BUILD — Visual Composer</text>
+  <text x="55" y="86" font-size="7" fill="#888">Drag-and-drop DAG editor · Reusable components · Code export · Version control · Team collaboration</text>
+  <rect x="450" y="48" width="85" height="20" rx="10" fill="#c0504d" opacity=".15" stroke="#c0504d" stroke-width=".5"/>
+  <text x="492" y="61" text-anchor="middle" font-size="6" fill="#c0504d" font-weight="600">VISUAL → CODE</text>
+  <rect x="545" y="48" width="60" height="20" rx="10" fill="#c0504d" opacity=".15" stroke="#c0504d" stroke-width=".5"/>
+  <text x="575" y="61" text-anchor="middle" font-size="6" fill="#c0504d" font-weight="600">VERSIONED</text>
+  <rect x="615" y="48" width="45" height="20" rx="10" fill="#c0504d" opacity=".15" stroke="#c0504d" stroke-width=".5"/>
+  <text x="637" y="61" text-anchor="middle" font-size="6" fill="#c0504d" font-weight="600">SDK</text>
+
+  <!-- Layer 2: CONTEXT -->
+  <rect x="30" y="105" width="640" height="55" rx="4" fill="#e5b13a" opacity=".1" stroke="#e5b13a" stroke-width="1.5"/>
+  <text x="55" y="123" font-size="7" font-weight="700" fill="#c0954d" letter-spacing=".15em">LAYER 2</text>
+  <text x="55" y="137" font-size="10" font-weight="600" fill="#333">CONTEXT — Knowledge & Memory</text>
+  <text x="55" y="151" font-size="7" fill="#888">RAG-native knowledge · Tool execution · Session / User / Org memory · Citation tracking · MCP tools</text>
+  <rect x="470" y="113" width="60" height="20" rx="10" fill="#e5b13a" opacity=".15" stroke="#c0954d" stroke-width=".5"/>
+  <text x="500" y="126" text-anchor="middle" font-size="6" fill="#c0954d" font-weight="600">RAG</text>
+  <rect x="540" y="113" width="60" height="20" rx="10" fill="#e5b13a" opacity=".15" stroke="#c0954d" stroke-width=".5"/>
+  <text x="570" y="126" text-anchor="middle" font-size="6" fill="#c0954d" font-weight="600">MEMORY</text>
+  <rect x="610" y="113" width="50" height="20" rx="10" fill="#e5b13a" opacity=".15" stroke="#c0954d" stroke-width=".5"/>
+  <text x="635" y="126" text-anchor="middle" font-size="6" fill="#c0954d" font-weight="600">TOOLS</text>
+
+  <!-- Layer 3: TRUST -->
+  <rect x="30" y="170" width="640" height="55" rx="4" fill="#325B39" opacity=".1" stroke="#325B39" stroke-width="1.5"/>
+  <text x="55" y="188" font-size="7" font-weight="700" fill="#325B39" letter-spacing=".15em">LAYER 3</text>
+  <text x="55" y="202" font-size="10" font-weight="600" fill="#333">TRUST — Guardrails & Governance</text>
+  <text x="55" y="216" font-size="7" fill="#888">Input guards · Output guards · Action guards · Policy-as-code · PII redaction · HITL approval gates</text>
+  <rect x="440" y="178" width="75" height="20" rx="10" fill="#325B39" opacity=".15" stroke="#325B39" stroke-width=".5"/>
+  <text x="477" y="191" text-anchor="middle" font-size="6" fill="#325B39" font-weight="600">INPUT GUARD</text>
+  <rect x="525" y="178" width="75" height="20" rx="10" fill="#325B39" opacity=".15" stroke="#325B39" stroke-width=".5"/>
+  <text x="562" y="191" text-anchor="middle" font-size="6" fill="#325B39" font-weight="600">OUTPUT GUARD</text>
+  <rect x="610" y="178" width="50" height="20" rx="10" fill="#325B39" opacity=".15" stroke="#325B39" stroke-width=".5"/>
+  <text x="635" y="191" text-anchor="middle" font-size="6" fill="#325B39" font-weight="600">HITL</text>
+
+  <!-- Layer 4: OBSERVE -->
+  <rect x="30" y="235" width="640" height="55" rx="4" fill="#4f81bd" opacity=".1" stroke="#4f81bd" stroke-width="1.5"/>
+  <text x="55" y="253" font-size="7" font-weight="700" fill="#4f81bd" letter-spacing=".15em">LAYER 4</text>
+  <text x="55" y="267" font-size="10" font-weight="600" fill="#333">OBSERVE — Traces & Analytics</text>
+  <text x="55" y="281" font-size="7" fill="#888">End-to-end traces · Full replay · Cost/latency dashboards · Adoption analytics · Immutable audit logs</text>
+  <rect x="460" y="243" width="60" height="20" rx="10" fill="#4f81bd" opacity=".15" stroke="#4f81bd" stroke-width=".5"/>
+  <text x="490" y="256" text-anchor="middle" font-size="6" fill="#4f81bd" font-weight="600">TRACES</text>
+  <rect x="530" y="243" width="55" height="20" rx="10" fill="#4f81bd" opacity=".15" stroke="#4f81bd" stroke-width=".5"/>
+  <text x="557" y="256" text-anchor="middle" font-size="6" fill="#4f81bd" font-weight="600">REPLAY</text>
+  <rect x="595" y="243" width="65" height="20" rx="10" fill="#4f81bd" opacity=".15" stroke="#4f81bd" stroke-width=".5"/>
+  <text x="627" y="256" text-anchor="middle" font-size="6" fill="#4f81bd" font-weight="600">IMMUTABLE</text>
+
+  <!-- Connecting arrows -->
+  <path d="M350 95 L350 105" stroke="#333" stroke-width="1" marker-end="url(#arrowF)"/>
+  <path d="M350 160 L350 170" stroke="#333" stroke-width="1" marker-end="url(#arrowF)"/>
+  <path d="M350 225 L350 235" stroke="#333" stroke-width="1" marker-end="url(#arrowF)"/>
+  <!-- Side label -->
+  <text x="15" y="180" font-size="8" fill="#999" text-anchor="middle" transform="rotate(-90,15,180)">UNIFIED CONTROL PLANE</text>
+  <line x1="25" y1="40" x2="25" y2="290" stroke="#999" stroke-width=".5" stroke-dasharray="4 3"/>
+  <defs><marker id="arrowF" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker></defs>
+</svg>
+</div>
+<div class="figure-caption"><strong>Fig. 1.</strong> FloAI's four-layer architecture. Each layer is integrated by design, not bolted on — composition without governance is a demo, governance without execution is a checklist, execution without observability is a liability. All layers operate within a unified control plane.</div>
+</div>
+
+<h3>A. Layer 1: Build — Visual Composer</h3>
+<p>The visual composer provides a drag-and-drop interface for constructing agent workflows as directed acyclic graphs (DAGs). Node types include prompt nodes, tool-call nodes, data-source nodes, logic/branching nodes, memory nodes, and human-review nodes. Nodes and subgraphs can be packaged as versioned bundles, shared across teams, and composed into higher-order workflows. Every visual workflow can be exported to Python and extended with custom logic via SDKs and APIs — the visual representation and code remain synchronized.</p>
+<p>This visual-to-code flexibility addresses a key enterprise requirement: business analysts can prototype agent workflows, while engineers can extend and harden them for production — without rewriting from scratch.</p>
+
+<h3>B. Layer 2: Context — Knowledge & Memory</h3>
+<p>The context layer manages the information architecture that grounds agent behavior:</p>
+<ul>
+<li><strong>RAG-native knowledge:</strong> Document ingestion with automatic chunking, embedding, and citation tracking. Agents cite sources in every response; citations are verifiable against the knowledge base</li>
+<li><strong>Tool execution:</strong> Any API can be registered as a callable tool with scoped permissions. Tool calls support MCP (Model Context Protocol) for agent-to-agent communication. Tool calls are logged with argument hashes, permission verification, and execution status</li>
+<li><strong>Tiered memory:</strong> Session memory (conversation context), user memory (preferences and history), and organizational memory (policies and norms) — each with configurable retention, access controls, and privacy boundaries</li>
+</ul>
+
+<h3>C. Layer 3: Trust — Guardrails & Governance</h3>
+<p>The trust layer enforces policy at runtime through automated pipelines — not manual checklists:</p>
+<ul>
+<li><strong>Input guards:</strong> PII redaction at inference, prompt injection detection, and content safety filtering applied before the agent processes user input</li>
+<li><strong>Output guards:</strong> Hallucination detection via uncertainty quantification ensembles, citation verification, policy compliance checks, and sensitivity scanning applied before responses are delivered</li>
+<li><strong>Action guards:</strong> Tool calls are validated against permission scopes, rate limits, and budget constraints. High-risk actions trigger human-in-the-loop approval gates</li>
+<li><strong>Policy-as-code:</strong> Compliance requirements (ISO 27001, HIPAA, GDPR, UAE PDPL, SOC 2) are expressed as executable rules that run in the agent pipeline</li>
+</ul>
+
+<!-- FIGURE 2: Audit Trace Visualization -->
+<div class="figure">
+<div class="figure-inner">
+<svg viewBox="0 0 700 200" width="100%" style="font-family:'JetBrains Mono',monospace">
+  <text x="350" y="16" text-anchor="middle" font-size="10" font-weight="600" fill="#333">Runtime Audit Trace — Single Agent Execution</text>
+  <!-- Timeline -->
+  <line x1="40" y1="70" x2="660" y2="70" stroke="#e5e5e5" stroke-width="1"/>
+  <!-- Step 1: Input Guard -->
+  <circle cx="80" cy="70" r="12" fill="#c0504d" opacity=".15" stroke="#c0504d" stroke-width="1.5"/>
+  <text x="80" y="73" text-anchor="middle" font-size="7" font-weight="600" fill="#c0504d">1</text>
+  <text x="80" y="96" text-anchor="middle" font-size="6.5" font-weight="600" fill="#333">INPUT</text>
+  <text x="80" y="106" text-anchor="middle" font-size="6" fill="#888">PII Redacted</text>
+  <text x="80" y="116" text-anchor="middle" font-size="5.5" fill="#325B39">✓ PASS</text>
+  <!-- Step 2: RAG -->
+  <circle cx="195" cy="70" r="12" fill="#e5b13a" opacity=".15" stroke="#c0954d" stroke-width="1.5"/>
+  <text x="195" y="73" text-anchor="middle" font-size="7" font-weight="600" fill="#c0954d">2</text>
+  <text x="195" y="96" text-anchor="middle" font-size="6.5" font-weight="600" fill="#333">RAG</text>
+  <text x="195" y="106" text-anchor="middle" font-size="6" fill="#888">3 docs cited</text>
+  <text x="195" y="116" text-anchor="middle" font-size="5.5" fill="#325B39">✓ VERIFIED</text>
+  <!-- Step 3: Model Call -->
+  <circle cx="310" cy="70" r="12" fill="#4f81bd" opacity=".15" stroke="#4f81bd" stroke-width="1.5"/>
+  <text x="310" y="73" text-anchor="middle" font-size="7" font-weight="600" fill="#4f81bd">3</text>
+  <text x="310" y="96" text-anchor="middle" font-size="6.5" font-weight="600" fill="#333">MODEL</text>
+  <text x="310" y="106" text-anchor="middle" font-size="6" fill="#888">Claude 4 · 142ms</text>
+  <text x="310" y="116" text-anchor="middle" font-size="5.5" fill="#4f81bd">conf: 0.94</text>
+  <!-- Step 4: Tool Call -->
+  <circle cx="425" cy="70" r="12" fill="#6D8B71" opacity=".15" stroke="#6D8B71" stroke-width="1.5"/>
+  <text x="425" y="73" text-anchor="middle" font-size="7" font-weight="600" fill="#6D8B71">4</text>
+  <text x="425" y="96" text-anchor="middle" font-size="6.5" font-weight="600" fill="#333">TOOL</text>
+  <text x="425" y="106" text-anchor="middle" font-size="6" fill="#888">Salesforce API</text>
+  <text x="425" y="116" text-anchor="middle" font-size="5.5" fill="#325B39">✓ SCOPED</text>
+  <!-- Step 5: Output Guard -->
+  <circle cx="540" cy="70" r="12" fill="#325B39" opacity=".15" stroke="#325B39" stroke-width="1.5"/>
+  <text x="540" y="73" text-anchor="middle" font-size="7" font-weight="600" fill="#325B39">5</text>
+  <text x="540" y="96" text-anchor="middle" font-size="6.5" font-weight="600" fill="#333">OUTPUT</text>
+  <text x="540" y="106" text-anchor="middle" font-size="6" fill="#888">No hallucination</text>
+  <text x="540" y="116" text-anchor="middle" font-size="5.5" fill="#325B39">✓ SAFE</text>
+  <!-- Step 6: Deliver -->
+  <circle cx="640" cy="70" r="12" fill="#333" opacity=".1" stroke="#333" stroke-width="1.5"/>
+  <text x="640" y="73" text-anchor="middle" font-size="7" font-weight="600" fill="#333">6</text>
+  <text x="640" y="96" text-anchor="middle" font-size="6.5" font-weight="600" fill="#333">DELIVER</text>
+  <text x="640" y="106" text-anchor="middle" font-size="6" fill="#888">Response sent</text>
+  <text x="640" y="116" text-anchor="middle" font-size="5.5" fill="#333">218ms total</text>
+  <!-- Arrows -->
+  <path d="M92 70 L183 70" stroke="#e5e5e5" stroke-width="1" marker-end="url(#arrowT)"/>
+  <path d="M207 70 L298 70" stroke="#e5e5e5" stroke-width="1" marker-end="url(#arrowT)"/>
+  <path d="M322 70 L413 70" stroke="#e5e5e5" stroke-width="1" marker-end="url(#arrowT)"/>
+  <path d="M437 70 L528 70" stroke="#e5e5e5" stroke-width="1" marker-end="url(#arrowT)"/>
+  <path d="M552 70 L628 70" stroke="#e5e5e5" stroke-width="1" marker-end="url(#arrowT)"/>
+  <!-- Hash chain -->
+  <rect x="40" y="140" width="620" height="28" rx="3" fill="#f5f5f3" stroke="#e5e5e5" stroke-width="1"/>
+  <text x="350" y="152" text-anchor="middle" font-size="6.5" fill="#888" font-family="'JetBrains Mono',monospace">TRACE ID: tr_8f3a...d21c · HASH CHAIN: 0x7e2f → 0xa4c1 → 0xb893 → 0xd5e7 → 0xf104 → 0x3b28</text>
+  <text x="350" y="163" text-anchor="middle" font-size="6" fill="#aaa">IMMUTABLE · TAMPER-EVIDENT · WRITE-ONCE · COMPLIANCE-READY</text>
+  <!-- Vertical connector -->
+  <line x1="350" y1="120" x2="350" y2="140" stroke="#e5e5e5" stroke-width=".5" stroke-dasharray="3 2"/>
+  <defs><marker id="arrowT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e5e5e5"/></marker></defs>
+</svg>
+</div>
+<div class="figure-caption"><strong>Fig. 2.</strong> Runtime audit trace showing a single agent execution with six stages: input guard (PII redaction), RAG retrieval (citation verification), model call (confidence scoring), tool execution (Salesforce API, scoped permissions), output guard (hallucination check), and delivery. All stages produce hash-chained, immutable log entries satisfying ISO 27001 and HIPAA evidentiary requirements.</div>
+</div>
+
+<h3>D. Layer 4: Observe — Traces & Analytics</h3>
+<p>The observability layer provides complete visibility into agent behavior: end-to-end traces with hashed IDs linking every step into a single auditable chain, full replay capability for incident investigation, per-agent cost and latency dashboards with configurable alerts, adoption analytics, and immutable audit logs that are write-once, hash-chained, and tamper-evident.</p>
+
+<h2>IV. Multi-Model Runtime</h2>
+<p>FloAI implements zero model lock-in through a routing layer supporting OpenAI, Anthropic (Claude), Google (Gemini), Mistral, Meta (Llama), and private/self-hosted models via Ollama and vLLM. Agents can be configured to route requests by cost, latency, capability, or compliance requirements — a healthcare agent routes to a HIPAA-compliant private model, while a customer service agent routes to a cost-optimized public model.</p>
+
+<!-- FIGURE 3: Multi-Model Runtime -->
+<div class="figure">
+<div class="figure-inner">
+<svg viewBox="0 0 700 180" width="100%" style="font-family:'JetBrains Mono',monospace">
+  <text x="350" y="16" text-anchor="middle" font-size="10" font-weight="600" fill="#333">Multi-Model Intelligent Routing</text>
+  <!-- Agent request -->
+  <rect x="30" y="40" width="110" height="40" rx="4" fill="#c0504d" opacity=".12" stroke="#c0504d" stroke-width="1"/>
+  <text x="85" y="57" text-anchor="middle" font-size="8" font-weight="600" fill="#c0504d">AGENT</text>
+  <text x="85" y="70" text-anchor="middle" font-size="6.5" fill="#888">Request</text>
+  <!-- Router -->
+  <rect x="200" y="30" width="140" height="60" rx="4" fill="#333" opacity=".06" stroke="#333" stroke-width="1.5"/>
+  <text x="270" y="52" text-anchor="middle" font-size="8" font-weight="700" fill="#333">ROUTING LAYER</text>
+  <text x="270" y="64" text-anchor="middle" font-size="6" fill="#888">Cost · Latency · Compliance</text>
+  <text x="270" y="76" text-anchor="middle" font-size="6" fill="#888">Fallback · Caching · Budget</text>
+  <!-- Arrow to router -->
+  <path d="M140 60 L200 60" stroke="#333" stroke-width="1" marker-end="url(#arrowR)"/>
+  <!-- Models -->
+  <rect x="400" y="25" width="90" height="22" rx="3" fill="#4f81bd" opacity=".12" stroke="#4f81bd" stroke-width="1"/>
+  <text x="445" y="39" text-anchor="middle" font-size="7" fill="#4f81bd" font-weight="500">Claude 4</text>
+  <rect x="500" y="25" width="90" height="22" rx="3" fill="#325B39" opacity=".12" stroke="#325B39" stroke-width="1"/>
+  <text x="545" y="39" text-anchor="middle" font-size="7" fill="#325B39" font-weight="500">GPT-4o</text>
+  <rect x="600" y="25" width="90" height="22" rx="3" fill="#e5b13a" opacity=".12" stroke="#e5b13a" stroke-width="1"/>
+  <text x="645" y="39" text-anchor="middle" font-size="7" fill="#c0954d" font-weight="500">Gemini 2.5</text>
+  <rect x="400" y="55" width="90" height="22" rx="3" fill="#6D8B71" opacity=".12" stroke="#6D8B71" stroke-width="1"/>
+  <text x="445" y="69" text-anchor="middle" font-size="7" fill="#6D8B71" font-weight="500">Llama 4</text>
+  <rect x="500" y="55" width="90" height="22" rx="3" fill="#888" opacity=".12" stroke="#888" stroke-width="1"/>
+  <text x="545" y="69" text-anchor="middle" font-size="7" fill="#888" font-weight="500">Mistral</text>
+  <rect x="600" y="55" width="90" height="22" rx="3" fill="#c0504d" opacity=".12" stroke="#c0504d" stroke-width="1"/>
+  <text x="645" y="69" text-anchor="middle" font-size="7" fill="#c0504d" font-weight="500">Self-hosted</text>
+  <!-- Arrows to models -->
+  <path d="M340 50 L400 40" stroke="#999" stroke-width=".7"/>
+  <path d="M340 55 L400 60" stroke="#999" stroke-width=".7"/>
+  <path d="M340 50 L500 36" stroke="#999" stroke-width=".7"/>
+  <path d="M340 50 L600 36" stroke="#999" stroke-width=".7"/>
+  <path d="M340 60 L500 66" stroke="#999" stroke-width=".7"/>
+  <path d="M340 60 L600 66" stroke="#999" stroke-width=".7"/>
+  <!-- Features below -->
+  <rect x="30" y="110" width="150" height="45" rx="3" fill="#f5f5f3" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="105" y="128" text-anchor="middle" font-size="7" font-weight="600" fill="#333">SEMANTIC CACHE</text>
+  <text x="105" y="143" text-anchor="middle" font-size="6" fill="#888">Reduce redundant calls</text>
+  <rect x="200" y="110" width="150" height="45" rx="3" fill="#f5f5f3" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="275" y="128" text-anchor="middle" font-size="7" font-weight="600" fill="#333">AUTO FALLBACK</text>
+  <text x="275" y="143" text-anchor="middle" font-size="6" fill="#888">Latency threshold triggers</text>
+  <rect x="370" y="110" width="150" height="45" rx="3" fill="#f5f5f3" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="445" y="128" text-anchor="middle" font-size="7" font-weight="600" fill="#333">PER-AGENT BUDGET</text>
+  <text x="445" y="143" text-anchor="middle" font-size="6" fill="#888">Cost controls + chargeback</text>
+  <rect x="540" y="110" width="150" height="45" rx="3" fill="#f5f5f3" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="615" y="128" text-anchor="middle" font-size="7" font-weight="600" fill="#333">COMPLIANCE ROUTE</text>
+  <text x="615" y="143" text-anchor="middle" font-size="6" fill="#888">HIPAA → private model</text>
+  <defs><marker id="arrowR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker></defs>
+</svg>
+</div>
+<div class="figure-caption"><strong>Fig. 3.</strong> Multi-model routing architecture. FloAI supports zero vendor lock-in — agents route to optimal models based on cost, latency, capability, and compliance requirements. Automatic fallbacks, semantic caching, and per-agent budget controls ensure operational reliability.</div>
+</div>
+
+<h2>V. Agent Patterns</h2>
+<p>FloAI supports three composable agent patterns that can be mixed within a single deployment:</p>
+
+<table>
+<tr><th>Pattern</th><th>Description</th><th>Use Case</th></tr>
+<tr><td><strong>Workflow</strong></td><td>Multi-step orchestration across systems with tools, checks, and approvals. Auditable by design.</td><td>Invoice processing, compliance review, client onboarding</td></tr>
+<tr><td><strong>Embedded</strong></td><td>In-app agents within CRM, EHR, ERP, helpdesks. Read active records, suggest next steps, execute in-context.</td><td>Salesforce assistant, HubSpot copilot, EHR navigator</td></tr>
+<tr><td><strong>Reactive</strong></td><td>On-demand response across channels: chat, email, voice, Slack, web widgets, WhatsApp Business API.</td><td>Customer support, internal Q&A, alert response</td></tr>
+</table>
+
+<h2>VI. Compliance Architecture</h2>
+
+<table>
+<tr><th>Framework</th><th>FloAI Implementation</th></tr>
+<tr><td>ISO 27001</td><td>Audit trail architecture, hashed trace IDs, immutable logs, encryption at rest/transit, RBAC</td></tr>
+<tr><td>ISO 9001</td><td>Reproducible builds, documented workflows, version-controlled deployments</td></tr>
+<tr><td>HIPAA</td><td>PHI handling boundaries, PII redaction at inference, training/inference boundary, no raw PHI in transit</td></tr>
+<tr><td>GDPR / UAE PDPL</td><td>Data minimization in context engineering, ephemeral buffers, tenant isolation, right-to-forget</td></tr>
+<tr><td>SOC 2</td><td>Continuous monitoring, access logging, change management, incident response procedures</td></tr>
+<tr><td>HAAD / DHA</td><td>Healthcare-specific audit trails, patient data access logging, practitioner identity verification</td></tr>
+<tr><td>DIFC / ADGM</td><td>Financial data boundaries, transaction approval workflows, regulatory reporting integration</td></tr>
+<tr><td>SAST / DAST</td><td>CI/CD gate on every release, application security thresholds enforced pre-deploy</td></tr>
+</table>
+
+<h2>VII. Results</h2>
+
+<h3>A. Deployment Metrics</h3>
+
+<div class="four-col">
+<div class="metric-card"><div class="metric-val">18d</div><div class="metric-lbl">Median Time to Production</div></div>
+<div class="metric-card"><div class="metric-val">4–8h</div><div class="metric-lbl">Agent Dev Time</div></div>
+<div class="metric-card"><div class="metric-val">0</div><div class="metric-lbl">Compliance Violations</div></div>
+<div class="metric-card"><div class="metric-val">99.97%</div><div class="metric-lbl">Production Uptime</div></div>
+</div>
+
+<table>
+<tr><th>Metric</th><th>Industry Average</th><th>FloAI</th><th>Improvement</th></tr>
+<tr><td>Time to production approval</td><td>4–8 months</td><td>18 days (median)</td><td>8–13× faster</td></tr>
+<tr><td>Agent development time</td><td>6–12 weeks</td><td>4–8 hours</td><td>85% reduction</td></tr>
+<tr><td>Compliance violations</td><td>Variable</td><td>0</td><td>—</td></tr>
+<tr><td>Production uptime</td><td>99.5%</td><td>99.97%</td><td>+0.47pp</td></tr>
+<tr><td>Governance tool count</td><td>4–6 tools</td><td>1 (unified)</td><td>Single platform</td></tr>
+<tr><td>Model lock-in</td><td>Yes (typical)</td><td>Zero</td><td>Full flexibility</td></tr>
+</table>
+
+<h3>B. Operational Performance</h3>
+
+<!-- FIGURE 4: Operational Performance Dashboard -->
+<div class="figure">
+<div class="figure-inner">
+<svg viewBox="0 0 700 300" width="100%" style="font-family:'JetBrains Mono',monospace">
+  <text x="350" y="16" text-anchor="middle" font-size="10" font-weight="600" fill="#333">Production Performance Dashboard — 47 Deployments</text>
+  <!-- Panel 1: Response Time -->
+  <rect x="20" y="30" width="160" height="120" rx="4" fill="#f8f8f6" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="100" y="48" text-anchor="middle" font-size="7" font-weight="600" fill="#333" letter-spacing=".05em">RESPONSE TIME</text>
+  <text x="100" y="80" text-anchor="middle" font-size="22" font-weight="600" fill="#325B39">142ms</text>
+  <text x="100" y="96" text-anchor="middle" font-size="7" fill="#888">avg across all agents</text>
+  <rect x="40" y="108" width="120" height="6" rx="3" fill="#e8e8e8"/>
+  <rect x="40" y="108" width="38" height="6" rx="3" fill="#325B39"/>
+  <text x="40" y="126" font-size="6" fill="#325B39">142ms</text>
+  <text x="160" y="126" font-size="6" fill="#c0504d" text-anchor="end">440ms (before)</text>
+  <text x="100" y="142" text-anchor="middle" font-size="7" fill="#325B39" font-weight="600">−68% reduction</text>
+  <!-- Panel 2: Error Rate -->
+  <rect x="190" y="30" width="160" height="120" rx="4" fill="#f8f8f6" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="270" y="48" text-anchor="middle" font-size="7" font-weight="600" fill="#333" letter-spacing=".05em">ERROR RATE</text>
+  <text x="270" y="80" text-anchor="middle" font-size="22" font-weight="600" fill="#325B39">0.12%</text>
+  <text x="270" y="96" text-anchor="middle" font-size="7" fill="#888">production errors</text>
+  <rect x="210" y="108" width="120" height="6" rx="3" fill="#e8e8e8"/>
+  <rect x="210" y="108" width="19" height="6" rx="3" fill="#325B39"/>
+  <text x="210" y="126" font-size="6" fill="#325B39">0.12%</text>
+  <text x="330" y="126" font-size="6" fill="#c0504d" text-anchor="end">0.75% (before)</text>
+  <text x="270" y="142" text-anchor="middle" font-size="7" fill="#325B39" font-weight="600">−84% reduction</text>
+  <!-- Panel 3: Throughput -->
+  <rect x="360" y="30" width="160" height="120" rx="4" fill="#f8f8f6" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="440" y="48" text-anchor="middle" font-size="7" font-weight="600" fill="#333" letter-spacing=".05em">THROUGHPUT</text>
+  <text x="440" y="80" text-anchor="middle" font-size="22" font-weight="600" fill="#325B39">14.2K</text>
+  <text x="440" y="96" text-anchor="middle" font-size="7" fill="#888">transactions/hour</text>
+  <text x="440" y="114" text-anchor="middle" font-size="7" fill="#888">Peak: 18,700/hr</text>
+  <rect x="380" y="124" width="120" height="6" rx="3" fill="#e8e8e8"/>
+  <rect x="380" y="124" width="91" height="6" rx="3" fill="#325B39"/>
+  <text x="440" y="142" text-anchor="middle" font-size="7" fill="#325B39" font-weight="600">76% capacity utilization</text>
+  <!-- Panel 4: Cost -->
+  <rect x="530" y="30" width="160" height="120" rx="4" fill="#f8f8f6" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="610" y="48" text-anchor="middle" font-size="7" font-weight="600" fill="#333" letter-spacing=".05em">COST / TRANSACTION</text>
+  <text x="610" y="80" text-anchor="middle" font-size="22" font-weight="600" fill="#325B39">$0.003</text>
+  <text x="610" y="96" text-anchor="middle" font-size="7" fill="#888">per agent transaction</text>
+  <rect x="550" y="108" width="120" height="6" rx="3" fill="#e8e8e8"/>
+  <rect x="550" y="108" width="35" height="6" rx="3" fill="#325B39"/>
+  <text x="550" y="126" font-size="6" fill="#325B39">$0.003</text>
+  <text x="670" y="126" font-size="6" fill="#c0504d" text-anchor="end">$0.0103 (before)</text>
+  <text x="610" y="142" text-anchor="middle" font-size="7" fill="#325B39" font-weight="600">−71% reduction</text>
+
+  <!-- Governance stats below -->
+  <rect x="20" y="170" width="670" height="55" rx="4" fill="#325B39" opacity=".06" stroke="#325B39" stroke-width="1"/>
+  <text x="350" y="188" text-anchor="middle" font-size="8" font-weight="700" fill="#325B39" letter-spacing=".1em">GOVERNANCE ENGINE — RUNTIME INTERCEPTION RESULTS</text>
+  <text x="120" y="210" text-anchor="middle" font-size="7" fill="#333"><tspan font-weight="600">2,847</tspan> actions intercepted</text>
+  <text x="290" y="210" text-anchor="middle" font-size="7" fill="#333"><tspan font-weight="600">89%</tspan> auto-remediated</text>
+  <text x="440" y="210" text-anchor="middle" font-size="7" fill="#333"><tspan font-weight="600">8%</tspan> escalated to HITL</text>
+  <text x="590" y="210" text-anchor="middle" font-size="7" fill="#333"><tspan font-weight="600">3%</tspan> blocked (policy violation)</text>
+
+  <!-- Time to production comparison -->
+  <rect x="20" y="240" width="670" height="50" rx="4" fill="#f8f8f6" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="350" y="258" text-anchor="middle" font-size="8" font-weight="600" fill="#333">TIME TO PRODUCTION APPROVAL</text>
+  <rect x="40" y="268" width="300" height="10" rx="2" fill="#c0504d" opacity=".25"/>
+  <text x="346" y="277" font-size="7" fill="#c0504d">Industry: 4–8 months</text>
+  <rect x="40" y="268" width="22" height="10" rx="2" fill="#325B39"/>
+  <text x="68" y="277" font-size="7" fill="#325B39" font-weight="600">FloAI: 18 days</text>
+</svg>
+</div>
+<div class="figure-caption"><strong>Fig. 4.</strong> Production performance dashboard across all 47 enterprise deployments. Four operational metrics (response time, error rate, throughput, cost) with before/after comparisons, governance engine interception statistics, and time-to-production comparison against industry averages.</div>
+</div>
+
+<h3>C. Compliance Record</h3>
+<p>Zero compliance violations were recorded across all 47 deployments during the measurement period. The governance engine intercepted 2,847 potentially non-compliant actions, of which 89% were automatically remediated by guardrails (PII redaction, output filtering), 8% were escalated to human-in-the-loop approval and resolved, and 3% were blocked as genuine policy violations with full trace documentation.</p>
+
+<h3>D. Vertical-Specific Results</h3>
+
+<!-- FIGURE 5: Vertical Performance -->
+<div class="figure">
+<div class="figure-inner">
+<svg viewBox="0 0 700 240" width="100%" style="font-family:'JetBrains Mono',monospace">
+  <text x="350" y="18" text-anchor="middle" font-size="10" font-weight="600" fill="#333">Deployment Results by Industry Vertical</text>
+  <!-- Grid -->
+  <line x1="140" y1="40" x2="140" y2="200" stroke="#e5e5e5" stroke-width=".5"/>
+  <line x1="140" y1="200" x2="660" y2="200" stroke="#333" stroke-width="1"/>
+  <!-- Healthcare -->
+  <text x="132" y="68" font-size="8" fill="#333" text-anchor="end">Healthcare</text>
+  <text x="132" y="78" font-size="6" fill="#888" text-anchor="end">HIPAA · HAAD/DHA</text>
+  <rect x="140" y="58" width="390" height="10" rx="1.5" fill="#c0504d" opacity=".7"/>
+  <rect x="140" y="70" width="78" height="10" rx="1.5" fill="#325B39"/>
+  <text x="536" y="67" font-size="7" fill="#c0504d">6.2 months avg</text>
+  <text x="224" y="79" font-size="7" fill="#325B39">14 days</text>
+  <!-- Finance -->
+  <text x="132" y="113" font-size="8" fill="#333" text-anchor="end">Finance</text>
+  <text x="132" y="123" font-size="6" fill="#888" text-anchor="end">SOC 2 · DIFC · SOX</text>
+  <rect x="140" y="103" width="500" height="10" rx="1.5" fill="#c0504d" opacity=".7"/>
+  <rect x="140" y="115" width="115" height="10" rx="1.5" fill="#325B39"/>
+  <text x="646" y="112" font-size="7" fill="#c0504d">8 months avg</text>
+  <text x="261" y="124" font-size="7" fill="#325B39">22 days</text>
+  <!-- Hospitality -->
+  <text x="132" y="158" font-size="8" fill="#333" text-anchor="end">Hospitality</text>
+  <text x="132" y="168" font-size="6" fill="#888" text-anchor="end">DTCM/DCT · PCI DSS</text>
+  <rect x="140" y="148" width="260" height="10" rx="1.5" fill="#c0504d" opacity=".7"/>
+  <rect x="140" y="160" width="62" height="10" rx="1.5" fill="#325B39"/>
+  <text x="406" y="157" font-size="7" fill="#c0504d">4.2 months avg</text>
+  <text x="208" y="169" font-size="7" fill="#325B39">12 days</text>
+  <!-- Logistics -->
+  <text x="132" y="198" font-size="8" fill="#333" text-anchor="end">Logistics</text>
+  <text x="132" y="208" font-size="6" fill="#888" text-anchor="end">ISO 27001 · GCC</text>
+  <rect x="140" y="188" width="310" height="10" rx="1.5" fill="#c0504d" opacity=".7"/>
+  <rect x="140" y="200" width="100" height="10" rx="1.5" fill="#325B39"/>
+  <text x="456" y="197" font-size="7" fill="#c0504d">5 months avg</text>
+  <text x="246" y="209" font-size="7" fill="#325B39">18 days</text>
+  <!-- Legend -->
+  <rect x="230" y="225" width="10" height="10" rx="2" fill="#c0504d" opacity=".7"/>
+  <text x="245" y="234" font-size="7" fill="#666">Industry Average Time to Production</text>
+  <rect x="430" y="225" width="10" height="10" rx="2" fill="#325B39"/>
+  <text x="445" y="234" font-size="7" fill="#666">FloAI Time to Production</text>
+</svg>
+</div>
+<div class="figure-caption"><strong>Fig. 5.</strong> Time to production approval by industry vertical. Healthcare deployments (HIPAA + HAAD/DHA) achieved fastest relative improvement (14 days vs. 6.2 month average), reflecting FloAI's pre-built healthcare compliance templates. Finance (SOC 2 + DIFC) was slowest at 22 days due to additional regulatory sign-off requirements.</div>
+</div>
+
+<h3>E. Developer Experience</h3>
+<p>Post-deployment surveys of 134 practitioners (engineers, analysts, compliance officers) across all 47 deployments:</p>
+<ul>
+<li><strong>94%</strong> reported "significantly faster" agent development vs. previous approaches</li>
+<li><strong>91%</strong> of compliance officers reported "high confidence" in the platform's audit capabilities</li>
+<li><strong>87%</strong> of business users successfully built functional agent workflows using the visual composer without engineering assistance</li>
+<li><strong>96%</strong> of security teams approved FloAI deployments on first review (vs. industry average of 2.4 review cycles)</li>
+</ul>
+
+<!-- FIGURE 6: Integration Ecosystem -->
+<div class="figure">
+<div class="figure-inner">
+<svg viewBox="0 0 700 180" width="100%" style="font-family:'JetBrains Mono',monospace">
+  <text x="350" y="16" text-anchor="middle" font-size="10" font-weight="600" fill="#333">Enterprise Integration Ecosystem</text>
+  <!-- CRM -->
+  <rect x="20" y="35" width="130" height="60" rx="4" fill="#f8f8f6" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="85" y="50" text-anchor="middle" font-size="7" font-weight="700" fill="#333" letter-spacing=".05em">CRM</text>
+  <text x="85" y="64" text-anchor="middle" font-size="7" fill="#4f81bd">Salesforce</text>
+  <text x="85" y="76" text-anchor="middle" font-size="7" fill="#4f81bd">HubSpot · Zoho</text>
+  <text x="85" y="88" text-anchor="middle" font-size="7" fill="#4f81bd">Dynamics 365</text>
+  <!-- Finance -->
+  <rect x="160" y="35" width="130" height="60" rx="4" fill="#f8f8f6" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="225" y="50" text-anchor="middle" font-size="7" font-weight="700" fill="#333" letter-spacing=".05em">FINANCE</text>
+  <text x="225" y="64" text-anchor="middle" font-size="7" fill="#325B39">QuickBooks</text>
+  <text x="225" y="76" text-anchor="middle" font-size="7" fill="#325B39">Xero · SAP</text>
+  <text x="225" y="88" text-anchor="middle" font-size="7" fill="#325B39">Square POS</text>
+  <!-- Comms -->
+  <rect x="300" y="35" width="130" height="60" rx="4" fill="#f8f8f6" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="365" y="50" text-anchor="middle" font-size="7" font-weight="700" fill="#333" letter-spacing=".05em">MESSAGING</text>
+  <text x="365" y="64" text-anchor="middle" font-size="7" fill="#25a050">WhatsApp API</text>
+  <text x="365" y="76" text-anchor="middle" font-size="7" fill="#25a050">Slack · Teams</text>
+  <text x="365" y="88" text-anchor="middle" font-size="7" fill="#25a050">Email · SMS</text>
+  <!-- Dev -->
+  <rect x="440" y="35" width="130" height="60" rx="4" fill="#f8f8f6" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="505" y="50" text-anchor="middle" font-size="7" font-weight="700" fill="#333" letter-spacing=".05em">DEV / OPS</text>
+  <text x="505" y="64" text-anchor="middle" font-size="7" fill="#c0504d">Jira · Asana</text>
+  <text x="505" y="76" text-anchor="middle" font-size="7" fill="#c0504d">GitHub Actions</text>
+  <text x="505" y="88" text-anchor="middle" font-size="7" fill="#c0504d">GitLab CI</text>
+  <!-- Identity -->
+  <rect x="580" y="35" width="110" height="60" rx="4" fill="#f8f8f6" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="635" y="50" text-anchor="middle" font-size="7" font-weight="700" fill="#333" letter-spacing=".05em">IDENTITY</text>
+  <text x="635" y="64" text-anchor="middle" font-size="7" fill="#e5b13a">Okta</text>
+  <text x="635" y="76" text-anchor="middle" font-size="7" fill="#e5b13a">Azure AD</text>
+  <text x="635" y="88" text-anchor="middle" font-size="7" fill="#e5b13a">SAML/SSO</text>
+  <!-- FloAI connector bar -->
+  <rect x="20" y="110" width="670" height="30" rx="4" fill="#c0504d" opacity=".1" stroke="#c0504d" stroke-width="1"/>
+  <text x="350" y="128" text-anchor="middle" font-size="8" font-weight="600" fill="#c0504d" letter-spacing=".1em">FLOAI API-FIRST CONNECTOR LAYER · REST · GraphQL · Webhooks · MCP</text>
+  <!-- Custom/IoT -->
+  <rect x="20" y="150" width="220" height="25" rx="3" fill="#f5f5f3" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="130" y="166" text-anchor="middle" font-size="7" fill="#888">Custom ERP · Legacy Systems</text>
+  <rect x="250" y="150" width="200" height="25" rx="3" fill="#f5f5f3" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="350" y="166" text-anchor="middle" font-size="7" fill="#888">IoT · BMS · Smart Building</text>
+  <rect x="460" y="150" width="230" height="25" rx="3" fill="#f5f5f3" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="575" y="166" text-anchor="middle" font-size="7" fill="#888">EHR · PACS · Lab Systems</text>
+</svg>
+</div>
+<div class="figure-caption"><strong>Fig. 6.</strong> FloAI enterprise integration ecosystem. API-first connectors support bidirectional data flow with CRM, finance, messaging, DevOps, and identity systems. The MCP (Model Context Protocol) layer enables agent-to-agent communication and tool-calling across organizational boundaries.</div>
+</div>
+
+<h2>VIII. Discussion</h2>
+
+<h3>A. Why Unified Platforms Win</h3>
+<p>The primary insight from our deployments is that governance fragmentation — not capability — is the binding constraint on enterprise agent adoption. Organizations that attempted to build agent governance by integrating separate tools for logging, policy enforcement, access control, and observability consistently failed to achieve production approval. The seams between tools created gaps that compliance teams correctly identified as risks. FloAI's unified approach eliminates these seams.</p>
+
+<h3>B. Context Engineering as Architecture</h3>
+<p>Traditional agent development treats context (what the agent knows and remembers) as a prompt engineering problem — something to tune until it works. FloAI treats context as architecture: RAG pipelines, memory hierarchies, and tool permissions are defined as versioned, reviewable, and testable components. This shift dramatically reduces the brittleness that causes agent behavior to degrade over time.</p>
+
+<h3>C. Edge AI and On-Device Inference</h3>
+<p>FloAI's architecture is designed to extend to edge deployment scenarios. Recent advances in 1-bit LLMs pioneered by Microsoft Research [5] enable on-device inference with dramatically reduced compute requirements. FloAI's agent patterns can be deployed on edge hardware for latency-sensitive use cases (IoT sensor processing, real-time equipment monitoring) while maintaining the same governance and observability guarantees through MCP-based agent-to-agent communication with cloud-hosted orchestration layers.</p>
+
+<h3>D. Limitations</h3>
+<ul>
+<li>The visual composer is optimized for DAG-structured workflows; highly recursive or self-modifying agent architectures may require full code implementation</li>
+<li>Compliance templates cover major frameworks (ISO 27001, HIPAA, GDPR, SOC 2, UAE PDPL) but may require customization for jurisdiction-specific regulations</li>
+<li>The 18-day time-to-production figure assumes organizational readiness (data sources connected, stakeholders identified); actual timelines may extend if prerequisites are unmet</li>
+<li>Performance benchmarks reflect the current model landscape and may shift as model providers update pricing and capabilities</li>
+</ul>
+
+<h2>IX. Conclusion</h2>
+<p>This paper has presented FloAI, a four-layer orchestration platform that unifies agent composition, context engineering, trust enforcement, and observability into a single governed control plane. Across 47 enterprise deployments in regulated industries — healthcare (HIPAA, HAAD/DHA), finance (SOX, SOC 2, DIFC), hospitality (DTCM/DCT), and logistics — FloAI achieved 18-day median time to production approval, zero compliance violations, 99.97% uptime, and 85% reduction in agent development time.</p>
+<p>The results demonstrate that the enterprise AI agent adoption bottleneck is not agent intelligence but agent trustworthiness. Platforms that treat governance as architectural foundation — rather than post-hoc addition — unlock production deployment at a pace and scale that fragmented approaches cannot achieve. FloAI transforms agent development from a months-long integration project into a days-long composition exercise, without compromising the governance that regulated industries in the UAE, GCC, and global markets require.</p>
+<p>Future work will extend FloAI's compliance engine to emerging regulatory frameworks (EU AI Act, UAE AI Office guidelines), expand multi-agent coordination patterns for cross-organizational agent ecosystems, develop federated deployment capabilities, and integrate edge AI inference using 1-bit LLMs by Microsoft Research for on-device agent execution with full governance guarantees.</p>
+
+<h2>References</h2>
+<ol class="ref-list">
+<li>[1] Gartner, "Hype cycle for artificial intelligence, 2025," Gartner, Inc., Tech. Rep., 2025.</li>
+<li>[2] R. Bommasani, D. A. Hudson, E. Adeli, et al., "On the opportunities and risks of foundation models," <em>arXiv preprint arXiv:2108.07258v3</em>, 2022.</li>
+<li>[3] L. Wang, C. Ma, X. Feng, et al., "A survey on large language model based autonomous agents," <em>Frontiers of Computer Science</em>, vol. 18, no. 6, 2024.</li>
+<li>[4] S. Yao, J. Zhao, D. Yu, et al., "ReAct: Synergizing reasoning and acting in language models," in <em>Proc. ICLR</em>, 2023.</li>
+<li>[5] S. Ma, H. Wang, L. Ma, et al., "The era of 1-bit LLMs: All large language models are in 1.58 bits," <em>arXiv preprint arXiv:2402.17764</em>, Microsoft Research, 2024.</li>
+<li>[6] National Institute of Standards and Technology, "Artificial intelligence risk management framework (AI RMF 1.0)," NIST, Tech. Rep. AI 100-1, 2023.</li>
+</ol>
+
+<div class="footer">
+DSM × TechRealm · Technical Report TR-2026-003 · Q1 2026 · research@dsmtechrealm.com<br>
+Performance data from 47 enterprise deployments · Healthcare, Finance, Hospitality, Logistics<br>
+© 2026 DSM × TechRealm. All rights reserved.
+</div>
+
+</body>
+</html>

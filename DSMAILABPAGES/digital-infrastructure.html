@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Infrastructure | DSM × TechRealm</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#fafafa; --text:#09090b; --line:#18181b; --muted:#71717a;
+      --dsm-r:#c0504d; --dsm-y:#e5b13a; --dsm-b:#4f81bd;
+    }
+    *,*::before,*::after { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); margin:0; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+    .font-mono { font-family:'JetBrains Mono',monospace; }
+    .di-grid { position:fixed; inset:0; z-index:0; pointer-events:none;
+      background-image:linear-gradient(rgba(0,0,0,.026) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.026) 1px,transparent 1px);
+      background-size:40px 40px; }
+    #di-progress { position:fixed; top:0; left:0; width:2px; height:0; z-index:50;
+      background:linear-gradient(180deg,var(--dsm-r) 0%,var(--dsm-y) 50%,var(--dsm-b) 100%); opacity:.75; }
+    .di-ambient { position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden; }
+    .di-ambient-v,.di-ambient-h { position:absolute; will-change:transform,opacity; }
+    .di-ambient-v { width:1px; top:-15%; height:130%; background:linear-gradient(180deg,transparent,rgba(24,24,27,.07),transparent); animation:diV 24s ease-in-out infinite; }
+    .di-ambient-h { height:1px; left:-8%; width:115%; background:linear-gradient(90deg,transparent,rgba(24,24,27,.06),transparent); animation:diH 30s ease-in-out infinite; }
+    .di-ambient-v:nth-child(1){ left:9%; animation-delay:0s; }
+    .di-ambient-v:nth-child(2){ left:34%; animation-delay:-5s; animation-duration:27s; }
+    .di-ambient-v:nth-child(3){ left:58%; animation-delay:-11s; }
+    .di-ambient-v:nth-child(4){ left:91%; animation-delay:-2s; animation-duration:22s; }
+    .di-ambient-h:nth-child(5){ top:24%; animation-delay:-7s; }
+    .di-ambient-h:nth-child(6){ top:51%; animation-delay:-14s; animation-duration:34s; }
+    .di-ambient-h:nth-child(7){ top:76%; animation-delay:-4s; }
+    @keyframes diV { 0%,100%{ transform:translateY(-3%); opacity:.3; } 50%{ transform:translateY(4%); opacity:.65; } }
+    @keyframes diH { 0%,100%{ transform:translateX(4%); opacity:.22; } 50%{ transform:translateX(-4%); opacity:.55; } }
+    .di-wire {
+      background:rgba(255,255,255,.94); backdrop-filter:blur(12px);
+      border:1px solid var(--line); border-radius:1.15rem;
+      box-shadow:8px 8px 0 rgba(0,0,0,.032);
+      transition:box-shadow .4s cubic-bezier(.23,1,.32,1), transform .4s cubic-bezier(.23,1,.32,1), border-color .35s ease;
+    }
+    .di-wire:hover { box-shadow:11px 13px 0 rgba(0,0,0,.045); transform:translate(-1px,-1px); border-color:rgba(24,24,27,.85); }
+    .di-pill { display:inline-flex; align-items:center; gap:.4rem; border:1px solid var(--line); border-radius:9999px; padding:.25rem .7rem;
+      font-family:'JetBrains Mono',monospace; font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; background:#fff; }
+    .di-reveal { opacity:0; transform:translateY(24px); }
+    .di-path { fill:none; stroke:var(--line); stroke-width:1.2; stroke-linecap:round; stroke-linejoin:round; }
+    .di-path-glow { fill:none; stroke:rgba(79,129,189,.22); stroke-width:2.8; stroke-linecap:round; }
+    /* Hero: full-bleed portrait — mono by default; color when pointer is over portrait hit zone */
+    #di-hero .di-hero-bg-img {
+      filter:grayscale(1) contrast(1.06) brightness(1.02);
+      transition:filter .75s cubic-bezier(.23,1,.32,1), transform 1s ease;
+      transform:scale(1.02);
+    }
+    #di-hero.di-hero--color .di-hero-bg-img {
+      filter:grayscale(0) contrast(1.02) brightness(1);
+      transform:scale(1.03);
+    }
+    #di-hero-hit:focus-visible { outline:2px solid rgba(79,129,189,.5); outline-offset:4px; }
+    /* Portrait: mono default, color on hover (sections below hero) */
+    .di-portrait-frame { position:relative; overflow:hidden; border-radius:.75rem; border:1px solid rgba(24,24,27,.2); background:#f4f4f5; }
+    .di-portrait-frame img { display:block; width:100%; height:100%; object-fit:cover; object-position:center top;
+      filter:grayscale(1) contrast(1.05) brightness(1.02); transition:filter .7s cubic-bezier(.23,1,.32,1), transform .8s ease; }
+    .di-portrait-frame:hover img, .di-portrait-frame:focus-within img { filter:grayscale(0) contrast(1) brightness(1); transform:scale(1.02); }
+    .di-portrait-frame::after {
+      content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.4); opacity:.9;
+    }
+    /* Industry wheel */
+    #di-wheel { transition:opacity .6s ease, transform .5s cubic-bezier(.23,1,.32,1); }
+    #di-wheel.di-wheel--hidden { opacity:0; pointer-events:none; }
+    .di-wheel-pointer { transform-origin:50px 50px; transition:transform .55s cubic-bezier(.23,1,.32,1); }
+    .di-industry-section { scroll-margin-top:6rem; }
+    .di-term { background:#fff; border:1px solid rgba(24,24,27,.12); border-radius:.5rem; font-family:'JetBrains Mono',monospace; font-size:10px; color:#52525b; }
+    .di-term-row { display:grid; grid-template-columns:72px 1fr 56px; gap:.4rem; padding:.4rem .55rem; border-bottom:1px dashed rgba(24,24,27,.08); transition:background .25s ease; }
+    .di-term-row:hover { background:rgba(79,129,189,.06); color:var(--text); }
+    .di-term-row:last-child { border-bottom:none; }
+    /* DSM accents — small areas, diagrams, hover */
+    .di-mod { --acc:var(--dsm-b); position:relative; overflow:hidden; }
+    .di-mod--r { --acc:var(--dsm-r); }
+    .di-mod--y { --acc:var(--dsm-y); }
+    .di-mod::before {
+      content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:0 2px 2px 0;
+      background:linear-gradient(180deg,var(--acc),color-mix(in srgb,var(--acc) 35%,transparent)); opacity:.55;
+      transition:opacity .35s ease, box-shadow .35s ease;
+    }
+    .di-mod::after {
+      content:''; position:absolute; right:0; top:0; width:48%; height:100%;
+      background:radial-gradient(ellipse 80% 60% at 100% 20%, color-mix(in srgb,var(--acc) 12%,transparent), transparent 72%);
+      pointer-events:none; opacity:.7; transition:opacity .4s ease;
+    }
+    .di-mod:hover::before { opacity:1; box-shadow:0 0 24px color-mix(in srgb,var(--acc) 25%,transparent); }
+    .di-mod:hover::after { opacity:1; }
+    .di-mod:hover { border-color:color-mix(in srgb,var(--acc) 45%,var(--line)) !important; }
+    .di-diag-panel { position:relative; transition:transform .45s cubic-bezier(.23,1,.32,1), box-shadow .45s ease, border-color .35s ease; }
+    .di-diag-panel:hover { transform:translateY(-3px); box-shadow:0 14px 40px rgba(0,0,0,.06), 0 0 0 1px rgba(24,24,27,.12); }
+    .di-diag-panel--pulse .di-node-pulse { animation:diNodePulse 2.4s ease-in-out infinite; }
+    @keyframes diNodePulse {
+      0%,100%{ filter:drop-shadow(0 0 0 transparent); }
+      50%{ filter:drop-shadow(0 0 7px color-mix(in srgb,var(--pulse, var(--dsm-b)) 50%,transparent)); }
+    }
+    .di-meaning-board:not(.di-meaning--lit) g.di-layer-node { opacity:.42; }
+    .di-meaning-board.di-meaning--lit g.di-layer-node { opacity:1; transition:opacity .7s ease; }
+    .di-out { --o:var(--dsm-b); border-color:color-mix(in srgb,var(--o) 22%,#d4d4d8); }
+    .di-out--r { --o:var(--dsm-r); }
+    .di-out--y { --o:var(--dsm-y); }
+    .di-out:hover { border-color:color-mix(in srgb,var(--o) 55%,#a1a1aa); box-shadow:8px 10px 0 color-mix(in srgb,var(--o) 14%,rgba(0,0,0,.04)); }
+    .di-out .di-out-dot { background:var(--o); box-shadow:0 0 0 3px color-mix(in srgb,var(--o) 25%,transparent); }
+    #di-wheel .di-wheel-sector { fill:#a1a1aa; transition:fill .35s ease; }
+    #di-wheel.di-wheel--sector-0 .di-wheel-sector[data-s="0"] { fill:var(--dsm-b); }
+    #di-wheel.di-wheel--sector-1 .di-wheel-sector[data-s="1"] { fill:var(--dsm-r); }
+    #di-wheel.di-wheel--sector-2 .di-wheel-sector[data-s="2"] { fill:var(--dsm-y); }
+    #di-wheel.di-wheel--sector-3 .di-wheel-sector[data-s="3"] { fill:var(--dsm-b); }
+    #di-wheel.di-wheel--sector-4 .di-wheel-sector[data-s="4"] { fill:var(--dsm-r); }
+    #di-wheel.di-wheel--sector-0 #di-wheel-label { color:var(--dsm-b); }
+    #di-wheel.di-wheel--sector-1 #di-wheel-label { color:var(--dsm-r); }
+    #di-wheel.di-wheel--sector-2 #di-wheel-label { color:var(--dsm-y); }
+    #di-wheel.di-wheel--sector-3 #di-wheel-label { color:var(--dsm-b); }
+    #di-wheel.di-wheel--sector-4 #di-wheel-label { color:var(--dsm-r); }
+    @media (prefers-reduced-motion:reduce) {
+      .di-ambient-v,.di-ambient-h { animation:none !important; opacity:.35; transform:none !important; }
+      .di-reveal { opacity:1; transform:none; }
+      #di-hero .di-hero-bg-img { filter:grayscale(1) contrast(1.05) !important; transform:none !important; }
+      .di-portrait-frame img { filter:none; transform:none; }
+      .di-wheel-pointer { transition:none; }
+      .di-diag-panel--pulse .di-node-pulse { animation:none !important; }
+      .di-meaning-board:not(.di-meaning--lit) g.di-layer-node { opacity:1; }
+    }
+  </style>
+</head>
+<body class="relative z-10">
+  <svg class="hidden" aria-hidden="true"><defs>
+    <filter id="di-hand" x="-3%" y="-3%" width="106%" height="106%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.038 0.038" numOctaves="2" seed="4" stitchTiles="stitch" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="0.7" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs></svg>
+
+  <div class="di-grid" aria-hidden="true"></div>
+  <div class="di-ambient" aria-hidden="true">
+    <div class="di-ambient-v"></div><div class="di-ambient-v"></div><div class="di-ambient-v"></div><div class="di-ambient-v"></div>
+    <div class="di-ambient-h"></div><div class="di-ambient-h"></div><div class="di-ambient-h"></div>
+  </div>
+  <div id="di-progress" aria-hidden="true"></div>
+
+  <!-- Industry navigator wheel (fixed; fades when industry stack leaves view) -->
+  <div id="di-wheel" class="di-wheel--sector-0 hidden lg:flex fixed top-28 left-6 z-40 flex-col items-center gap-2" aria-live="polite">
+    <span class="font-mono text-[7px] tracking-[.25em] text-zinc-400 uppercase text-center max-w-[5.5rem] leading-tight">Industries<br/>we build for</span>
+    <svg width="112" height="112" viewBox="0 0 100 100" class="drop-shadow-sm" aria-hidden="true">
+      <circle cx="50" cy="50" r="46" fill="none" stroke="#d4d4d8" stroke-width="0.75"/>
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#e4e4e7" stroke-width="0.5" stroke-dasharray="3 4"/>
+      <g class="di-wheel-pointer" id="di-wheel-pointer" style="transform:rotate(0deg);transform-origin:50px 50px">
+        <line x1="50" y1="50" x2="50" y2="14" stroke="#18181b" stroke-width="1.25" stroke-linecap="round"/>
+        <circle cx="50" cy="14" r="2.5" fill="#4f81bd" opacity=".85"/>
+      </g>
+      <text class="di-wheel-sector" data-s="0" x="50" y="9" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="5.5">Hlth</text>
+      <text class="di-wheel-sector" data-s="1" x="86" y="54" text-anchor="middle" fill="#a1a1aa" font-family="'JetBrains Mono',monospace" font-size="5.5">Fin</text>
+      <text class="di-wheel-sector" data-s="2" x="50" y="94" text-anchor="middle" fill="#a1a1aa" font-family="'JetBrains Mono',monospace" font-size="5.5">Rtl</text>
+      <text class="di-wheel-sector" data-s="3" x="14" y="54" text-anchor="middle" fill="#a1a1aa" font-family="'JetBrains Mono',monospace" font-size="5.5">RE</text>
+      <text class="di-wheel-sector" data-s="4" x="78" y="22" text-anchor="middle" fill="#a1a1aa" font-family="'JetBrains Mono',monospace" font-size="5">Log</text>
+    </svg>
+    <span id="di-wheel-label" class="font-mono text-[8px] tracking-[.12em] uppercase text-center max-w-[6rem] transition-colors duration-300 text-[var(--dsm-b)]">Healthcare</span>
+  </div>
+
+  <header class="fixed top-0 left-0 right-0 z-30 px-4 md:px-10 py-4 flex justify-between items-center pointer-events-none bg-[#fafafa]/85 backdrop-blur-md border-b border-zinc-200/80">
+    <a href="offerings.html" class="pointer-events-auto di-pill text-[10px] tracking-[.15em] hover:bg-zinc-900 hover:text-white transition-colors duration-300">
+      <i data-lucide="arrow-left" class="w-3 h-3" stroke-width="1.5"></i> Offerings
+    </a>
+    <img src="assets/dsm-logo.png" alt="" class="pointer-events-auto h-6 md:h-7 w-auto object-contain opacity-90" width="180" height="48"/>
+    <span class="pointer-events-auto font-mono text-[8px] tracking-[.3em] text-zinc-400 uppercase hidden sm:block">INFRA.LAYER</span>
+  </header>
+
+  <main>
+    <!-- Hero: full-bleed portrait + drafting grid + interactive particle lines (see ai-robodesign.html) -->
+    <section id="di-hero" class="relative z-[15] min-h-[100svh] overflow-hidden flex flex-col justify-end">
+      <div class="absolute inset-0 z-0">
+        <img class="di-hero-bg-img h-full w-full object-cover object-[center_12%] sm:object-center"
+          src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/92a4234b-15fa-4d5f-8821-48d3f9f7e2f1_3840w.jpg"
+          alt="" width="3840" height="2160" loading="eager" decoding="async" fetchpriority="high"/>
+        <!-- Paper / editorial scrim: readable type on left, portrait visible on right -->
+        <div class="absolute inset-0 bg-gradient-to-r from-[#fafafa] via-[#fafafa]/92 to-transparent sm:via-[#fafafa]/78"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-[#fafafa] via-transparent to-[#fafafa]/30"></div>
+        <div class="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-[#fafafa] pointer-events-none"></div>
+      </div>
+
+      <!-- Drafting grid (same rhythm as ai-robodesign hero; graphite on paper) -->
+      <div class="pointer-events-none absolute inset-0 z-[4]" aria-hidden="true">
+        <div class="absolute inset-y-0 left-[12.5%] w-px bg-gradient-to-b from-transparent via-zinc-400/22 to-transparent"></div>
+        <div class="absolute inset-y-0 left-[25%] w-px bg-gradient-to-b from-transparent via-zinc-400/18 to-transparent"></div>
+        <div class="absolute inset-y-0 left-[37.5%] w-px bg-gradient-to-b from-transparent via-zinc-400/18 to-transparent"></div>
+        <div class="absolute inset-y-0 left-[50%] w-px bg-gradient-to-b from-transparent via-zinc-400/28 to-transparent"></div>
+        <div class="absolute inset-y-0 left-[62.5%] w-px bg-gradient-to-b from-transparent via-zinc-400/18 to-transparent"></div>
+        <div class="absolute inset-y-0 left-[75%] w-px bg-gradient-to-b from-transparent via-zinc-400/18 to-transparent"></div>
+        <div class="absolute inset-y-0 left-[87.5%] w-px bg-gradient-to-b from-transparent via-zinc-400/22 to-transparent"></div>
+        <div class="absolute inset-x-0 top-[20%] h-px bg-gradient-to-r from-transparent via-zinc-400/20 to-transparent"></div>
+        <div class="absolute inset-x-0 top-[40%] h-px bg-gradient-to-r from-transparent via-zinc-400/16 to-transparent"></div>
+        <div class="absolute inset-x-0 top-[60%] h-px bg-gradient-to-r from-transparent via-zinc-400/16 to-transparent"></div>
+        <div class="absolute inset-x-0 top-[80%] h-px bg-gradient-to-r from-transparent via-zinc-400/20 to-transparent"></div>
+      </div>
+
+      <!-- Linked nodes + lines; grab follows cursor (detect_on: window — does not block UI) -->
+      <div id="di-hero-particles" class="absolute inset-0 z-[5] pointer-events-none opacity-[0.72]" aria-hidden="true"></div>
+
+      <!-- Portrait activation zone (right field — move off to return to mono) -->
+      <div id="di-hero-hit" class="absolute inset-y-0 right-0 z-[6] w-[56%] max-sm:w-[48%] cursor-crosshair" aria-hidden="true"></div>
+
+      <div class="relative z-20 w-full max-w-7xl mx-auto px-6 md:px-12 pt-28 pb-16 md:pb-20 pointer-events-none">
+        <div class="mb-10 h-px bg-gradient-to-r from-transparent via-zinc-300/60 to-transparent max-w-xl"></div>
+        <div class="max-w-xl space-y-8 pointer-events-auto">
+          <div class="di-reveal">
+            <p class="di-pill mb-2 bg-white/90 backdrop-blur-sm"><i data-lucide="layers" class="w-3 h-3" stroke-width="1.5"></i> Systems foundation</p>
+            <p class="font-mono text-[9px] tracking-[.32em] text-zinc-500 uppercase mt-3">FIG.INFRA.00 · Operating layer</p>
+          </div>
+          <div class="di-reveal">
+            <h1 class="text-4xl sm:text-5xl md:text-[3.25rem] font-medium tracking-tight text-zinc-900 leading-[1.06] drop-shadow-[0_1px_0_rgba(250,250,250,0.9)]">
+              Digital infrastructure<br><span class="text-zinc-500">is how modern work actually runs.</span>
+            </h1>
+            <p class="mt-6 text-base md:text-lg text-zinc-600 font-light max-w-xl leading-relaxed border-l border-zinc-300/90 pl-5 bg-white/40 backdrop-blur-[2px] rounded-r-sm py-1">
+              We design and ship the platforms, integrations, automation, and observability that connect your tools, data, and teams — so operations stay reliable as you scale.
+            </p>
+          </div>
+          <div class="di-reveal flex flex-wrap gap-3">
+            <a href="#di-meaning" class="font-mono text-[10px] uppercase tracking-[.16em] border border-zinc-900 bg-zinc-900 text-white px-5 py-2.5 rounded hover:bg-white hover:text-zinc-900 transition-colors">The operating layer</a>
+            <a href="#di-industry-stack" class="font-mono text-[10px] uppercase tracking-[.16em] border border-zinc-300 text-zinc-600 px-5 py-2.5 rounded hover:border-zinc-900 bg-white/70 backdrop-blur-sm">Industries</a>
+          </div>
+          <p class="font-mono text-[8px] text-zinc-500 tracking-[.06em] max-w-sm">Reference layer · move the pointer over the portrait field to activate color · particle lines respond to cursor</p>
+        </div>
+        <svg class="pointer-events-none absolute right-8 md:right-16 bottom-24 w-36 h-36 md:w-44 md:h-44 opacity-35 hidden sm:block" viewBox="0 0 100 100" filter="url(#di-hand)" aria-hidden="true">
+          <circle cx="50" cy="50" r="40" fill="none" stroke="#d4d4d8" stroke-width="0.5" stroke-dasharray="4 3"/>
+          <path class="di-path" d="M10 50 L30 50 L40 35 L55 65 L70 40 L90 50" pathLength="1"/>
+        </svg>
+      </div>
+    </section>
+
+    <!-- What digital infrastructure means -->
+    <section id="di-meaning" class="px-6 md:px-12 py-24 md:py-32 max-w-7xl mx-auto border-t border-dashed border-zinc-200 scroll-mt-24">
+      <div class="di-reveal max-w-2xl mb-10 md:mb-14">
+        <p class="font-mono text-[9px] tracking-[.28em] text-zinc-400 uppercase mb-3">Definition</p>
+        <h2 class="text-3xl md:text-4xl font-medium text-zinc-900 tracking-tight">The invisible layer behind every screen</h2>
+        <p class="mt-4 text-zinc-500 font-light text-sm md:text-base leading-relaxed">
+          Digital infrastructure is not “servers” in the abstract — it is the authored graph of interfaces, workflows, integrations, data, automation, and visibility that keeps your business coherent.
+        </p>
+        <div class="mt-6 flex flex-wrap items-center gap-3 font-mono text-[8px] tracking-[.12em] uppercase text-zinc-500">
+          <span class="inline-flex items-center gap-1.5"><i class="w-2 h-2 rounded-full bg-[var(--dsm-b)] shadow-[0_0_0_3px_rgba(79,129,189,.2)]" aria-hidden="true"></i> Signal</span>
+          <span class="inline-flex items-center gap-1.5"><i class="w-2 h-2 rounded-full bg-[var(--dsm-y)] shadow-[0_0_0_3px_rgba(229,177,58,.2)]" aria-hidden="true"></i> Orchestration</span>
+          <span class="inline-flex items-center gap-1.5"><i class="w-2 h-2 rounded-full bg-[var(--dsm-r)] shadow-[0_0_0_3px_rgba(192,80,77,.2)]" aria-hidden="true"></i> Policy / edge</span>
+        </div>
+      </div>
+      <div id="di-meaning-board" class="di-reveal di-wire di-meaning-board p-6 md:p-10 overflow-x-auto relative border-zinc-200/90">
+        <div class="pointer-events-none absolute top-0 right-0 w-40 md:w-56 h-40 bg-gradient-to-bl from-[rgba(79,129,189,.1)] via-[rgba(229,177,58,.06)] to-transparent rounded-tr-[1.1rem]"></div>
+        <div class="pointer-events-none absolute bottom-0 left-0 w-32 h-24 bg-gradient-to-tr from-[rgba(192,80,77,.07)] to-transparent rounded-bl-[1rem]"></div>
+        <p class="font-mono text-[9px] tracking-[.2em] text-zinc-500 uppercase mb-6 text-center relative z-[1]">Flow · layer model</p>
+        <svg class="w-full min-w-[680px] max-w-5xl mx-auto h-32 md:h-40 relative z-[1]" viewBox="0 0 680 150" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="diFlowSeg1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#4f81bd"/><stop offset="100%" stop-color="#e5b13a"/></linearGradient>
+            <linearGradient id="diFlowSeg2" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#e5b13a"/><stop offset="100%" stop-color="#c0504d"/></linearGradient>
+            <linearGradient id="diFlowSeg3" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#c0504d"/><stop offset="100%" stop-color="#4f81bd"/></linearGradient>
+            <marker id="arrM" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="#71717a"/></marker>
+          </defs>
+          <text x="340" y="18" text-anchor="middle" fill="#a1a1aa" font-family="'JetBrains Mono',monospace" font-size="7" letter-spacing="0.12em">AUTHORING · LEFT → RIGHT</text>
+          <g class="di-layer-node" style="transform-origin:center">
+            <rect x="4" y="44" width="86" height="54" rx="3" stroke="#18181b" stroke-width="1" fill="#fff"/>
+            <circle cx="12" cy="52" r="2.5" fill="#4f81bd" opacity=".85"/>
+            <text x="47" y="78" text-anchor="middle" fill="#3f3f46" font-family="'JetBrains Mono',monospace" font-size="9">Interfaces</text>
+          </g>
+          <line x1="90" y1="71" x2="108" y2="71" stroke="url(#diFlowSeg1)" stroke-width="2" marker-end="url(#arrM)"/>
+          <g class="di-layer-node" style="transform-origin:center">
+            <rect x="112" y="44" width="86" height="54" rx="3" stroke="#18181b" fill="#fafafa"/>
+            <circle cx="120" cy="52" r="2.5" fill="#e5b13a" opacity=".9"/>
+            <text x="155" y="78" text-anchor="middle" fill="#3f3f46" font-family="'JetBrains Mono',monospace" font-size="9">Workflows</text>
+          </g>
+          <line x1="198" y1="71" x2="216" y2="71" stroke="url(#diFlowSeg1)" stroke-width="1.5" marker-end="url(#arrM)"/>
+          <g class="di-layer-node" style="transform-origin:center">
+            <rect x="220" y="44" width="94" height="54" rx="3" stroke="#18181b" fill="#fff"/>
+            <circle cx="228" cy="52" r="2.5" fill="#c0504d" opacity=".75"/>
+            <text x="267" y="78" text-anchor="middle" fill="#3f3f46" font-family="'JetBrains Mono',monospace" font-size="9">Integrations</text>
+          </g>
+          <line x1="314" y1="71" x2="332" y2="71" stroke="url(#diFlowSeg2)" stroke-width="2" marker-end="url(#arrM)"/>
+          <g class="di-layer-node" style="transform-origin:center">
+            <rect x="336" y="44" width="78" height="54" rx="3" stroke="#18181b" fill="#fafafa"/>
+            <circle cx="344" cy="52" r="2.5" fill="#4f81bd" opacity=".6"/>
+            <text x="375" y="78" text-anchor="middle" fill="#3f3f46" font-family="'JetBrains Mono',monospace" font-size="8">Data</text>
+          </g>
+          <line x1="414" y1="71" x2="432" y2="71" stroke="url(#diFlowSeg2)" stroke-width="1.5" marker-end="url(#arrM)"/>
+          <g class="di-layer-node" style="transform-origin:center">
+            <rect x="436" y="44" width="90" height="54" rx="3" stroke="#18181b" fill="#fff"/>
+            <circle cx="444" cy="52" r="2.5" fill="#e5b13a" opacity=".65"/>
+            <text x="481" y="78" text-anchor="middle" fill="#3f3f46" font-family="'JetBrains Mono',monospace" font-size="9">Automation</text>
+          </g>
+          <line x1="526" y1="71" x2="544" y2="71" stroke="url(#diFlowSeg3)" stroke-width="2" marker-end="url(#arrM)"/>
+          <g class="di-layer-node" style="transform-origin:center">
+            <rect x="548" y="44" width="82" height="54" rx="3" stroke="#4f81bd" stroke-width="1.2" fill="rgba(79,129,189,.07)"/>
+            <circle cx="556" cy="52" r="2.5" fill="#c0504d" opacity=".55"/>
+            <text x="589" y="78" text-anchor="middle" fill="#27272a" font-family="'JetBrains Mono',monospace" font-size="9">Visibility</text>
+          </g>
+          <path d="M47 118 L633 118" stroke="#e4e4e7" stroke-dasharray="4 3" stroke-width="0.75"/>
+          <text x="340" y="112" text-anchor="middle" fill="#a1a1aa" font-family="'JetBrains Mono',monospace" font-size="6.5">BASELINE · COHERENCE</text>
+        </svg>
+        <div class="mt-8 grid md:grid-cols-3 gap-4 relative z-[1]">
+          <div class="di-wire p-4 border border-zinc-200/80 bg-white/80 hover:border-[#4f81bd]/45 transition-colors group">
+            <p class="font-mono text-[8px] text-[var(--dsm-b)] uppercase tracking-[.15em] mb-2">Plane A</p>
+            <svg viewBox="0 0 200 48" class="w-full h-10" aria-hidden="true"><rect x="4" y="14" width="192" height="22" rx="2" fill="none" stroke="#18181b" stroke-width="0.75"/><line x1="24" y1="14" x2="24" y2="36" stroke="#4f81bd" stroke-opacity=".4"/><line x1="100" y1="14" x2="100" y2="36" stroke="#e5b13a" stroke-opacity=".35"/><line x1="176" y1="14" x2="176" y2="36" stroke="#c0504d" stroke-opacity=".35"/></svg>
+            <p class="font-mono text-[8px] text-zinc-500 mt-2">Experience &amp; API surfaces</p>
+          </div>
+          <div class="di-wire p-4 border border-zinc-200/80 bg-white/80 hover:border-[#e5b13a]/50 transition-colors">
+            <p class="font-mono text-[8px] text-[var(--dsm-y)] uppercase tracking-[.15em] mb-2">Plane B</p>
+            <svg viewBox="0 0 200 48" class="w-full h-10" aria-hidden="true"><path d="M10 32 Q100 8 190 32" fill="none" stroke="#71717a" stroke-width="0.75" stroke-dasharray="3 2"/><circle cx="100" cy="20" r="4" fill="#fff" stroke="#e5b13a" stroke-width="1.2"/></svg>
+            <p class="font-mono text-[8px] text-zinc-500 mt-2">Orchestration &amp; queues</p>
+          </div>
+          <div class="di-wire p-4 border border-zinc-200/80 bg-white/80 hover:border-[#c0504d]/45 transition-colors">
+            <p class="font-mono text-[8px] text-[var(--dsm-r)] uppercase tracking-[.15em] mb-2">Plane C</p>
+            <svg viewBox="0 0 200 48" class="w-full h-10" aria-hidden="true"><rect x="8" y="12" width="184" height="26" rx="2" fill="rgba(192,80,77,.06)" stroke="#c0504d" stroke-opacity=".35"/><text x="100" y="29" text-anchor="middle" fill="#71717a" font-family="monospace" font-size="7">POLICY · AUDIT · SLO</text></svg>
+            <p class="font-mono text-[8px] text-zinc-500 mt-2">Guardrails &amp; evidence</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- What we build -->
+    <section id="di-build" class="px-6 md:px-12 py-24 md:py-32 max-w-7xl mx-auto border-t border-dashed border-zinc-200">
+      <div class="di-reveal mb-14 max-w-2xl">
+        <p class="font-mono text-[9px] tracking-[.28em] text-zinc-400 uppercase mb-3">Capability modules</p>
+        <h2 class="text-3xl md:text-4xl font-medium text-zinc-900 tracking-tight">What we build</h2>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <article class="di-reveal di-wire di-mod di-mod--b group p-6 md:p-7 relative"><span class="font-mono text-[8px] absolute top-3 right-3 text-[var(--dsm-b)]">SYS.A</span><i data-lucide="monitor" class="w-5 h-5 mb-3 text-[var(--dsm-b)] opacity-90 group-hover:opacity-100 transition-opacity" stroke-width="1.2"></i><h3 class="font-mono text-[11px] uppercase tracking-[.12em] text-zinc-700 mb-2">Internal operating systems</h3><p class="text-xs text-zinc-500 font-light leading-relaxed">Consoles and workflows your team runs daily — permissions, queues, and audit trails included.</p></article>
+        <article class="di-reveal di-wire di-mod di-mod--y group p-6 md:p-7 relative"><span class="font-mono text-[8px] absolute top-3 right-3 text-[var(--dsm-y)]">SYS.B</span><i data-lucide="git-branch" class="w-5 h-5 mb-3 text-[var(--dsm-y)] opacity-90 group-hover:opacity-100 transition-opacity" stroke-width="1.2"></i><h3 class="font-mono text-[11px] uppercase tracking-[.12em] text-zinc-700 mb-2">Automation architecture</h3><p class="text-xs text-zinc-500 font-light leading-relaxed">Durable jobs, routing, retries, and human gates — designed for production, not demos.</p></article>
+        <article class="di-reveal di-wire di-mod di-mod--r group p-6 md:p-7 relative"><span class="font-mono text-[8px] absolute top-3 right-3 text-[var(--dsm-r)]">SYS.C</span><i data-lucide="layout-grid" class="w-5 h-5 mb-3 text-[var(--dsm-r)] opacity-90 group-hover:opacity-100 transition-opacity" stroke-width="1.2"></i><h3 class="font-mono text-[11px] uppercase tracking-[.12em] text-zinc-700 mb-2">Portals &amp; dashboards</h3><p class="text-xs text-zinc-500 font-light leading-relaxed">Client-facing and internal surfaces with clear roles and real data.</p></article>
+        <article class="di-reveal di-wire di-mod di-mod--b group p-6 md:p-7 relative"><span class="font-mono text-[8px] absolute top-3 right-3 text-[var(--dsm-b)]">SYS.D</span><i data-lucide="link" class="w-5 h-5 mb-3 text-[var(--dsm-b)] opacity-90 group-hover:opacity-100 transition-opacity" stroke-width="1.2"></i><h3 class="font-mono text-[11px] uppercase tracking-[.12em] text-zinc-700 mb-2">Integrations &amp; pipelines</h3><p class="text-xs text-zinc-500 font-light leading-relaxed">CRM, email, Slack, spreadsheets, databases, and APIs — wired with intent.</p></article>
+        <article class="di-reveal di-wire di-mod di-mod--y group p-6 md:p-7 relative"><span class="font-mono text-[8px] absolute top-3 right-3 text-[var(--dsm-y)]">SYS.E</span><i data-lucide="activity" class="w-5 h-5 mb-3 text-[var(--dsm-y)] opacity-90 group-hover:opacity-100 transition-opacity" stroke-width="1.2"></i><h3 class="font-mono text-[11px] uppercase tracking-[.12em] text-zinc-700 mb-2">Observability &amp; reporting</h3><p class="text-xs text-zinc-500 font-light leading-relaxed">Health signals, run logs, and exec views that match how you operate.</p></article>
+        <article class="di-reveal di-wire di-mod di-mod--r group p-6 md:p-7 relative"><span class="font-mono text-[8px] absolute top-3 right-3 text-[var(--dsm-r)]">SYS.F</span><i data-lucide="cpu" class="w-5 h-5 mb-3 text-[var(--dsm-r)] opacity-90 group-hover:opacity-100 transition-opacity" stroke-width="1.2"></i><h3 class="font-mono text-[11px] uppercase tracking-[.12em] text-zinc-700 mb-2">AI-enabled operations</h3><p class="text-xs text-zinc-500 font-light leading-relaxed">Copilots and classifiers grounded in your systems — with review and policy.</p></article>
+      </div>
+    </section>
+
+    <!-- Industry stack + wheel-driven narrative -->
+    <div id="di-industry-stack" class="relative z-10">
+      <section class="px-6 md:px-12 pt-12 pb-8 max-w-7xl mx-auto border-t border-dashed border-zinc-200">
+        <div class="di-reveal max-w-2xl lg:pl-36">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="h-px flex-1 max-w-[4rem] bg-gradient-to-r from-[#4f81bd]/60 via-[#e5b13a]/50 to-[#c0504d]/50"></span>
+            <span class="flex gap-1" aria-hidden="true"><i class="w-1.5 h-3 rounded-sm bg-[var(--dsm-b)] opacity-80"></i><i class="w-1.5 h-3 rounded-sm bg-[var(--dsm-y)] opacity-80"></i><i class="w-1.5 h-3 rounded-sm bg-[var(--dsm-r)] opacity-80"></i></span>
+          </div>
+          <p class="font-mono text-[9px] tracking-[.28em] text-zinc-400 uppercase mb-3">Sector routes</p>
+          <h2 class="text-3xl md:text-4xl font-medium text-zinc-900 tracking-tight">Industries we build for</h2>
+          <p class="mt-3 text-zinc-500 font-light text-sm">Scroll each block — the navigator on the left tracks your position. Infrastructure priorities shift by sector; the pattern stays engineered.</p>
+        </div>
+      </section>
+
+      <section id="di-ind-health" class="di-industry-section px-6 md:px-12 py-20 md:py-28 max-w-7xl mx-auto border-t border-zinc-100" data-industry-index="0">
+        <div class="lg:pl-36 grid lg:grid-cols-2 gap-10 items-start di-reveal">
+          <div>
+            <p class="font-mono text-[10px] uppercase tracking-[.2em] text-zinc-800 mb-2">Healthcare</p>
+            <h3 class="text-xl font-medium text-zinc-900 mb-4">Compliance-aware systems, fewer handoffs</h3>
+            <p class="text-sm text-zinc-500 font-light leading-relaxed">Unify EHR-adjacent tools, scheduling, intake, and comms with audit trails and role clarity — less swivel-chair, more care time.</p>
+            <ul class="mt-4 space-y-2 text-xs text-zinc-600 font-light list-disc pl-4 marker:text-zinc-400">
+              <li>Patient routing &amp; secure messaging bridges</li>
+              <li>Referral and document workflows</li>
+              <li>Operational dashboards without shadow spreadsheets</li>
+            </ul>
+          </div>
+          <div class="di-diag-panel di-diag-panel--pulse di-wire p-5 aspect-video flex items-center justify-center bg-gradient-to-br from-white to-zinc-50/90" style="--pulse: var(--dsm-b)">
+            <svg viewBox="0 0 280 160" class="w-full max-w-sm" fill="none" aria-hidden="true">
+              <defs><linearGradient id="diHlGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#4f81bd"/><stop offset="100%" stop-color="#e5b13a"/></linearGradient></defs>
+              <path d="M76 80 H110" stroke="url(#diHlGrad)" stroke-width="1.5"/>
+              <rect x="20" y="60" width="56" height="40" rx="2" stroke="#18181b" fill="rgba(79,129,189,.04)"/><text x="48" y="84" text-anchor="middle" font-size="7" font-family="monospace" fill="#52525b">INTAKE</text>
+              <circle class="di-node-pulse" cx="48" cy="58" r="3" fill="#fff" stroke="#4f81bd" stroke-width="1.2"/>
+              <rect x="110" y="55" width="60" height="50" rx="2" stroke="#4f81bd" stroke-width="1.2" fill="rgba(79,129,189,.06)"/><text x="140" y="84" text-anchor="middle" font-size="7" font-family="monospace" fill="#27272a">ROUTER</text>
+              <path d="M170 80 H200" stroke="#c0504d" stroke-opacity=".45" stroke-width="1.2"/>
+              <rect x="200" y="62" width="56" height="36" rx="2" stroke="#18181b" fill="rgba(229,177,58,.05)"/><text x="228" y="84" text-anchor="middle" font-size="7" font-family="monospace" fill="#71717a">EHR SYNC</text>
+              <circle class="di-node-pulse" cx="228" cy="60" r="2.5" fill="#fff" stroke="#e5b13a" stroke-width="1"/>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <section id="di-ind-finance" class="di-industry-section px-6 md:px-12 py-20 md:py-28 max-w-7xl mx-auto border-t border-dashed border-zinc-200" data-industry-index="1">
+        <div class="lg:pl-36 grid lg:grid-cols-2 gap-10 items-start di-reveal">
+          <div>
+            <p class="font-mono text-[10px] uppercase tracking-[.2em] text-zinc-800 mb-2">Finance</p>
+            <h3 class="text-xl font-medium text-zinc-900 mb-4">Controls, reconciliation, and speed</h3>
+            <p class="text-sm text-zinc-500 font-light leading-relaxed">Connect ledgers, CRM, and reporting with deterministic jobs — fewer manual closes and clearer lineage for auditors and leadership.</p>
+            <ul class="mt-4 space-y-2 text-xs text-zinc-600 font-light list-disc pl-4">
+              <li>Reconciliation &amp; exception queues</li>
+              <li>Approval chains with immutable logs</li>
+              <li>Investor-ready reporting pipelines</li>
+            </ul>
+          </div>
+          <div class="di-diag-panel di-diag-panel--pulse di-wire p-5 aspect-video flex items-center justify-center bg-gradient-to-br from-white to-red-50/20" style="--pulse: var(--dsm-r)">
+            <svg viewBox="0 0 280 160" class="w-full max-w-sm" fill="none">
+              <defs><linearGradient id="diFnGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#4f81bd"/><stop offset="100%" stop-color="#c0504d"/></linearGradient></defs>
+              <rect x="30" y="50" width="70" height="45" rx="2" stroke="#18181b" fill="rgba(79,129,189,.05)"/><text x="65" y="78" text-anchor="middle" font-size="7" font-family="monospace" fill="#52525b">CORE</text>
+              <circle class="di-node-pulse" cx="65" cy="54" r="3" fill="#fff" stroke="#4f81bd" stroke-width="1"/>
+              <path d="M100 72 L130 72" stroke="url(#diFnGrad)" stroke-width="2"/>
+              <polygon points="135,72 130,69 130,75" fill="#c0504d" opacity=".75"/>
+              <rect x="140" y="48" width="100" height="50" rx="2" stroke="#c0504d" stroke-width="1.3" fill="rgba(192,80,77,.07)"/><text x="190" y="80" text-anchor="middle" font-size="7" font-family="monospace" fill="#27272a">CONTROL</text>
+              <line x1="190" y1="48" x2="190" y2="42" stroke="#e5b13a" stroke-opacity=".7"/><circle cx="190" cy="40" r="2" fill="#e5b13a"/>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <section id="di-ind-retail" class="di-industry-section px-6 md:px-12 py-20 md:py-28 max-w-7xl mx-auto border-t border-dashed border-zinc-200" data-industry-index="2">
+        <div class="lg:pl-36 grid lg:grid-cols-2 gap-10 items-start di-reveal">
+          <div>
+            <p class="font-mono text-[10px] uppercase tracking-[.2em] text-zinc-800 mb-2">Retail / Commerce</p>
+            <h3 class="text-xl font-medium text-zinc-900 mb-4">Inventory, orders, and channels in sync</h3>
+            <p class="text-sm text-zinc-500 font-light leading-relaxed">Omnichannel truth: POS, warehouse, and ecommerce wired so stock, pricing, and fulfillment stay aligned under load.</p>
+            <ul class="mt-4 space-y-2 text-xs text-zinc-600 font-light list-disc pl-4">
+              <li>Order orchestration &amp; exceptions</li>
+              <li>Promo and catalog sync</li>
+              <li>Ops dashboards for stores &amp; HQ</li>
+            </ul>
+          </div>
+          <div class="di-diag-panel di-diag-panel--pulse di-wire p-5 aspect-video flex items-center justify-center bg-gradient-to-br from-white to-amber-50/25" style="--pulse: var(--dsm-y)">
+            <svg viewBox="0 0 280 160" class="w-full max-w-sm" fill="none">
+              <defs><linearGradient id="diRtGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#4f81bd"/><stop offset="50%" stop-color="#e5b13a"/><stop offset="100%" stop-color="#c0504d"/></linearGradient></defs>
+              <path d="M70 58 H90 M190 58 H210" stroke="#a1a1aa" stroke-dasharray="3 2"/>
+              <rect x="20" y="40" width="50" height="36" rx="2" stroke="#18181b" fill="rgba(79,129,189,.04)"/><text x="45" y="62" text-anchor="middle" font-size="6" font-family="monospace" fill="#52525b">POS</text>
+              <rect x="90" y="55" width="90" height="50" rx="2" stroke="#e5b13a" stroke-width="1.3" fill="rgba(229,177,58,.08)"/><text x="135" y="84" text-anchor="middle" font-size="7" font-family="monospace" fill="#27272a">OMS</text>
+              <circle class="di-node-pulse" cx="135" cy="58" r="4" fill="#fff" stroke="#e5b13a" stroke-width="1.3"/>
+              <rect x="200" y="42" width="55" height="40" rx="2" stroke="#18181b" fill="rgba(192,80,77,.04)"/><text x="227" y="66" text-anchor="middle" font-size="6" font-family="monospace" fill="#71717a">WMS</text>
+              <path d="M45 76 L45 100 Q135 118 225 100 L225 76" fill="none" stroke="url(#diRtGrad)" stroke-width="1" stroke-dasharray="4 3"/>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <section id="di-ind-realestate" class="di-industry-section px-6 md:px-12 py-20 md:py-28 max-w-7xl mx-auto border-t border-dashed border-zinc-200" data-industry-index="3">
+        <div class="lg:pl-36 grid lg:grid-cols-2 gap-10 items-start di-reveal">
+          <div>
+            <p class="font-mono text-[10px] uppercase tracking-[.2em] text-zinc-800 mb-2">Real Estate / Property</p>
+            <h3 class="text-xl font-medium text-zinc-900 mb-4">Leasing, maintenance, and portfolio visibility</h3>
+            <p class="text-sm text-zinc-500 font-light leading-relaxed">Tenant requests, vendor dispatch, and asset data on one rails — fewer dropped threads between field and finance.</p>
+            <ul class="mt-4 space-y-2 text-xs text-zinc-600 font-light list-disc pl-4">
+              <li>Work orders &amp; SLAs</li>
+              <li>Owner &amp; operator portals</li>
+              <li>Reporting across properties</li>
+            </ul>
+          </div>
+          <div class="di-diag-panel di-diag-panel--pulse di-wire p-5 aspect-video flex items-center justify-center bg-gradient-to-br from-white to-slate-50/80" style="--pulse: var(--dsm-b)">
+            <svg viewBox="0 0 280 160" class="w-full max-w-sm" fill="none">
+              <rect x="40" y="45" width="200" height="70" rx="3" stroke="#d4d4d8" fill="rgba(79,129,189,.03)"/><line x1="140" y1="45" x2="140" y2="115" stroke="#4f81bd" stroke-opacity=".25"/><line x1="40" y1="80" x2="240" y2="80" stroke="#e5b13a" stroke-opacity=".3" stroke-dasharray="3 2"/>
+              <circle class="di-node-pulse" cx="90" cy="80" r="8" fill="#fff" stroke="#c0504d" stroke-width="1.2" stroke-opacity=".65"/><circle class="di-node-pulse" cx="190" cy="80" r="8" fill="#fff" stroke="#4f81bd" stroke-width="1.3"/>
+              <text x="90" y="104" text-anchor="middle" font-size="6" font-family="monospace" fill="#a1a1aa">FIELD</text><text x="190" y="104" text-anchor="middle" font-size="6" font-family="monospace" fill="#a1a1aa">FINANCE</text>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <section id="di-ind-logistics" class="di-industry-section px-6 md:px-12 py-20 md:py-28 max-w-7xl mx-auto border-t border-dashed border-zinc-200" data-industry-index="4">
+        <div class="lg:pl-36 grid lg:grid-cols-2 gap-10 items-start di-reveal">
+          <div>
+            <p class="font-mono text-[10px] uppercase tracking-[.2em] text-zinc-800 mb-2">Logistics / Operations</p>
+            <h3 class="text-xl font-medium text-zinc-900 mb-4">Throughput, exceptions, and fleet truth</h3>
+            <p class="text-sm text-zinc-500 font-light leading-relaxed">Dispatch, carrier APIs, and warehouse systems coordinated — with clear escalation when reality diverges from plan.</p>
+            <ul class="mt-4 space-y-2 text-xs text-zinc-600 font-light list-disc pl-4">
+              <li>Shipment tracking &amp; ETAs</li>
+              <li>Exception queues &amp; reroutes</li>
+              <li>Ops metrics without spreadsheet drift</li>
+            </ul>
+          </div>
+          <div class="di-diag-panel di-diag-panel--pulse di-wire p-5 aspect-video flex items-center justify-center bg-gradient-to-br from-white to-zinc-50/90" style="--pulse: var(--dsm-r)">
+            <svg viewBox="0 0 280 160" class="w-full max-w-sm" fill="none">
+              <defs><linearGradient id="diLgGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#4f81bd"/><stop offset="50%" stop-color="#e5b13a"/><stop offset="100%" stop-color="#c0504d"/></linearGradient></defs>
+              <path d="M30 100 Q140 38 250 100" fill="none" stroke="url(#diLgGrad)" stroke-width="1.4"/>
+              <circle cx="30" cy="100" r="5" fill="#fff" stroke="#4f81bd" stroke-width="1.2"/><circle class="di-node-pulse" cx="140" cy="70" r="6" fill="#fff" stroke="#e5b13a" stroke-width="1.3"/><circle cx="250" cy="100" r="5" fill="#fff" stroke="#c0504d" stroke-width="1.2"/>
+              <text x="140" y="24" text-anchor="middle" font-size="6" font-family="monospace" fill="#a1a1aa">HUB</text>
+            </svg>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Infrastructure in motion -->
+    <section id="di-motion" class="px-6 md:px-12 py-24 md:py-36 max-w-7xl mx-auto border-t border-dashed border-zinc-200 bg-gradient-to-b from-white/50 via-[rgba(79,129,189,.04)] to-white/40">
+      <div class="di-reveal text-center max-w-2xl mx-auto mb-12">
+        <p class="font-mono text-[9px] tracking-[.28em] text-zinc-400 uppercase mb-3">[ execution pathway ]</p>
+        <h2 class="text-3xl md:text-4xl font-medium text-zinc-900 tracking-tight">Infrastructure in motion</h2>
+        <p class="mt-3 text-zinc-500 font-light text-sm">Request → validate → route → sync → acknowledge. Path traces with scroll.</p>
+        <div class="mt-5 flex justify-center gap-2 font-mono text-[7px] tracking-[.2em] uppercase text-zinc-400">
+          <span class="px-2 py-0.5 rounded border border-[#4f81bd]/30 text-[#4f81bd]/90">ingest</span>
+          <span class="px-2 py-0.5 rounded border border-[#e5b13a]/35 text-[#b8860b]">transform</span>
+          <span class="px-2 py-0.5 rounded border border-[#c0504d]/30 text-[#c0504d]/90">commit</span>
+        </div>
+      </div>
+      <div class="di-reveal relative max-w-4xl mx-auto">
+        <svg class="w-full h-auto" viewBox="0 0 720 220" fill="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="diMotionStroke" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#4f81bd"/><stop offset="38%" stop-color="#e5b13a"/><stop offset="72%" stop-color="#c0504d"/><stop offset="100%" stop-color="#4f81bd"/>
+            </linearGradient>
+            <linearGradient id="diMotionGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="rgba(79,129,189,.35)"/><stop offset="50%" stop-color="rgba(229,177,58,.28)"/><stop offset="100%" stop-color="rgba(192,80,77,.3)"/>
+            </linearGradient>
+          </defs>
+          <path id="di-motion-path" d="M40 120 C120 40 200 40 280 100 S480 180 560 100 S640 60 680 100" pathLength="1" fill="none" stroke="url(#diMotionStroke)" stroke-width="1.35" stroke-linecap="round"/>
+          <path id="di-motion-glow" d="M40 120 C120 40 200 40 280 100 S480 180 560 100 S640 60 680 100" pathLength="1" fill="none" stroke="url(#diMotionGlow)" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+          <g id="di-motion-nodes">
+            <circle cx="40" cy="120" r="6" fill="#fff" stroke="#4f81bd" stroke-width="1.3"/>
+            <circle cx="280" cy="100" r="6" fill="#fff" stroke="#e5b13a" stroke-width="1.3"/>
+            <circle cx="560" cy="100" r="6" fill="#fff" stroke="#c0504d" stroke-width="1.2"/>
+            <circle cx="680" cy="100" r="7" fill="rgba(79,129,189,.12)" stroke="#4f81bd" stroke-width="1.2"/>
+          </g>
+          <text x="40" y="142" text-anchor="middle" font-size="7" font-family="monospace" fill="#71717a">INGEST</text>
+          <text x="360" y="198" text-anchor="middle" font-size="7" font-family="monospace" fill="#71717a">HANDOFF</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- Observability / terminal (light sketch) -->
+    <section id="di-observe" class="px-6 md:px-12 py-24 max-w-5xl mx-auto border-t border-dashed border-zinc-200">
+      <div class="di-reveal mb-8">
+        <p class="font-mono text-[9px] tracking-[.28em] text-zinc-400 uppercase mb-2">Systems view</p>
+        <h2 class="text-2xl md:text-3xl font-medium text-zinc-900">Observability stream</h2>
+      </div>
+      <div class="di-reveal di-term overflow-hidden shadow-sm ring-1 ring-zinc-200/80">
+        <div class="flex items-center justify-between px-4 py-2.5 border-b border-zinc-200 bg-gradient-to-r from-zinc-50/95 via-white to-zinc-50/90 relative">
+          <span class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#4f81bd] via-[#e5b13a] to-[#c0504d] opacity-80"></span>
+          <span class="font-mono text-[9px] uppercase tracking-[.18em] text-zinc-500 pl-2">infra.log · tail</span>
+          <span class="font-mono text-[8px] text-[#4f81bd]">[ HEALTH_OK ]</span>
+        </div>
+        <div class="p-1">
+          <div class="di-term-row border-l-2 border-l-[#4f81bd]/40 hover:border-l-[#4f81bd]"><span class="text-zinc-400">10:02:01</span><span>deploy · api-gateway · v2.4.1 · rolling 3/3</span><span class="text-right font-mono text-[9px]" style="color:var(--dsm-b)">OK</span></div>
+          <div class="di-term-row border-l-2 border-l-[#e5b13a]/35 hover:border-l-[#e5b13a]"><span class="text-zinc-400">10:02:14</span><span>sync · salesforce → warehouse · delta 1.2k rows</span><span class="text-right font-mono text-[9px]" style="color:var(--dsm-y)">OK</span></div>
+          <div class="di-term-row border-l-2 border-l-[#4f81bd]/50 hover:border-l-[#4f81bd]"><span class="text-zinc-400">10:02:22</span><span>workflow · intake_approve · step 3/4</span><span class="text-right font-mono text-[9px]" style="color:var(--dsm-b)">RUN</span></div>
+          <div class="di-term-row border-l-2 border-l-[#c0504d]/30 hover:border-l-[#c0504d]"><span class="text-zinc-400">10:02:31</span><span>report · weekly_ops.pdf · generated</span><span class="text-right font-mono text-[9px]" style="color:var(--dsm-r)">OK</span></div>
+          <div class="di-term-row border-l-2 border-l-[#4f81bd]/35 hover:border-l-[#4f81bd]"><span class="text-zinc-400">10:02:44</span><span>GET /health · latency 42ms</span><span class="text-right font-mono text-[9px]" style="color:var(--dsm-b)">OK</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Portrait + intelligence -->
+    <section id="di-portrait-intel" class="px-6 md:px-12 py-28 md:py-36 max-w-7xl mx-auto border-t border-dashed border-zinc-200">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div class="di-reveal order-2 lg:order-1 space-y-4">
+          <p class="font-mono text-[9px] tracking-[.28em] text-zinc-400 uppercase">Signal · overlay</p>
+          <h2 class="text-2xl md:text-3xl font-medium text-zinc-900">Systems intelligence, not noise</h2>
+          <p class="text-sm text-zinc-500 font-light leading-relaxed">Infrastructure is judged by how calmly it behaves under load — routing overlays, health tags, and execution context that operators can trust.</p>
+          <ul class="font-mono text-[10px] text-zinc-500 space-y-2 border-l-2 border-l-zinc-200 pl-4">
+            <li class="flex items-center gap-2"><span class="inline-block w-1.5 h-1.5 rounded-full bg-[var(--dsm-b)] shrink-0"></span><span class="text-zinc-400">TAG</span> ROUTE_ID · ORD-88421</li>
+            <li class="flex items-center gap-2"><span class="inline-block w-1.5 h-1.5 rounded-full bg-[var(--dsm-r)] shrink-0"></span><span class="text-zinc-400">TAG</span> POLICY · PII_MIN</li>
+            <li class="flex items-center gap-2"><span class="inline-block w-1.5 h-1.5 rounded-full bg-[var(--dsm-y)] shrink-0"></span><span class="text-zinc-400">TAG</span> SLO · 99.5% window</li>
+          </ul>
+        </div>
+        <div class="di-reveal order-1 lg:order-2 relative">
+          <div class="di-portrait-frame aspect-[3/4] max-w-md mx-auto">
+            <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/92a4234b-15fa-4d5f-8821-48d3f9f7e2f1_3840w.jpg" alt="" width="600" height="800" loading="lazy" decoding="async"/>
+          </div>
+          <div class="absolute top-4 right-4 md:right-8 font-mono text-[7px] tracking-[.15em] text-zinc-700 bg-white/95 border border-zinc-200/90 px-2 py-1 rounded pointer-events-none border-t-2 border-t-[#4f81bd]/70">ANNOT · LAYER_γ</div>
+          <div class="absolute bottom-8 left-4 font-mono text-[7px] text-zinc-500 pointer-events-none pl-2 border-l-2 border-[#e5b13a]/60">+0.02 · alignment</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Outcomes -->
+    <section id="di-outcomes" class="px-6 md:px-12 py-24 md:py-32 max-w-7xl mx-auto border-t border-dashed border-zinc-200">
+      <div class="di-reveal mb-12 max-w-xl">
+        <h2 class="text-3xl font-medium text-zinc-900 tracking-tight">Operational outcomes</h2>
+        <p class="mt-2 text-zinc-500 font-light text-sm">What strong infrastructure returns — stated as system properties, not vanity metrics.</p>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div class="di-reveal di-wire di-out di-out--b group p-6 border-dashed relative overflow-hidden"><span class="di-out-dot absolute top-3 right-3 w-2 h-2 rounded-full opacity-80"></span><p class="font-mono text-[10px] uppercase tracking-[.1em] text-zinc-800 mb-2">Cleaner operations</p><p class="text-xs text-zinc-500 font-light">Fewer ad-hoc tools and fewer manual bridges between teams.</p><svg class="mt-4 w-full h-8 opacity-50 group-hover:opacity-90 transition-opacity" viewBox="0 0 120 24" aria-hidden="true"><path d="M4 18 L116 18" stroke="#a1a1aa" stroke-width="0.5"/><path d="M4 18 L20 10 L40 14 L60 8 L80 16 L100 12 L116 14" fill="none" stroke="#4f81bd" stroke-width="1.2" opacity=".7"/></svg></div>
+        <div class="di-reveal di-wire di-out di-out--y group p-6 border-dashed relative overflow-hidden"><span class="di-out-dot absolute top-3 right-3 w-2 h-2 rounded-full opacity-80"></span><p class="font-mono text-[10px] uppercase tracking-[.1em] text-zinc-800 mb-2">Better visibility</p><p class="text-xs text-zinc-500 font-light">Shared truth for status, backlog, and exceptions.</p><svg class="mt-4 w-full h-8 opacity-50 group-hover:opacity-90 transition-opacity" viewBox="0 0 120 24" aria-hidden="true"><rect x="4" y="6" width="112" height="12" rx="1" fill="none" stroke="#e5b13a" stroke-opacity=".4" stroke-width="0.75"/><line x1="20" y1="6" x2="20" y2="18" stroke="#e5b13a" stroke-opacity=".5"/><line x1="60" y1="6" x2="60" y2="18" stroke="#e5b13a" stroke-opacity=".35"/></svg></div>
+        <div class="di-reveal di-wire di-out di-out--r group p-6 border-dashed relative overflow-hidden"><span class="di-out-dot absolute top-3 right-3 w-2 h-2 rounded-full opacity-80"></span><p class="font-mono text-[10px] uppercase tracking-[.1em] text-zinc-800 mb-2">Fewer bottlenecks</p><p class="text-xs text-zinc-500 font-light">Queues and approvals that don’t stall in inboxes.</p><svg class="mt-4 w-full h-8 opacity-50 group-hover:opacity-90 transition-opacity" viewBox="0 0 120 24" aria-hidden="true"><path d="M8 16h24M48 16h24M88 16h20" stroke="#c0504d" stroke-opacity=".45" stroke-width="1.2" stroke-linecap="round"/><circle cx="32" cy="16" r="3" fill="#fff" stroke="#c0504d" stroke-width="1"/></svg></div>
+        <div class="di-reveal di-wire di-out di-out--b group p-6 border-dashed relative overflow-hidden"><span class="di-out-dot absolute top-3 right-3 w-2 h-2 rounded-full opacity-80"></span><p class="font-mono text-[10px] uppercase tracking-[.1em] text-zinc-800 mb-2">Scalable execution</p><p class="text-xs text-zinc-500 font-light">Design that holds as volume and teams grow.</p><svg class="mt-4 w-full h-8 opacity-50 group-hover:opacity-90 transition-opacity" viewBox="0 0 120 24" aria-hidden="true"><path d="M4 20 L116 4" stroke="#4f81bd" stroke-opacity=".35" stroke-width="0.75"/><path d="M4 16 L30 12 L56 8 L82 10 L108 6" fill="none" stroke="#4f81bd" stroke-width="1"/></svg></div>
+        <div class="di-reveal di-wire di-out di-out--y group p-6 border-dashed relative overflow-hidden"><span class="di-out-dot absolute top-3 right-3 w-2 h-2 rounded-full opacity-80"></span><p class="font-mono text-[10px] uppercase tracking-[.1em] text-zinc-800 mb-2">Reliable systems</p><p class="text-xs text-zinc-500 font-light">Monitoring, runbooks, and recovery paths — engineered in.</p><svg class="mt-4 w-full h-8 opacity-50 group-hover:opacity-90 transition-opacity" viewBox="0 0 120 24" aria-hidden="true"><circle cx="60" cy="12" r="9" fill="none" stroke="#e5b13a" stroke-opacity=".45" stroke-width="0.75" stroke-dasharray="4 3"/></svg></div>
+        <div class="di-reveal di-wire di-out di-out--r group p-6 border-dashed relative overflow-hidden"><span class="di-out-dot absolute top-3 right-3 w-2 h-2 rounded-full opacity-80"></span><p class="font-mono text-[10px] uppercase tracking-[.1em] text-zinc-800 mb-2">Coordination</p><p class="text-xs text-zinc-500 font-light">Tools and data aligned across functions and regions.</p><svg class="mt-4 w-full h-8 opacity-50 group-hover:opacity-90 transition-opacity" viewBox="0 0 120 24" aria-hidden="true"><path d="M20 12 L50 12 L50 6 L90 6 L90 18 L60 18 L60 12" fill="none" stroke="#c0504d" stroke-opacity=".4" stroke-width="0.9"/></svg></div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section id="di-cta" class="px-6 md:px-12 py-28 md:py-36 max-w-3xl mx-auto text-center border-t border-dashed border-zinc-200 relative">
+      <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent from-20% via-[#4f81bd]/35 to-transparent to-80%"></div>
+      <div class="di-reveal">
+        <h2 class="text-3xl md:text-4xl font-medium text-zinc-900 tracking-tight mb-4">Design your infrastructure stack <span class="bg-gradient-to-r from-[#4f81bd] via-[#c0504d] to-[#e5b13a] bg-clip-text text-transparent">with us.</span></h2>
+        <p class="text-zinc-500 font-light text-sm md:text-base max-w-lg mx-auto mb-10">Bring your platforms, bottlenecks, and ambitions — we map the operating layer, then ship software and automation that belongs in production.</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="offerings.html" class="font-mono text-[10px] uppercase tracking-[.16em] border border-zinc-900 bg-zinc-900 text-white px-8 py-3 rounded hover:bg-white hover:text-zinc-900 transition-colors">Back to offerings</a>
+          <a href="software-automation.html" class="font-mono text-[10px] uppercase tracking-[.16em] text-zinc-500 border-b border-dashed border-zinc-400 hover:text-zinc-900 pb-1">Software &amp; automation →</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="relative z-10 px-6 py-12 text-center border-t border-zinc-200">
+    <p class="font-mono text-[9px] tracking-[.32em] uppercase text-zinc-400">DSM Techrealm · Digital infrastructure © 2026</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script>
+    lucide.createIcons();
+    gsap.registerPlugin(ScrollTrigger);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const industryLabels = ['Healthcare','Finance','Retail / Commerce','Real Estate','Logistics'];
+    const wheelPointer = document.getElementById('di-wheel-pointer');
+    const wheelLabel = document.getElementById('di-wheel-label');
+    const wheelEl = document.getElementById('di-wheel');
+    const industryStack = document.getElementById('di-industry-stack');
+    const heroEl = document.getElementById('di-hero');
+    const heroHit = document.getElementById('di-hero-hit');
+
+    if (heroEl && heroHit) {
+      heroHit.addEventListener('mouseenter', function() { heroEl.classList.add('di-hero--color'); });
+      heroHit.addEventListener('mouseleave', function() { heroEl.classList.remove('di-hero--color'); });
+      heroHit.addEventListener('touchstart', function() { heroEl.classList.add('di-hero--color'); }, { passive: true });
+      heroHit.addEventListener('touchend', function() { heroEl.classList.remove('di-hero--color'); });
+      heroHit.addEventListener('touchcancel', function() { heroEl.classList.remove('di-hero--color'); });
+    }
+
+    function setIndustryWheel(index) {
+      if (!wheelPointer || !wheelLabel) return;
+      const deg = index * 72;
+      wheelPointer.style.transform = 'rotate('+deg+'deg)';
+      wheelLabel.textContent = industryLabels[index] || '';
+      if (wheelEl) {
+        wheelEl.classList.remove('di-wheel--sector-0','di-wheel--sector-1','di-wheel--sector-2','di-wheel--sector-3','di-wheel--sector-4');
+        wheelEl.classList.add('di-wheel--sector-' + index);
+      }
+    }
+
+    if (!reduced && typeof particlesJS === 'function' && document.getElementById('di-hero-particles')) {
+      particlesJS('di-hero-particles', {
+        particles: {
+          number: { value: 52, density: { enable: true, value_area: 900 } },
+          color: { value: ['#18181b', '#4f81bd', '#e5b13a', '#c0504d'] },
+          shape: { type: 'circle' },
+          opacity: { value: 0.28, random: true },
+          size: { value: 2.2, random: true },
+          line_linked: { enable: true, distance: 132, color: '#27272a', opacity: 0.12, width: 1 },
+          move: { enable: true, speed: 0.65, direction: 'none', random: true, straight: false, out_mode: 'out', bounce: false }
+        },
+        interactivity: {
+          detect_on: 'window',
+          events: { onhover: { enable: true, mode: 'grab' }, onclick: { enable: false }, resize: true },
+          modes: { grab: { distance: 200, line_linked: { opacity: 0.38 } } }
+        },
+        retina_detect: true
+      });
+    }
+
+    if (!reduced) {
+      document.querySelectorAll('.di-industry-section').forEach(function(sec) {
+        var idx = parseInt(sec.getAttribute('data-industry-index'), 10);
+        ScrollTrigger.create({
+          trigger: sec,
+          start: 'top 55%',
+          end: 'bottom 45%',
+          onEnter: function() { setIndustryWheel(idx); },
+          onEnterBack: function() { setIndustryWheel(idx); }
+        });
+      });
+
+      if (industryStack && wheelEl && 'IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function(entries) {
+          entries.forEach(function(e) {
+            wheelEl.classList.toggle('di-wheel--hidden', !e.isIntersecting);
+          });
+        }, { rootMargin: '-72px 0px -12% 0px', threshold: 0 });
+        io.observe(industryStack);
+      }
+
+      gsap.utils.toArray('.di-reveal').forEach(function(el) {
+        gsap.to(el, {
+          scrollTrigger: { trigger: el, start: 'top 91%', toggleActions: 'play none none none' },
+          opacity: 1, y: 0, duration: 0.72, ease: 'power3.out'
+        });
+      });
+
+      var mp = document.getElementById('di-motion-path');
+      var mg = document.getElementById('di-motion-glow');
+      if (mp) {
+        var Lm = mp.getTotalLength();
+        mp.style.strokeDasharray = Lm;
+        mp.style.strokeDashoffset = Lm;
+        if (mg) { mg.style.strokeDasharray = Lm; mg.style.strokeDashoffset = Lm; }
+        gsap.to(mp, { strokeDashoffset: 0, ease: 'none', scrollTrigger: { trigger: '#di-motion', start: 'top 75%', end: 'bottom 30%', scrub: 0.65 } });
+        if (mg) gsap.to(mg, { strokeDashoffset: 0, ease: 'none', scrollTrigger: { trigger: '#di-motion', start: 'top 75%', end: 'bottom 30%', scrub: 0.65 } });
+      }
+      var motionNodes = document.getElementById('di-motion-nodes');
+      if (motionNodes) {
+        gsap.from(motionNodes.querySelectorAll('circle'), {
+          scale: 0.68, opacity: 0.55, transformOrigin: '50% 50%', stagger: 0.06, ease: 'power2.out',
+          scrollTrigger: { trigger: '#di-motion', start: 'top 72%', end: 'center center', scrub: 0.75 }
+        });
+      }
+      var meaningBoard = document.getElementById('di-meaning-board');
+      if (meaningBoard) {
+        ScrollTrigger.create({
+          trigger: meaningBoard,
+          start: 'top 88%',
+          once: true,
+          onEnter: function() { meaningBoard.classList.add('di-meaning--lit'); }
+        });
+      }
+
+      ScrollTrigger.create({
+        trigger: document.body,
+        start: 'top top',
+        end: 'bottom bottom',
+        onUpdate: function(self) {
+          var bar = document.getElementById('di-progress');
+          if (bar) bar.style.height = (self.progress * 100) + '%';
+        }
+      });
+    } else {
+      document.querySelectorAll('.di-reveal').forEach(function(el) {
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+      });
+      var mbRm = document.getElementById('di-meaning-board');
+      if (mbRm) mbRm.classList.add('di-meaning--lit');
+    }
+  </script>
+</body>
+</html>
