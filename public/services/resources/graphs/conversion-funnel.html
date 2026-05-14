@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversion Funnel — DSM Research</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#FCFCF6;color:#090908;font-family:'JetBrains Mono',monospace;-webkit-font-smoothing:antialiased;padding:3rem 1.5rem;display:flex;justify-content:center;align-items:center;min-height:100vh}
+        .poster{max-width:860px;width:100%;background:#FDFDFA;border:1px solid rgba(0,0,0,.08);box-shadow:0 1px 3px rgba(0,0,0,.04);padding:3.5rem 3rem;position:relative}
+        .poster::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#6D8B71,#8FA98F,#A7CCD1)}
+        .label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#71717a}
+        .title{font-family:'Inter',sans-serif;font-size:1.65rem;font-weight:600;line-height:1.25;margin:.75rem 0 .25rem;color:#090908}
+        .subtitle{font-size:11px;color:#71717a;max-width:560px;line-height:1.6}
+        .chart-area{margin-top:2.5rem}
+        .axis-label{font-size:9px;fill:#71717a;letter-spacing:.08em}
+        .stage-label{font-size:10px;fill:#394547;font-weight:500}
+        .value-label{font-size:11px;font-weight:600}
+        .rate-label{font-size:9px;font-weight:500;fill:#6D8B71}
+        .grid-line{stroke:#e5e5e5;stroke-width:.5}
+        .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:2rem;padding-top:1.5rem;border-top:1px solid #e5e5e5}
+        .metric{text-align:center;padding:.75rem}
+        .metric-value{font-size:1.1rem;font-weight:600;color:#325B39}
+        .metric-label{font-size:9px;color:#71717a;margin-top:.25rem;letter-spacing:.1em;text-transform:uppercase}
+        .footer-note{font-size:9px;color:#a1a1aa;margin-top:2rem;line-height:1.6;border-top:1px solid #e5e5e5;padding-top:1rem;display:flex;justify-content:space-between}
+        @media(max-width:640px){.poster{padding:2rem 1.25rem}.title{font-size:1.25rem}.metrics{grid-template-columns:1fr}}
+        @media print{body{padding:0}.poster{box-shadow:none;border:none}}
+    </style>
+</head>
+<body>
+    <div class="poster">
+        <div class="label">DSM × TechRealm Research · Acquisition Analysis</div>
+        <h1 class="title">Multi-Channel AI Acquisition Funnel</h1>
+        <p class="subtitle">Aggregate conversion pipeline across Meta, Google, Email, and WhatsApp channels. AI-optimized behavioral targeting with automated follow-up sequences.</p>
+
+        <div class="chart-area">
+            <svg viewBox="0 0 780 420" width="100%" style="overflow:visible">
+                <!-- Funnel stages rendered as centered horizontal bars, narrowing -->
+
+                <!-- Stage 1: Impressions — 1,000,000 -->
+                <rect x="40" y="20" width="700" height="52" rx="3" fill="#6D8B71" opacity=".15"/>
+                <rect x="40" y="20" width="700" height="52" rx="3" fill="none" stroke="#6D8B71" stroke-width="1" opacity=".4"/>
+                <text x="390" y="42" class="stage-label" text-anchor="middle" style="font-size:11px">IMPRESSIONS</text>
+                <text x="390" y="60" class="value-label" text-anchor="middle" fill="#325B39">1,000,000</text>
+
+                <!-- Connector -->
+                <path d="M180,72 L180,88 M600,72 L600,88" stroke="#d4d4d8" stroke-width="1"/>
+                <text x="720" y="84" class="rate-label" text-anchor="end">3.2% CTR</text>
+
+                <!-- Stage 2: Clicks — 32,000 -->
+                <rect x="100" y="88" width="580" height="52" rx="3" fill="#6D8B71" opacity=".22"/>
+                <rect x="100" y="88" width="580" height="52" rx="3" fill="none" stroke="#6D8B71" stroke-width="1" opacity=".4"/>
+                <text x="390" y="110" class="stage-label" text-anchor="middle" style="font-size:11px">CLICKS</text>
+                <text x="390" y="128" class="value-label" text-anchor="middle" fill="#325B39">32,000</text>
+
+                <!-- Connector -->
+                <path d="M220,140 L220,156 M560,140 L560,156" stroke="#d4d4d8" stroke-width="1"/>
+                <text x="720" y="152" class="rate-label" text-anchor="end">18.8% conv.</text>
+
+                <!-- Stage 3: Leads — 6,000 -->
+                <rect x="160" y="156" width="460" height="52" rx="3" fill="#6D8B71" opacity=".32"/>
+                <rect x="160" y="156" width="460" height="52" rx="3" fill="none" stroke="#6D8B71" stroke-width="1" opacity=".4"/>
+                <text x="390" y="178" class="stage-label" text-anchor="middle" style="font-size:11px">LEADS CAPTURED</text>
+                <text x="390" y="196" class="value-label" text-anchor="middle" fill="#325B39">6,000</text>
+
+                <!-- Connector -->
+                <path d="M260,208 L260,224 M520,208 L520,224" stroke="#d4d4d8" stroke-width="1"/>
+                <text x="720" y="220" class="rate-label" text-anchor="end">40% qualified</text>
+
+                <!-- Stage 4: Qualified — 2,400 -->
+                <rect x="220" y="224" width="340" height="52" rx="3" fill="#6D8B71" opacity=".45"/>
+                <rect x="220" y="224" width="340" height="52" rx="3" fill="none" stroke="#6D8B71" stroke-width="1" opacity=".4"/>
+                <text x="390" y="246" class="stage-label" text-anchor="middle" style="font-size:11px">QUALIFIED LEADS</text>
+                <text x="390" y="264" class="value-label" text-anchor="middle" fill="#325B39">2,400</text>
+
+                <!-- Connector -->
+                <path d="M300,276 L300,292 M480,276 L480,292" stroke="#d4d4d8" stroke-width="1"/>
+                <text x="720" y="288" class="rate-label" text-anchor="end">25% proposal</text>
+
+                <!-- Stage 5: Proposals — 600 -->
+                <rect x="280" y="292" width="220" height="52" rx="3" fill="#6D8B71" opacity=".6"/>
+                <rect x="280" y="292" width="220" height="52" rx="3" fill="none" stroke="#6D8B71" stroke-width="1" opacity=".4"/>
+                <text x="390" y="314" class="stage-label" text-anchor="middle" style="font-size:11px">PROPOSALS SENT</text>
+                <text x="390" y="332" class="value-label" text-anchor="middle" fill="#325B39">600</text>
+
+                <!-- Connector -->
+                <path d="M340,344 L340,360 M440,344 L440,360" stroke="#d4d4d8" stroke-width="1"/>
+                <text x="720" y="356" class="rate-label" text-anchor="end">38% close rate</text>
+
+                <!-- Stage 6: Closed — 228 -->
+                <rect x="330" y="360" width="120" height="52" rx="3" fill="#325B39" opacity=".85"/>
+                <text x="390" y="382" text-anchor="middle" style="font-size:11px;fill:#fff;font-weight:500">CLOSED WON</text>
+                <text x="390" y="400" text-anchor="middle" style="font-size:13px;fill:#fff;font-weight:700">228</text>
+            </svg>
+        </div>
+
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-value">0.023%</div>
+                <div class="metric-label">Overall Conv. Rate</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value">$142</div>
+                <div class="metric-label">Cost Per Acquisition</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value">3.8×</div>
+                <div class="metric-label">ROAS (Return on Ad Spend)</div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            <span>DSM Research · Q1 2026 · aggregate across 8 client campaigns</span>
+            <span>channels: Meta Ads, Google Ads, Email, WhatsApp, SMS</span>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Acceleration — DSM Research</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#FCFCF6;color:#090908;font-family:'JetBrains Mono',monospace;-webkit-font-smoothing:antialiased;padding:3rem 1.5rem;display:flex;justify-content:center;align-items:center;min-height:100vh}
+        .poster{max-width:860px;width:100%;background:#FDFDFA;border:1px solid rgba(0,0,0,.08);box-shadow:0 1px 3px rgba(0,0,0,.04);padding:3.5rem 3rem;position:relative}
+        .poster::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#96B0DB,#A7CCD1,#6D8B71)}
+        .label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#71717a}
+        .title{font-family:'Inter',sans-serif;font-size:1.65rem;font-weight:600;line-height:1.25;margin:.75rem 0 .25rem;color:#090908}
+        .subtitle{font-size:11px;color:#71717a;max-width:560px;line-height:1.6}
+        .chart-area{margin-top:2.5rem}
+        .axis-label{font-size:9px;fill:#71717a;letter-spacing:.08em}
+        .grid-line{stroke:#e5e5e5;stroke-width:.5}
+        .data-label{font-size:9px;font-weight:600;letter-spacing:.05em}
+        .callout{display:inline-flex;align-items:center;gap:.5rem;background:#f4f4f5;border:1px solid #e5e5e5;border-radius:4px;padding:.4rem .7rem;font-size:10px;color:#394547;margin-top:1.5rem}
+        .callout-value{font-weight:600;color:#325B39}
+        .legend{display:flex;gap:1.5rem;margin-top:1.5rem;padding-top:1rem;border-top:1px solid #e5e5e5}
+        .legend-item{display:flex;align-items:center;gap:.4rem;font-size:10px;color:#394547}
+        .legend-line{width:18px;height:2px;border-radius:1px}
+        .footer-note{font-size:9px;color:#a1a1aa;margin-top:2rem;line-height:1.6;border-top:1px solid #e5e5e5;padding-top:1rem;display:flex;justify-content:space-between}
+        @media(max-width:640px){.poster{padding:2rem 1.25rem}.title{font-size:1.25rem}}
+        @media print{body{padding:0}.poster{box-shadow:none;border:none}}
+    </style>
+</head>
+<body>
+    <div class="poster">
+        <div class="label">DSM × TechRealm Research · Delivery Analysis</div>
+        <h1 class="title">Project Delivery: Traditional vs. AI-Enhanced</h1>
+        <p class="subtitle">Cumulative feature delivery over 12 months comparing traditional waterfall/agile methodology against AI-augmented development pipeline across 12 client engagements.</p>
+
+        <div class="chart-area">
+            <svg viewBox="0 0 780 400" width="100%" style="overflow:visible">
+                <!-- Grid -->
+                <line x1="60" y1="20" x2="60" y2="350" stroke="#d4d4d8" stroke-width=".5"/>
+                <line x1="60" y1="350" x2="760" y2="350" stroke="#394547" stroke-width="1"/>
+
+                <!-- Horizontal grid lines -->
+                <line x1="60" y1="284" x2="760" y2="284" class="grid-line"/>
+                <line x1="60" y1="218" x2="760" y2="218" class="grid-line"/>
+                <line x1="60" y1="152" x2="760" y2="152" class="grid-line"/>
+                <line x1="60" y1="86" x2="760" y2="86" class="grid-line"/>
+                <line x1="60" y1="20" x2="760" y2="20" class="grid-line"/>
+
+                <!-- Y axis labels (features delivered) -->
+                <text x="52" y="354" class="axis-label" text-anchor="end">0</text>
+                <text x="52" y="288" class="axis-label" text-anchor="end">20</text>
+                <text x="52" y="222" class="axis-label" text-anchor="end">40</text>
+                <text x="52" y="156" class="axis-label" text-anchor="end">60</text>
+                <text x="52" y="90" class="axis-label" text-anchor="end">80</text>
+                <text x="52" y="24" class="axis-label" text-anchor="end">100</text>
+
+                <!-- Y axis title -->
+                <text x="14" y="200" class="axis-label" text-anchor="middle" transform="rotate(-90,14,200)" style="letter-spacing:.15em">FEATURES SHIPPED</text>
+
+                <!-- X axis labels (months) -->
+                <text x="60" y="370" class="axis-label" text-anchor="middle">M0</text>
+                <text x="118" y="370" class="axis-label" text-anchor="middle">M1</text>
+                <text x="176" y="370" class="axis-label" text-anchor="middle">M2</text>
+                <text x="235" y="370" class="axis-label" text-anchor="middle">M3</text>
+                <text x="293" y="370" class="axis-label" text-anchor="middle">M4</text>
+                <text x="351" y="370" class="axis-label" text-anchor="middle">M5</text>
+                <text x="410" y="370" class="axis-label" text-anchor="middle">M6</text>
+                <text x="468" y="370" class="axis-label" text-anchor="middle">M7</text>
+                <text x="526" y="370" class="axis-label" text-anchor="middle">M8</text>
+                <text x="585" y="370" class="axis-label" text-anchor="middle">M9</text>
+                <text x="643" y="370" class="axis-label" text-anchor="middle">M10</text>
+                <text x="701" y="370" class="axis-label" text-anchor="middle">M11</text>
+                <text x="760" y="370" class="axis-label" text-anchor="middle">M12</text>
+
+                <!-- Area fill — AI-Enhanced -->
+                <path d="M60,350 L118,337 L176,310 L235,277 L293,238 L351,198 L410,158 L468,122 L526,89 L585,62 L643,42 L701,28 L760,20 L760,350 Z" fill="#A7CCD1" opacity=".12"/>
+
+                <!-- Traditional line (slower, linear-ish growth) -->
+                <!-- Data: 0,2,5,9,14,19,24,29,33,37,40,43,45 -->
+                <polyline points="60,350 118,343 176,334 235,320 293,304 351,287 410,271 468,254 526,241 585,228 643,218 701,208 760,201" fill="none" stroke="#71717a" stroke-width="2" stroke-dasharray="6,4"/>
+
+                <!-- Data points — Traditional -->
+                <circle cx="760" cy="201" r="3.5" fill="#71717a"/>
+                <text x="760" y="195" class="data-label" fill="#71717a" text-anchor="middle">45</text>
+
+                <!-- AI-Enhanced line (accelerating growth) -->
+                <!-- Data: 0,4,12,22,34,46,58,69,79,87,93,97,100 -->
+                <polyline points="60,350 118,337 176,310 235,277 293,238 351,198 410,158 468,122 526,89 585,62 643,42 701,28 760,20" fill="none" stroke="#325B39" stroke-width="2.5"/>
+
+                <!-- Data points — AI-Enhanced -->
+                <circle cx="760" cy="20" r="3.5" fill="#325B39"/>
+                <text x="748" y="14" class="data-label" fill="#325B39" text-anchor="end">100</text>
+
+                <!-- Annotation: gap highlight at M6 -->
+                <line x1="410" y1="158" x2="410" y2="271" stroke="#325B39" stroke-width="1" stroke-dasharray="3,3" opacity=".5"/>
+                <text x="420" y="218" class="data-label" fill="#325B39" style="font-size:10px">2.4× gap</text>
+
+                <!-- Endpoint labels -->
+                <text x="770" y="204" class="data-label" fill="#71717a" style="font-size:10px">Traditional</text>
+                <text x="770" y="24" class="data-label" fill="#325B39" style="font-size:10px">AI-Enhanced</text>
+            </svg>
+        </div>
+
+        <div class="callout">
+            At month 12, AI-enhanced delivery achieved <span class="callout-value">2.2× more features</span> with <span class="callout-value">34% fewer defects</span>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item"><div class="legend-line" style="background:#71717a"></div>Traditional Agile</div>
+            <div class="legend-item"><div class="legend-line" style="background:#325B39"></div>AI-Enhanced Pipeline</div>
+        </div>
+
+        <div class="footer-note">
+            <span>DSM Research · Q1 2026 · n = 12 matched-pair engagements</span>
+            <span>methodology: feature-point normalized, defect-adjusted</span>
+        </div>
+    </div>
+</body>
+</html>

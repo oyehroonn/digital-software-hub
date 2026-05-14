@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import Index from "./pages/Index";
 import Storefront from "./pages/Storefront";
 import Marketing from "./pages/Marketing";
+import Services from "./pages/Services";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
@@ -43,6 +44,7 @@ const AppContent = () => {
         <Route path="/" element={<Index />} />
         <Route path="/store" element={<Storefront />} />
         <Route path="/marketing" element={<Marketing />} />
+        <Route path="/services" element={<Services />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="*" element={<NotFound />} />

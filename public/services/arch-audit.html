@@ -1,0 +1,3444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free 1-Page Arch Audit · DSM × TechRealm</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&family=Caveat:wght@400;500;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg:#f7f4ed;
+      --paper:#fbf8f1;
+      --text:#0c0c10;
+      --muted:#6b675e;
+      --line:#1a1a1f;
+      --ink:#1a1a1f;
+      --graphite:#3b3a36;
+      --smudge:rgba(26,26,31,.08);
+      --dsm-red:#c0504d;
+      --dsm-yellow:#e5b13a;
+      --dsm-blue:#4f81bd;
+      --dsm-green:#7a8c5c;
+      --hole:#0a0a0c;
+    }
+    *,*::before,*::after { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body {
+      font-family:'Inter',sans-serif;
+      background:var(--bg); color:var(--text);
+      margin:0; overflow-x:hidden;
+      -webkit-font-smoothing:antialiased;
+      min-height:100vh;
+    }
+    ::-webkit-scrollbar { width:8px; height:8px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(26,26,31,.15); border-radius:9999px; }
+    .font-mono { font-family:'JetBrains Mono',monospace; }
+    .font-hand { font-family:'Caveat',cursive; }
+    .font-kalam { font-family:'Kalam',cursive; }
+
+    /* ─── PAPER + GRID BACKGROUND ─── */
+    .sketch-grid { position:fixed; inset:0; background-image:
+        linear-gradient(rgba(26,26,31,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26,26,31,.05) 1px, transparent 1px);
+      background-size:32px 32px; pointer-events:none; z-index:0;
+    }
+    .paper-noise { position:fixed; inset:0; pointer-events:none; z-index:1;
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(26,26,31,.025) 0 1px, transparent 2px),
+        radial-gradient(circle at 78% 62%, rgba(26,26,31,.02) 0 1px, transparent 2px),
+        radial-gradient(circle at 45% 88%, rgba(26,26,31,.025) 0 1px, transparent 2px);
+      background-size:200px 200px, 240px 240px, 320px 320px;
+      mix-blend-mode:multiply; opacity:.6;
+    }
+
+    /* ─── HEADER ─── */
+    .audit-header {
+      position:relative; z-index:5;
+      max-width:1280px; margin:0 auto; padding:2rem 2rem 1rem;
+      display:flex; flex-direction:column; gap:1.25rem;
+    }
+    .audit-topbar {
+      display:flex; justify-content:space-between; align-items:center; gap:1rem;
+      font-family:'JetBrains Mono',monospace;
+      font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted);
+    }
+    .back-link {
+      display:inline-flex; align-items:center; gap:.5rem;
+      color:var(--ink); text-decoration:none;
+      border:1px dashed rgba(26,26,31,.4); border-radius:9999px;
+      padding:.4rem .85rem; transition:all .25s ease;
+      background:var(--paper);
+    }
+    .back-link:hover { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+    .audit-title-block {
+      display:grid; grid-template-columns:1fr auto; gap:2rem; align-items:end;
+      padding-top:.5rem;
+    }
+    .audit-title-block .kicker {
+      font-family:'JetBrains Mono',monospace;
+      font-size:11px; letter-spacing:.24em; text-transform:uppercase; color:var(--dsm-red);
+    }
+    .audit-title-block h1 {
+      font-family:'Caveat',cursive;
+      font-size:clamp(3rem, 7vw, 5.5rem);
+      font-weight:700; line-height:.9; letter-spacing:-.01em;
+      margin:.25rem 0 .35rem;
+    }
+    .audit-title-block h1 .underline-wobble {
+      display:inline-block; position:relative;
+    }
+    .audit-title-block h1 .underline-wobble::after {
+      content:''; position:absolute; left:-2px; right:-2px; bottom:.05em; height:8px;
+      background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 10' preserveAspectRatio='none'><path d='M2 6 Q 30 1, 60 5 T 120 4 T 198 6' fill='none' stroke='%23c0504d' stroke-width='2' stroke-linecap='round'/></svg>") center/100% 100% no-repeat;
+    }
+    .audit-title-block .lead {
+      font-size:14px; color:var(--graphite); max-width:34rem; line-height:1.55;
+    }
+    .audit-title-block .lead strong { font-weight:600; color:var(--ink); }
+
+    /* ─── PROGRESS METER ─── */
+    .progress-meter {
+      display:flex; flex-direction:column; align-items:flex-end; gap:.5rem; min-width:220px;
+    }
+    .progress-meter__svg { width:240px; height:46px; overflow:visible; }
+    .progress-scratch-bg { stroke:rgba(26,26,31,.18); stroke-width:2.5; fill:none; stroke-linecap:round; }
+    .progress-scratch-fill {
+      stroke:var(--ink); stroke-width:3.5; fill:none; stroke-linecap:round;
+      stroke-dasharray:1000; stroke-dashoffset:1000;
+      transition:stroke-dashoffset .8s cubic-bezier(.22,1,.36,1);
+    }
+    .progress-meter__label {
+      font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.18em;
+      text-transform:uppercase; color:var(--muted);
+      display:flex; align-items:center; gap:.6rem;
+    }
+    .progress-meter__pct { color:var(--ink); font-weight:500; }
+    .progress-meter__dot { width:6px; height:6px; border-radius:50%; background:var(--dsm-red); display:inline-block; }
+
+    @media (max-width: 800px) {
+      .audit-title-block { grid-template-columns:1fr; }
+      .progress-meter { align-items:flex-start; }
+    }
+
+    /* ─── PANEL (paper card) ─── */
+    .panel {
+      position:relative; z-index:3;
+      max-width:1080px; margin:2.5rem auto;
+      background:var(--paper);
+      border:1.5px solid var(--ink);
+      border-radius:14px;
+      padding:2.25rem 2.5rem 2.5rem;
+      box-shadow:14px 14px 0 rgba(26,26,31,.06), 0 2px 0 rgba(26,26,31,.04);
+    }
+    .panel::before, .panel::after {
+      content:''; position:absolute; pointer-events:none;
+    }
+    /* dashed inner outline */
+    .panel::before {
+      inset:8px; border:1px dashed rgba(26,26,31,.22); border-radius:10px;
+    }
+    /* taped tab on top-left */
+    .panel__tape {
+      position:absolute; top:-14px; left:32px; z-index:2;
+      width:90px; height:26px;
+      background:rgba(229,177,58,.55);
+      border:1px solid rgba(26,26,31,.4);
+      transform:rotate(-2deg);
+      box-shadow:2px 2px 0 rgba(26,26,31,.06);
+      display:flex; align-items:center; justify-content:center;
+      font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.22em;
+      text-transform:uppercase; color:var(--ink);
+    }
+    .panel__head {
+      display:flex; justify-content:space-between; align-items:flex-end;
+      gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;
+      border-bottom:1px dashed rgba(26,26,31,.25); padding-bottom:1rem;
+    }
+    .panel__num {
+      font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.24em;
+      text-transform:uppercase; color:var(--muted);
+    }
+    .panel__title {
+      font-family:'Caveat',cursive; font-size:2.4rem; font-weight:700; line-height:1;
+      margin:.1rem 0; color:var(--ink);
+    }
+    .panel__sub { font-size:13px; color:var(--graphite); max-width:42rem; line-height:1.55; }
+    .panel__sub code {
+      font-family:'JetBrains Mono',monospace; background:rgba(26,26,31,.08);
+      padding:.1rem .35rem; border-radius:4px; font-size:11px;
+    }
+    .panel__meta {
+      font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.2em;
+      text-transform:uppercase; color:var(--muted); text-align:right;
+    }
+    .panel__meta b { color:var(--ink); font-weight:500; }
+
+    /* ─── FIELD WRAPPER (label + input + eraser) ─── */
+    .field {
+      position:relative;
+      display:flex; flex-direction:column; gap:.45rem;
+      margin-bottom:1.25rem;
+    }
+    .field__label {
+      font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.2em;
+      text-transform:uppercase; color:var(--muted);
+      display:flex; align-items:center; gap:.5rem;
+    }
+    .field__label .req { color:var(--dsm-red); font-size:14px; line-height:0; }
+    .field__hint {
+      font-family:'Kalam',cursive; font-size:13px; color:var(--graphite);
+      margin-top:-.15rem;
+    }
+    .field__row { display:flex; align-items:stretch; gap:.5rem; }
+    .field__input,
+    .field__textarea,
+    .field__select {
+      font-family:'Inter',sans-serif; font-size:14px; color:var(--ink);
+      background:transparent; border:none; outline:none;
+      border-bottom:1.5px solid rgba(26,26,31,.35);
+      padding:.55rem .15rem .45rem;
+      width:100%;
+      transition:border-color .2s ease;
+    }
+    .field__textarea {
+      border:1.5px solid rgba(26,26,31,.35); border-radius:8px;
+      padding:.85rem 1rem; min-height:90px; resize:vertical;
+      background:rgba(255,255,255,.45); line-height:1.55;
+    }
+    .field__select {
+      appearance:none; -webkit-appearance:none;
+      cursor:pointer;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'><path d='M2 5 L7 10 L12 5' stroke='%23071' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+      background-repeat:no-repeat; background-position:right .25rem center; background-size:14px;
+      padding-right:1.5rem;
+    }
+    .field__input:focus,
+    .field__textarea:focus,
+    .field__select:focus { border-color:var(--ink); }
+    .field__input::placeholder,
+    .field__textarea::placeholder { color:rgba(26,26,31,.32); }
+
+    /* eraser button on every field */
+    .field__eraser {
+      position:absolute; top:.1rem; right:0;
+      width:28px; height:18px; border:none; background:transparent;
+      cursor:pointer; opacity:0; pointer-events:none;
+      transition:opacity .2s ease, transform .25s ease;
+    }
+    .field:hover .field__eraser,
+    .field:focus-within .field__eraser { opacity:.7; pointer-events:auto; }
+    .field__eraser:hover { opacity:1; }
+    .field__eraser svg { width:100%; height:100%; }
+    .field__eraser.erasing svg { animation:eraserRub .5s ease; }
+    @keyframes eraserRub {
+      0%   { transform:translateX(0) rotate(-4deg); }
+      25%  { transform:translateX(-3px) rotate(4deg); }
+      50%  { transform:translateX(3px) rotate(-4deg); }
+      75%  { transform:translateX(-2px) rotate(2deg); }
+      100% { transform:translateX(0) rotate(0); }
+    }
+    .field__smudge {
+      position:absolute; left:0; right:24px; bottom:0; height:2px;
+      background:radial-gradient(ellipse at center, rgba(26,26,31,.25), transparent 70%);
+      opacity:0; pointer-events:none; transition:opacity .8s ease;
+    }
+    .field__smudge.show { opacity:1; animation:smudgeFade 1.4s ease forwards; }
+    @keyframes smudgeFade {
+      0% { opacity:.6; } 100% { opacity:0; }
+    }
+
+    /* grid helpers */
+    .row-2 { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
+    .row-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:1.25rem; }
+    .row-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; }
+    @media (max-width:760px) {
+      .row-2, .row-3, .row-4 { grid-template-columns:1fr; }
+      .panel { padding:2rem 1.25rem 1.75rem; margin:1.5rem .85rem; }
+    }
+
+    /* ─── PANEL 01 · TERMINAL ─── */
+    .term {
+      background:#0e0e12; color:#e8e6e0;
+      border:1.5px solid var(--ink); border-radius:10px;
+      font-family:'JetBrains Mono',monospace; font-size:13px;
+      box-shadow:8px 8px 0 rgba(26,26,31,.08);
+      overflow:hidden;
+    }
+    .term__bar {
+      display:flex; align-items:center; gap:.5rem;
+      padding:.55rem .85rem; background:#1a1a20;
+      border-bottom:1px solid rgba(255,255,255,.07);
+    }
+    .term__dot { width:10px; height:10px; border-radius:50%; }
+    .term__dot--r { background:#e96a5c; }
+    .term__dot--y { background:#e5b13a; }
+    .term__dot--g { background:#7ec27e; }
+    .term__title { margin-left:.5rem; font-size:10px; letter-spacing:.18em; color:#9b9b9b; text-transform:uppercase; }
+    .term__body { padding:1rem 1.1rem 1.25rem; }
+    .term__line {
+      display:flex; align-items:baseline; gap:.55rem;
+      padding:.3rem 0;
+      border-bottom:1px dashed rgba(255,255,255,.06);
+    }
+    .term__line:last-child { border-bottom:none; }
+    .term__prompt { color:#7a8c5c; flex-shrink:0; }
+    .term__key { color:#9b9b9b; flex-shrink:0; min-width:8.5rem; }
+    .term__input {
+      background:transparent; border:none; outline:none; color:#e8e6e0;
+      font-family:'JetBrains Mono',monospace; font-size:13px; flex:1;
+      caret-color:#e5b13a;
+    }
+    .term__input::placeholder { color:#54544d; font-style:italic; }
+    .term__check {
+      width:14px; height:14px; flex-shrink:0; opacity:0;
+      transition:opacity .25s ease;
+    }
+    .term__line.done .term__check { opacity:1; }
+    .term__line.done .term__key { color:#7a8c5c; }
+    .term__caret {
+      display:inline-block; width:8px; height:14px; background:#e5b13a;
+      animation:termBlink 1s steps(2) infinite;
+      vertical-align:-2px; margin-left:2px;
+    }
+    @keyframes termBlink { 50% { opacity:0; } }
+
+    /* ─── PANEL 02 · COOTIE CATCHER ─── */
+    .cootie-wrap {
+      display:grid; grid-template-columns:280px 1fr; gap:2rem; align-items:start;
+    }
+    @media (max-width:760px) { .cootie-wrap { grid-template-columns:1fr; } }
+    .cootie {
+      width:260px; height:260px; position:relative; cursor:pointer;
+      margin:.5rem auto 0; user-select:none;
+    }
+    .cootie__svg { width:100%; height:100%; overflow:visible; }
+    .cootie__hint {
+      text-align:center; font-family:'Kalam',cursive; font-size:14px;
+      color:var(--graphite); margin-top:.25rem;
+    }
+    .cootie-flap {
+      transform-origin:50% 50%;
+      transition:transform .55s cubic-bezier(.22,1.4,.36,1);
+    }
+    .cootie.open .cootie-flap--tl { transform:translate(-30px,-30px) rotate(-30deg); }
+    .cootie.open .cootie-flap--tr { transform:translate( 30px,-30px) rotate( 30deg); }
+    .cootie.open .cootie-flap--bl { transform:translate(-30px, 30px) rotate( 30deg); }
+    .cootie.open .cootie-flap--br { transform:translate( 30px, 30px) rotate(-30deg); }
+    .cootie:hover { animation:cootieBob 1.4s ease-in-out infinite; }
+    @keyframes cootieBob {
+      0%,100% { transform:translateY(0) rotate(-1deg); }
+      50%     { transform:translateY(-4px) rotate(1deg); }
+    }
+    .cootie-pick {
+      cursor:pointer; transition:fill .2s ease;
+    }
+    .cootie-pick:hover { fill:rgba(229,177,58,.4); }
+    .cootie-pick.selected { fill:rgba(192,80,77,.55); }
+
+    .cootie-out {
+      font-family:'JetBrains Mono',monospace; font-size:11px;
+      letter-spacing:.16em; text-transform:uppercase; color:var(--muted);
+    }
+    .cootie-out__chosen {
+      font-family:'Caveat',cursive; font-size:1.8rem; color:var(--ink); margin-top:.15rem;
+    }
+    .cootie-other-row { display:flex; gap:.5rem; margin-top:1rem; align-items:center; }
+    .cootie-other-row .field { margin:0; flex:1; }
+
+    /* ─── TAMAGOTCHI EVOLVER ─── */
+    .tama {
+      display:grid; grid-template-columns:repeat(6,1fr); gap:.5rem;
+      padding:1rem .75rem;
+      border:1.5px solid var(--ink); border-radius:14px;
+      background:rgba(255,255,255,.5);
+      box-shadow:6px 6px 0 rgba(26,26,31,.06);
+    }
+    .tama-cell {
+      cursor:pointer; padding:.75rem .25rem .5rem; text-align:center;
+      border:1.5px dashed transparent; border-radius:10px;
+      transition:all .3s cubic-bezier(.22,1,.36,1);
+      position:relative;
+    }
+    .tama-cell:hover { border-color:rgba(26,26,31,.3); background:rgba(229,177,58,.15); }
+    .tama-cell.selected {
+      border-color:var(--ink); background:rgba(229,177,58,.35);
+      transform:scale(1.08) translateY(-2px);
+    }
+    .tama-cell.selected .tama-icon { animation:tamaBob 1.6s ease-in-out infinite; }
+    @keyframes tamaBob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-4px); } }
+    .tama-icon { width:48px; height:48px; margin:0 auto .35rem; display:block; }
+    .tama-label {
+      font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.14em;
+      text-transform:uppercase; color:var(--muted);
+    }
+    .tama-cell.selected .tama-label { color:var(--ink); font-weight:500; }
+    .tama-cell:not(.selected):not(:hover) .tama-icon { opacity:.55; }
+    @media (max-width:760px) {
+      .tama { grid-template-columns:repeat(3,1fr); }
+    }
+
+    /* ─── PENCIL SLIDER ─── */
+    .pencil-slider {
+      position:relative; height:74px; margin:.75rem 0 .25rem;
+      user-select:none;
+    }
+    .pencil-slider__track {
+      position:absolute; top:38px; left:8px; right:8px; height:2px;
+      background:repeating-linear-gradient(to right, rgba(26,26,31,.18) 0 4px, transparent 4px 8px);
+    }
+    .pencil-slider__trail {
+      position:absolute; top:36px; left:8px; height:6px; pointer-events:none;
+      background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'><path d='M0 3 Q 25 1, 50 3 T 100 3' fill='none' stroke='%231a1a1f' stroke-width='2.5' stroke-linecap='round'/></svg>") left/100% 100% no-repeat;
+      width:0; transition:width .15s ease-out;
+      opacity:.85;
+    }
+    .pencil-slider__pencil {
+      position:absolute; top:8px; left:0; width:120px; height:60px;
+      cursor:grab; transition:transform .15s ease-out;
+      transform:translateX(-50%);
+    }
+    .pencil-slider__pencil:active { cursor:grabbing; }
+    .pencil-slider__labels {
+      display:flex; justify-content:space-between;
+      font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.18em;
+      text-transform:uppercase; color:var(--muted); margin-top:-.15rem;
+    }
+    .pencil-slider__value {
+      position:absolute; top:-22px; transform:translateX(-50%);
+      font-family:'Caveat',cursive; font-size:1.25rem; color:var(--ink);
+      white-space:nowrap; transition:left .12s ease-out;
+      pointer-events:none;
+    }
+    .pencil-slider__ticks {
+      position:absolute; top:32px; left:8px; right:8px; height:14px;
+      display:flex; justify-content:space-between; pointer-events:none;
+    }
+    .pencil-slider__tick { width:1.5px; height:14px; background:rgba(26,26,31,.3); }
+
+    /* ─── MARGINALIA TEXTAREA ─── */
+    .marginalia-wrap {
+      display:grid; grid-template-columns:1fr 64px; gap:.6rem; align-items:start;
+    }
+    .marginalia-margin {
+      position:relative; min-height:120px;
+      display:flex; flex-direction:column; gap:.4rem; align-items:center;
+      padding-top:.4rem;
+    }
+    .marginalia-doodle {
+      width:42px; height:42px; opacity:0; transform:scale(.5) rotate(-12deg);
+      animation:doodlePop .55s cubic-bezier(.22,1.4,.36,1) forwards;
+    }
+    @keyframes doodlePop {
+      0% { opacity:0; transform:scale(.4) rotate(-25deg); }
+      60% { opacity:1; transform:scale(1.15) rotate(6deg); }
+      100% { opacity:1; transform:scale(1) rotate(-3deg); }
+    }
+    .marginalia-doodle svg { width:100%; height:100%; }
+
+    /* ─── PANEL 03 · NPM TERMINAL PICKER ─── */
+    .npm-term { margin-top:.5rem; }
+    .npm-installed {
+      display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.65rem;
+    }
+    .npm-pkg {
+      font-family:'JetBrains Mono',monospace; font-size:11px;
+      border:1px solid rgba(26,26,31,.4); border-radius:6px;
+      padding:.25rem .55rem;
+      background:rgba(255,255,255,.55); color:var(--ink);
+      display:inline-flex; align-items:center; gap:.4rem;
+    }
+    .npm-pkg__x { cursor:pointer; color:var(--dsm-red); font-weight:600; }
+    .npm-pkg__v { color:var(--muted); font-weight:300; }
+    .term__autocomplete {
+      margin-top:.4rem; max-height:140px; overflow-y:auto;
+      border-top:1px dashed rgba(255,255,255,.08);
+      padding-top:.4rem;
+    }
+    .ac-row {
+      padding:.2rem .35rem; cursor:pointer; display:flex; justify-content:space-between;
+      font-size:12px;
+    }
+    .ac-row:hover, .ac-row.active { background:rgba(229,177,58,.18); }
+    .ac-row .ac-name { color:#e8e6e0; }
+    .ac-row .ac-cat { color:#7a8c5c; font-size:10px; }
+    .term__log { color:#7a8c5c; padding:.15rem 0; }
+    .term__log--warn { color:#e5b13a; }
+    .term__log--err { color:#e96a5c; }
+
+    /* ─── LEGO BRICKS ─── */
+    .lego-wrap {
+      display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-top:1.25rem;
+    }
+    @media (max-width:780px) { .lego-wrap { grid-template-columns:1fr; } }
+    .lego-pile {
+      border:1.5px solid var(--ink); border-radius:12px;
+      background:rgba(255,255,255,.45);
+      padding:1rem; min-height:300px;
+      box-shadow:6px 6px 0 rgba(26,26,31,.06);
+    }
+    .lego-pile__title {
+      font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.2em;
+      text-transform:uppercase; color:var(--muted); margin-bottom:.85rem;
+    }
+    .lego-bricks { display:flex; flex-wrap:wrap; gap:.55rem; }
+    .lego-brick {
+      position:relative; cursor:grab;
+      padding:.5rem .85rem .55rem;
+      background:#fbf8f1;
+      border:1.5px solid var(--ink); border-radius:6px;
+      font-family:'JetBrains Mono',monospace; font-size:11px;
+      letter-spacing:.06em;
+      box-shadow:3px 3px 0 rgba(26,26,31,.18);
+      transition:transform .15s ease, box-shadow .15s ease;
+      user-select:none;
+    }
+    .lego-brick::before, .lego-brick::after {
+      content:''; position:absolute; top:-6px; width:14px; height:6px;
+      background:#fbf8f1; border:1.5px solid var(--ink); border-bottom:none;
+      border-radius:4px 4px 0 0;
+    }
+    .lego-brick::before { left:10px; }
+    .lego-brick::after { right:10px; }
+    .lego-brick[data-color="r"] { background:#f3c9c7; }
+    .lego-brick[data-color="r"]::before, .lego-brick[data-color="r"]::after { background:#f3c9c7; }
+    .lego-brick[data-color="y"] { background:#f3e3b2; }
+    .lego-brick[data-color="y"]::before, .lego-brick[data-color="y"]::after { background:#f3e3b2; }
+    .lego-brick[data-color="b"] { background:#c5d3e6; }
+    .lego-brick[data-color="b"]::before, .lego-brick[data-color="b"]::after { background:#c5d3e6; }
+    .lego-brick[data-color="g"] { background:#cdd6b8; }
+    .lego-brick[data-color="g"]::before, .lego-brick[data-color="g"]::after { background:#cdd6b8; }
+    .lego-brick:hover { transform:translate(-1px,-1px); box-shadow:4px 4px 0 rgba(26,26,31,.22); }
+    .lego-brick.dragging { opacity:.4; }
+    .lego-brick.placed { box-shadow:2px 2px 0 rgba(26,26,31,.14); }
+
+    .lego-house {
+      position:relative; min-height:300px;
+      border:1.5px solid var(--ink); border-radius:12px;
+      background:rgba(255,255,255,.45);
+      padding:1rem;
+      box-shadow:6px 6px 0 rgba(26,26,31,.06);
+    }
+    .lego-house__svg {
+      position:absolute; inset:1rem; width:calc(100% - 2rem); height:calc(100% - 2rem);
+      pointer-events:none; opacity:.85;
+    }
+    .lego-house__drop {
+      position:relative; z-index:2; min-height:268px;
+      display:flex; flex-wrap:wrap; gap:.5rem; align-content:flex-start;
+      padding:.5rem;
+    }
+    .lego-house.drag-over { background:rgba(229,177,58,.12); }
+    .lego-house__title {
+      font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.2em;
+      text-transform:uppercase; color:var(--muted); margin-bottom:.85rem;
+      position:relative; z-index:2;
+    }
+
+    /* checkbox chips */
+    .chips { display:flex; flex-wrap:wrap; gap:.5rem; }
+    .chip {
+      cursor:pointer; user-select:none;
+      font-family:'JetBrains Mono',monospace; font-size:11px;
+      letter-spacing:.06em;
+      padding:.4rem .75rem;
+      border:1.5px solid rgba(26,26,31,.4); border-radius:9999px;
+      background:rgba(255,255,255,.5); color:var(--ink);
+      transition:all .2s ease;
+      position:relative;
+    }
+    .chip:hover { border-color:var(--ink); }
+    .chip input { position:absolute; opacity:0; pointer-events:none; }
+    .chip.selected {
+      background:var(--ink); color:var(--paper); border-color:var(--ink);
+    }
+    .chip.selected::before {
+      content:'✓ '; opacity:.85;
+    }
+
+    /* ─── PANEL 04 · PAIN HEATMAP ─── */
+    .heatmap-wrap {
+      display:grid; grid-template-columns:300px 1fr; gap:2rem; align-items:start;
+    }
+    @media (max-width:780px) { .heatmap-wrap { grid-template-columns:1fr; } }
+    .heatmap-svg-wrap {
+      border:1.5px solid var(--ink); border-radius:12px;
+      background:rgba(255,255,255,.45); padding:1rem;
+      box-shadow:6px 6px 0 rgba(26,26,31,.06);
+      position:relative;
+    }
+    .heatmap-svg { width:100%; height:auto; cursor:crosshair; display:block; }
+    .heatmap-part { cursor:pointer; transition:fill .2s ease; fill:rgba(255,255,255,0); }
+    .heatmap-part:hover { fill:rgba(229,177,58,.25); }
+    .heatmap-part.pain-1 { fill:rgba(192,80,77,.25); }
+    .heatmap-part.pain-2 { fill:rgba(192,80,77,.5); }
+    .heatmap-part.pain-3 { fill:rgba(192,80,77,.75); }
+    .heatmap-legend {
+      display:flex; flex-direction:column; gap:.45rem;
+      font-family:'JetBrains Mono',monospace; font-size:10px;
+      letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    }
+    .heatmap-legend__row { display:flex; align-items:center; gap:.6rem; }
+    .heatmap-legend__chip { width:14px; height:14px; border-radius:3px; border:1px solid rgba(26,26,31,.4); }
+    .heatmap-readout {
+      font-family:'Kalam',cursive; font-size:14px; color:var(--ink);
+      padding:.75rem 0; min-height:60px;
+    }
+    .heatmap-readout em { color:var(--dsm-red); font-style:normal; }
+    .heatmap-reset {
+      font-family:'JetBrains Mono',monospace; font-size:10px;
+      letter-spacing:.18em; text-transform:uppercase;
+      background:transparent; border:1px dashed rgba(26,26,31,.4);
+      padding:.35rem .75rem; border-radius:9999px; cursor:pointer;
+      color:var(--muted); margin-top:.5rem;
+    }
+    .heatmap-reset:hover { border-color:var(--ink); color:var(--ink); }
+
+    /* ─── GIT COMMIT FIELD ─── */
+    .git-commit {
+      background:#0e0e12; color:#e8e6e0;
+      border:1.5px solid var(--ink); border-radius:10px;
+      font-family:'JetBrains Mono',monospace; font-size:13px;
+      box-shadow:8px 8px 0 rgba(26,26,31,.08);
+      overflow:hidden;
+    }
+    .git-commit__head {
+      background:#1a1a20; padding:.55rem .85rem;
+      border-bottom:1px solid rgba(255,255,255,.07);
+      display:flex; justify-content:space-between; align-items:center;
+      font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#9b9b9b;
+    }
+    .git-commit__branch { color:#7a8c5c; }
+    .git-commit__row { display:flex; align-items:baseline; padding:.4rem .85rem; gap:.6rem; }
+    .git-commit__row + .git-commit__row { border-top:1px dashed rgba(255,255,255,.06); }
+    .git-commit__key { color:#9b9b9b; min-width:5.5rem; font-size:11px; }
+    .git-commit__select {
+      background:transparent; border:none; outline:none; color:#e5b13a;
+      font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer;
+    }
+    .git-commit__select option { background:#1a1a20; }
+    .git-commit__input {
+      background:transparent; border:none; outline:none; color:#e8e6e0;
+      font-family:'JetBrains Mono',monospace; font-size:13px; flex:1;
+      caret-color:#e5b13a;
+    }
+    .git-commit__input::placeholder { color:#54544d; }
+    .git-commit__counter {
+      font-size:10px; color:#7a8c5c; min-width:3.5rem; text-align:right;
+    }
+    .git-commit__counter.warn { color:#e5b13a; }
+    .git-commit__counter.err { color:#e96a5c; }
+    .git-commit__body {
+      position:relative; padding:.5rem .85rem 1rem;
+    }
+    .git-commit__body textarea {
+      background:transparent; border:none; outline:none; color:#e8e6e0;
+      font-family:'JetBrains Mono',monospace; font-size:13px;
+      width:100%; min-height:84px; resize:vertical;
+      caret-color:#e5b13a;
+    }
+    .git-commit__body textarea::placeholder { color:#54544d; }
+    .git-commit__col-guide {
+      position:absolute; top:.5rem; bottom:1rem; left:calc(.85rem + 72ch * .55em);
+      width:1px; background:rgba(255,255,255,.12); pointer-events:none;
+      display:none;
+    }
+
+    /* ─── PUNCH CARD ─── */
+    .punch-card-wrap {
+      position:relative;
+      border:1.5px solid var(--ink); border-radius:10px;
+      background:#f3ead7;
+      padding:1.5rem 1.25rem 1.25rem;
+      box-shadow:8px 8px 0 rgba(26,26,31,.08);
+      overflow:hidden;
+    }
+    .punch-card-wrap::before {
+      content:''; position:absolute; top:0; right:0;
+      width:0; height:0; border-style:solid; border-width:24px 24px 0 0;
+      border-color:var(--paper) transparent transparent transparent;
+    }
+    .punch-card-wrap::after {
+      content:''; position:absolute; top:24px; right:0;
+      width:24px; height:1.5px; background:var(--ink);
+      transform:rotate(-45deg); transform-origin:right;
+    }
+    .punch-card__head {
+      display:flex; justify-content:space-between; align-items:center;
+      font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.2em;
+      text-transform:uppercase; color:var(--graphite);
+      padding-bottom:.6rem; border-bottom:1px dashed rgba(26,26,31,.25);
+      margin-bottom:1rem;
+    }
+    .punch-card__counter { color:var(--ink); font-weight:500; }
+    .punch-grid {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:.6rem .75rem;
+    }
+    @media (max-width:560px){ .punch-grid { grid-template-columns:1fr 1fr; } }
+    .punch-row {
+      display:flex; align-items:center; gap:.7rem;
+      font-family:'JetBrains Mono',monospace; font-size:11px;
+      color:var(--ink); cursor:pointer; user-select:none;
+      padding:.3rem .15rem;
+    }
+    .punch-hole {
+      width:22px; height:14px; flex-shrink:0;
+      border:1.5px solid var(--ink); border-radius:3px;
+      background:#fbf8f1; position:relative;
+      transition:background .25s ease;
+    }
+    .punch-row:hover .punch-hole { background:rgba(229,177,58,.35); }
+    .punch-row.punched .punch-hole {
+      background:var(--hole);
+      box-shadow:inset 0 0 0 2px #f3ead7;
+    }
+    .punch-row.punched .punch-hole::after {
+      content:''; position:absolute; inset:-2px;
+      background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 14'><path d='M1 1 L21 13 M1 13 L21 1' stroke='%231a1a1f' stroke-width='.5' opacity='.4'/></svg>") center/contain no-repeat;
+    }
+    .punch-row.punched .punch-label { text-decoration:line-through; opacity:.55; }
+
+    /* ─── SPECTRUM SLIDER WITH PIN ─── */
+    .spectrum {
+      position:relative; height:90px; margin-top:.5rem;
+      user-select:none;
+    }
+    .spectrum__line {
+      position:absolute; top:45px; left:12px; right:12px; height:2px;
+      background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 2' preserveAspectRatio='none'><path d='M0 1 Q 25 0, 50 1 T 100 1' fill='none' stroke='%231a1a1f' stroke-width='1.5' stroke-linecap='round'/></svg>") left/100% 100% no-repeat;
+    }
+    .spectrum__pin {
+      position:absolute; top:0; left:50%; width:46px; height:60px;
+      transform:translateX(-50%) rotate(0);
+      cursor:grab; transition:transform .15s ease-out;
+    }
+    .spectrum__pin:active { cursor:grabbing; }
+    .spectrum__labels {
+      display:flex; justify-content:space-between;
+      font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.14em;
+      text-transform:uppercase; color:var(--muted); margin-top:.25rem;
+      gap:1rem;
+    }
+    .spectrum__labels span { max-width:18ch; }
+    .spectrum__labels span:last-child { text-align:right; }
+
+    /* ─── CRYSTAL BALL ─── */
+    .crystal {
+      position:relative; max-width:520px; margin:0 auto;
+      padding:2.5rem 1rem 1.5rem; text-align:center;
+    }
+    .crystal__ball-svg {
+      position:absolute; inset:0; width:100%; height:100%;
+      pointer-events:none;
+    }
+    .crystal__smoke {
+      transform-origin:center;
+      animation:smokeSwirl 14s linear infinite;
+      opacity:.5;
+    }
+    @keyframes smokeSwirl { to { transform:rotate(360deg); } }
+    .crystal__textarea {
+      position:relative; z-index:2;
+      background:transparent; border:none; outline:none;
+      width:80%; max-width:340px; height:120px;
+      resize:none; text-align:center;
+      font-family:'Caveat',cursive; font-size:1.4rem;
+      color:var(--ink); line-height:1.3;
+      padding:.5rem;
+    }
+    .crystal__textarea::placeholder {
+      color:rgba(26,26,31,.35); font-style:italic;
+    }
+    .crystal.typing .crystal__smoke { animation-duration:4s; opacity:.75; }
+
+    /* ─── PANEL 05 · POCKET CALCULATOR ─── */
+    .calc-wrap {
+      display:grid; grid-template-columns:300px 1fr; gap:2rem; align-items:start;
+    }
+    @media (max-width:780px) { .calc-wrap { grid-template-columns:1fr; } }
+    .calc {
+      width:280px; background:#dcd6c4;
+      border:1.5px solid var(--ink); border-radius:18px;
+      padding:1rem .85rem 1.2rem;
+      box-shadow:8px 8px 0 rgba(26,26,31,.1);
+      margin:0 auto;
+    }
+    .calc__brand {
+      display:flex; justify-content:space-between; align-items:center;
+      font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:.2em;
+      text-transform:uppercase; color:var(--muted); margin-bottom:.5rem;
+    }
+    .calc__solar {
+      width:36px; height:14px; background:#1a1a1f; border-radius:2px;
+      background-image:linear-gradient(90deg, #4a4a4a 0 25%, #2a2a2a 25% 50%, #4a4a4a 50% 75%, #2a2a2a 75%);
+    }
+    .calc__lcd {
+      background:#a5b09a; border:1.5px solid var(--ink); border-radius:4px;
+      padding:.55rem .75rem; margin-bottom:.8rem;
+      font-family:'JetBrains Mono',monospace; font-size:1.6rem;
+      text-align:right; color:#1a1a1f; min-height:48px;
+      letter-spacing:.04em; line-height:1; word-wrap:break-word;
+      box-shadow:inset 2px 2px 0 rgba(0,0,0,.15);
+    }
+    .calc__lcd-mini {
+      font-size:10px; letter-spacing:.15em; color:rgba(26,26,31,.6); height:14px;
+      text-align:right; padding-bottom:.15rem;
+    }
+    .calc__keys {
+      display:grid; grid-template-columns:repeat(4,1fr); gap:.4rem;
+    }
+    .calc__key {
+      cursor:pointer; user-select:none;
+      background:#fbf8f1; border:1.5px solid var(--ink); border-radius:6px;
+      padding:.55rem 0;
+      font-family:'JetBrains Mono',monospace; font-size:14px;
+      box-shadow:2px 2px 0 rgba(26,26,31,.18);
+      transition:transform .08s ease, box-shadow .08s ease;
+      text-align:center; color:var(--ink);
+    }
+    .calc__key:hover { background:rgba(229,177,58,.18); }
+    .calc__key:active { transform:translate(2px,2px); box-shadow:0 0 0 rgba(26,26,31,0); }
+    .calc__key--op { background:#e5b13a; }
+    .calc__key--eq { background:#c0504d; color:#fbf8f1; grid-column:span 2; }
+    .calc__key--clr { background:#1a1a1f; color:#fbf8f1; }
+    .calc-result {
+      position:relative; min-height:120px; display:flex; flex-direction:column;
+      gap:.7rem; align-items:flex-start; justify-content:center;
+    }
+    .wax-seal {
+      width:100px; height:100px; position:relative;
+      opacity:0; transform:scale(.4) rotate(-12deg);
+      transition:all .55s cubic-bezier(.22,1.4,.36,1);
+    }
+    .wax-seal.show { opacity:1; transform:scale(1) rotate(-8deg); }
+    .calc-readout {
+      font-family:'Kalam',cursive; font-size:15px; color:var(--ink);
+    }
+    .calc-readout em { color:var(--dsm-red); font-style:normal; }
+
+    /* ─── PANEL 06 · MOOD RING ─── */
+    .mood-ring-wrap {
+      display:grid; grid-template-columns:300px 1fr; gap:2rem; align-items:center;
+    }
+    @media (max-width:780px) { .mood-ring-wrap { grid-template-columns:1fr; } }
+    .mood-ring {
+      position:relative; width:280px; height:280px;
+      margin:0 auto;
+    }
+    .mood-ring__bg {
+      position:absolute; inset:0; width:100%; height:100%; pointer-events:none;
+    }
+    .mood-cell {
+      position:absolute; width:64px; height:64px;
+      cursor:pointer; user-select:none;
+      border:1.5px solid transparent; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:30px; transition:transform .25s cubic-bezier(.22,1.4,.36,1), border-color .25s ease, background .25s ease;
+      background:rgba(255,255,255,.45);
+      transform:translate(-50%,-50%);
+    }
+    .mood-cell:hover { border-color:rgba(26,26,31,.4); transform:translate(-50%,-50%) scale(1.1); }
+    .mood-cell.selected {
+      border-color:var(--ink); background:rgba(229,177,58,.45);
+      animation:moodPulse 2s ease-in-out infinite;
+    }
+    @keyframes moodPulse {
+      0%,100% { transform:translate(-50%,-50%) scale(1) rotate(-3deg); }
+      50%     { transform:translate(-50%,-50%) scale(1.12) rotate(3deg); }
+    }
+    .mood-cell__label {
+      position:absolute; bottom:-22px; left:50%; transform:translateX(-50%);
+      font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:.16em;
+      text-transform:uppercase; color:var(--muted); white-space:nowrap;
+      opacity:0; transition:opacity .25s ease;
+    }
+    .mood-cell:hover .mood-cell__label,
+    .mood-cell.selected .mood-cell__label { opacity:1; }
+    .mood-readout {
+      font-family:'Kalam',cursive; font-size:16px; color:var(--ink);
+      padding:.5rem 0;
+    }
+
+    /* ─── CASSETTE TAPE ─── */
+    .cassette-wrap {
+      display:grid; grid-template-columns:300px 1fr; gap:2rem; align-items:start;
+    }
+    @media (max-width:780px) { .cassette-wrap { grid-template-columns:1fr; } }
+    .cassette {
+      width:300px; height:170px; position:relative;
+      margin:0 auto;
+    }
+    .cassette__svg { width:100%; height:100%; }
+    .cassette__reel-l, .cassette__reel-r {
+      transform-origin:center;
+      transition:transform .5s linear;
+    }
+    .cassette.recording .cassette__reel-l { animation:reelSpin 2.4s linear infinite; }
+    .cassette.recording .cassette__reel-r { animation:reelSpin 1.8s linear infinite; }
+    @keyframes reelSpin { to { transform:rotate(360deg); } }
+    .cassette__label-input {
+      position:absolute; top:25px; left:48px; right:48px;
+      background:transparent; border:none; outline:none;
+      font-family:'Caveat',cursive; font-size:1.2rem; color:var(--ink);
+      text-align:center;
+    }
+    .cassette__label-input::placeholder { color:rgba(26,26,31,.35); }
+    .cassette-ctrls {
+      display:flex; flex-direction:column; gap:.65rem;
+    }
+    .cassette-btn {
+      cursor:pointer; user-select:none;
+      display:inline-flex; align-items:center; gap:.6rem;
+      padding:.5rem 1rem;
+      border:1.5px solid var(--ink); border-radius:9999px;
+      background:#fbf8f1; color:var(--ink);
+      font-family:'JetBrains Mono',monospace; font-size:11px;
+      letter-spacing:.14em; text-transform:uppercase;
+      box-shadow:3px 3px 0 rgba(26,26,31,.14);
+      transition:all .15s ease;
+      width:fit-content;
+    }
+    .cassette-btn:hover { transform:translate(-1px,-1px); box-shadow:4px 4px 0 rgba(26,26,31,.2); }
+    .cassette-btn.rec { color:var(--dsm-red); border-color:var(--dsm-red); }
+    .cassette-btn[disabled] { opacity:.35; cursor:not-allowed; box-shadow:1px 1px 0 rgba(26,26,31,.1); }
+    .cassette-time {
+      font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em;
+      color:var(--muted); padding-left:.2rem;
+    }
+    .cassette-status {
+      font-family:'Kalam',cursive; font-size:14px; color:var(--ink); margin-top:.3rem;
+    }
+    .cassette-transcript {
+      font-family:'Caveat',cursive; font-size:1.1rem; color:var(--graphite);
+      line-height:1.3; padding:.5rem 0;
+      min-height:1.5rem;
+    }
+
+    /* ─── SUBMIT / PAPER PLANE ─── */
+    .submit-panel {
+      max-width:780px; margin:3rem auto 5rem;
+      padding:2.5rem 2rem;
+      text-align:center;
+      position:relative; z-index:3;
+    }
+    .submit-panel h2 {
+      font-family:'Caveat',cursive; font-size:2.6rem; font-weight:700;
+      margin:0 0 .35rem;
+    }
+    .submit-panel p { color:var(--graphite); font-size:14px; max-width:30rem; margin:0 auto 1.5rem; line-height:1.55; }
+    .submit-opts {
+      display:flex; flex-direction:column; gap:.65rem; align-items:flex-start;
+      max-width:24rem; margin:0 auto 1.75rem; text-align:left;
+    }
+    .submit-opt {
+      display:flex; align-items:flex-start; gap:.7rem;
+      font-size:13px; cursor:pointer; user-select:none; color:var(--ink);
+      line-height:1.35;
+    }
+    .submit-opt input { display:none; }
+    .submit-opt .check-box {
+      width:18px; height:18px; flex-shrink:0; margin-top:1px;
+      border:1.5px solid var(--ink); border-radius:4px; background:transparent;
+      position:relative;
+    }
+    .submit-opt input:checked + .check-box::after {
+      content:''; position:absolute; top:1px; left:5px; width:5px; height:10px;
+      border:solid var(--ink); border-width:0 2px 2px 0;
+      transform:rotate(45deg);
+    }
+    .plane-zone {
+      position:relative; width:200px; height:120px; margin:0 auto;
+    }
+    .plane-btn {
+      position:relative; z-index:2;
+      cursor:pointer; background:transparent; border:none;
+      width:200px; height:120px;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:.5rem;
+    }
+    .plane-paper {
+      width:80px; height:80px;
+      transition:transform .8s cubic-bezier(.4,0,.2,1);
+    }
+    .plane-label {
+      font-family:'JetBrains Mono',monospace; font-size:11px;
+      letter-spacing:.22em; text-transform:uppercase; color:var(--ink);
+    }
+    .plane-btn:hover .plane-paper { transform:translateY(-4px) rotate(-6deg); }
+    .plane-btn.folding .plane-paper { animation:planeFold 1.2s ease forwards; }
+    .plane-btn.folding .plane-label { opacity:0; transition:opacity .3s; }
+    @keyframes planeFold {
+      0%   { transform:rotate(0) translate(0,0); }
+      20%  { transform:rotate(-8deg) translateY(-6px); }
+      40%  { transform:rotate(8deg) translateY(-6px); }
+      60%  { transform:rotate(-4deg) translateY(-12px); }
+      80%  { transform:rotate(0) translate(60px,-30px); opacity:1; }
+      100% { transform:rotate(-25deg) translate(560px,-260px) scale(.4); opacity:0; }
+    }
+
+    .thanks {
+      display:none; flex-direction:column; align-items:center; gap:.5rem;
+      animation:thanksFade .8s ease forwards;
+    }
+    .thanks.show { display:flex; }
+    @keyframes thanksFade { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .thanks-ticker {
+      font-family:'Caveat',cursive; font-size:2rem; color:var(--ink);
+    }
+    .thanks-sub {
+      font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.2em;
+      text-transform:uppercase; color:var(--muted);
+    }
+    .thanks-id {
+      margin-top:.6rem; padding:.4rem .85rem;
+      border:1px dashed rgba(26,26,31,.4); border-radius:9999px;
+      font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.18em;
+      color:var(--graphite);
+    }
+
+    /* ─── EASTER EGG ─── */
+    @keyframes shakeBody {
+      0%,100% { transform:translate(0,0); }
+      20% { transform:translate(-4px,2px); }
+      40% { transform:translate(4px,-2px); }
+      60% { transform:translate(-3px,3px); }
+      80% { transform:translate(3px,-3px); }
+    }
+    body.shake { animation:shakeBody .5s ease; }
+    .sticky-note {
+      position:fixed; top:30%; left:50%; transform:translate(-50%,-50%) rotate(-4deg);
+      width:280px; padding:1.25rem 1rem; z-index:200;
+      background:#f8e58f; border:1.5px solid var(--ink);
+      box-shadow:6px 6px 0 rgba(26,26,31,.18);
+      font-family:'Caveat',cursive; font-size:1.4rem; color:var(--ink);
+      text-align:center;
+      opacity:0; pointer-events:none;
+      transition:opacity .35s ease, transform .35s ease;
+    }
+    .sticky-note.show { opacity:1; transform:translate(-50%,-50%) rotate(-4deg) scale(1); pointer-events:auto; }
+    .sticky-note small { display:block; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.22em; text-transform:uppercase; color:var(--graphite); margin-top:.6rem; }
+
+    /* ─── SECTION DIVIDER (dashed paper fold) ─── */
+    .panel-divider {
+      max-width:1080px; margin:0 auto;
+      display:flex; align-items:center; gap:1rem;
+      font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.2em;
+      text-transform:uppercase; color:var(--muted);
+      padding:0 1rem;
+    }
+    .panel-divider::before, .panel-divider::after {
+      content:''; flex:1; height:1px;
+      background:repeating-linear-gradient(to right, rgba(26,26,31,.3) 0 6px, transparent 6px 12px);
+    }
+    .panel-divider svg { width:18px; height:18px; }
+
+    /* misc */
+    .field-link { color:var(--dsm-blue); text-decoration:underline; }
+    .help-tag {
+      display:inline-block; margin-left:.4rem;
+      font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.15em;
+      color:var(--muted); border:1px dashed rgba(26,26,31,.3);
+      padding:.05rem .35rem; border-radius:4px;
+      text-transform:uppercase;
+    }
+    .footnote {
+      max-width:1080px; margin:1rem auto 3rem; padding:0 1rem;
+      font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.15em;
+      text-transform:uppercase; color:var(--muted); text-align:center;
+    }
+  </style>
+</head>
+<body>
+  <div class="sketch-grid"></div>
+  <div class="paper-noise"></div>
+
+  <header class="audit-header">
+    <div class="audit-topbar">
+      <a class="back-link" href="dsmAIFinal.html">
+        <span>←</span> back to dsm × techrealm
+      </a>
+      <span>LANE / 03 · FIELD JOURNAL · v1.0</span>
+    </div>
+    <div class="audit-title-block">
+      <div>
+        <div class="kicker">FREE · 1-PAGE · 48-HOUR TURNAROUND</div>
+        <h1>The <span class="underline-wobble">Arch Audit</span><br/>field journal.</h1>
+        <p class="lead">Tell us your stack — we sketch it back in 48&nbsp;hours. <strong>No call required.</strong> If you don't need an agency, we'll tell you. Fill what you can; skip what you don't know. The form does the rest.</p>
+      </div>
+      <div class="progress-meter">
+        <svg class="progress-meter__svg" viewBox="0 0 240 46">
+          <path class="progress-scratch-bg" d="M4 8 Q 60 4, 120 9 T 236 8" />
+          <path class="progress-scratch-fill" id="prog-1" d="M4 8 Q 60 4, 120 9 T 236 8" />
+          <path class="progress-scratch-bg" d="M4 22 Q 70 18, 140 24 T 236 22" />
+          <path class="progress-scratch-fill" id="prog-2" d="M4 22 Q 70 18, 140 24 T 236 22" />
+          <path class="progress-scratch-bg" d="M4 36 Q 80 32, 150 37 T 236 36" />
+          <path class="progress-scratch-fill" id="prog-3" d="M4 36 Q 80 32, 150 37 T 236 36" />
+        </svg>
+        <div class="progress-meter__label">
+          <span class="progress-meter__dot"></span>
+          <span>Filled · <span class="progress-meter__pct" id="prog-pct">0%</span></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <form id="audit-form" autocomplete="on" novalidate>
+    <!-- ════════════════════════════════════════════
+         PANEL 01 · whoami (terminal typing effect)
+    ════════════════════════════════════════════ -->
+    <section class="panel" id="panel-1" data-panel="1">
+      <div class="panel__tape">01 · whoami</div>
+      <div class="panel__head">
+        <div>
+          <div class="panel__num">PANEL 01 / 06</div>
+          <h2 class="panel__title">$ whoami</h2>
+          <p class="panel__sub">First, the headers. Names, addresses, the boring bits. Don't worry, we'll get to <code>git commit</code> soon.</p>
+        </div>
+        <div class="panel__meta">
+          <div>fields · <b>9</b></div>
+          <div>est · <b>~90s</b></div>
+        </div>
+      </div>
+
+      <div class="term" id="whoami-term">
+        <div class="term__bar">
+          <span class="term__dot term__dot--r"></span>
+          <span class="term__dot term__dot--y"></span>
+          <span class="term__dot term__dot--g"></span>
+          <span class="term__title">auditee@dsm: ~ / whoami</span>
+        </div>
+        <div class="term__body">
+          <div class="term__line" data-key="name">
+            <span class="term__prompt">$</span>
+            <span class="term__key">name:</span>
+            <input class="term__input" type="text" name="name" id="f-name" placeholder="full name…" autocomplete="name" required>
+            <svg class="term__check" viewBox="0 0 14 14"><path d="M2 7 L6 11 L12 3" fill="none" stroke="#7a8c5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="term__line" data-key="email">
+            <span class="term__prompt">$</span>
+            <span class="term__key">email:</span>
+            <input class="term__input" type="email" name="email" id="f-email" placeholder="you@company.com" autocomplete="email" required>
+            <svg class="term__check" viewBox="0 0 14 14"><path d="M2 7 L6 11 L12 3" fill="none" stroke="#7a8c5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="term__line" data-key="role">
+            <span class="term__prompt">$</span>
+            <span class="term__key">role:</span>
+            <input class="term__input" type="text" name="role" id="f-role" placeholder="founder · cto · head of product · 'i built this in my garage'">
+            <svg class="term__check" viewBox="0 0 14 14"><path d="M2 7 L6 11 L12 3" fill="none" stroke="#7a8c5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="term__line" data-key="company">
+            <span class="term__prompt">$</span>
+            <span class="term__key">company:</span>
+            <input class="term__input" type="text" name="company" id="f-company" placeholder="company / brand name" autocomplete="organization">
+            <svg class="term__check" viewBox="0 0 14 14"><path d="M2 7 L6 11 L12 3" fill="none" stroke="#7a8c5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="term__line" data-key="url">
+            <span class="term__prompt">$</span>
+            <span class="term__key">site/product:</span>
+            <input class="term__input" type="url" name="url" id="f-url" placeholder="https://yourthing.com  (opt)" autocomplete="url">
+            <svg class="term__check" viewBox="0 0 14 14"><path d="M2 7 L6 11 L12 3" fill="none" stroke="#7a8c5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="term__line" data-key="social">
+            <span class="term__prompt">$</span>
+            <span class="term__key">social:</span>
+            <input class="term__input" type="text" name="social" id="f-social" placeholder="@handle · linkedin · github  (opt)">
+            <svg class="term__check" viewBox="0 0 14 14"><path d="M2 7 L6 11 L12 3" fill="none" stroke="#7a8c5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="term__line" data-key="tz">
+            <span class="term__prompt">$</span>
+            <span class="term__key">timezone:</span>
+            <input class="term__input" type="text" name="tz" id="f-tz" placeholder="auto-detecting…">
+            <svg class="term__check" viewBox="0 0 14 14"><path d="M2 7 L6 11 L12 3" fill="none" stroke="#7a8c5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="term__line" data-key="channel">
+            <span class="term__prompt">$</span>
+            <span class="term__key">contact via:</span>
+            <select class="term__input" name="channel" id="f-channel" style="background:transparent;">
+              <option value="">choose channel…</option>
+              <option value="email">email</option>
+              <option value="whatsapp">whatsapp</option>
+              <option value="slack">slack connect</option>
+              <option value="signal">signal</option>
+              <option value="pigeon">carrier pigeon</option>
+            </select>
+            <svg class="term__check" viewBox="0 0 14 14"><path d="M2 7 L6 11 L12 3" fill="none" stroke="#7a8c5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="term__line" data-key="window">
+            <span class="term__prompt">$</span>
+            <span class="term__key">best window:</span>
+            <select class="term__input" name="window" id="f-window" style="background:transparent;">
+              <option value="">when's good?</option>
+              <option value="morning">morning</option>
+              <option value="afternoon">afternoon</option>
+              <option value="evening">evening</option>
+              <option value="late">late-night ship-mode</option>
+              <option value="any">any time, surprise me</option>
+            </select>
+            <svg class="term__check" viewBox="0 0 14 14"><path d="M2 7 L6 11 L12 3" fill="none" stroke="#7a8c5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="term__line" style="border-bottom:none;">
+            <span class="term__prompt">$</span>
+            <span style="color:#7a8c5c;">ready_to_audit = <span id="ready-flag" style="color:#e96a5c;">false</span><span class="term__caret"></span></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="panel-divider">
+      <svg viewBox="0 0 18 18" fill="none"><path d="M2 9 H 16 M9 2 V 16" stroke="currentColor" stroke-width="1.2"/></svg>
+      <span>// next: the business</span>
+      <svg viewBox="0 0 18 18" fill="none"><path d="M2 9 H 16 M9 2 V 16" stroke="currentColor" stroke-width="1.2"/></svg>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         PANEL 02 · the business (cootie + tamagotchi + marginalia)
+    ════════════════════════════════════════════ -->
+    <section class="panel" id="panel-2" data-panel="2">
+      <div class="panel__tape">02 · biz</div>
+      <div class="panel__head">
+        <div>
+          <div class="panel__num">PANEL 02 / 06</div>
+          <h2 class="panel__title">The business.</h2>
+          <p class="panel__sub">Pick your industry like you're back in 4th grade. Evolve your business pet. Tell us what you actually do.</p>
+        </div>
+        <div class="panel__meta">
+          <div>fields · <b>9</b></div>
+          <div>est · <b>~3 min</b></div>
+        </div>
+      </div>
+
+      <!-- COOTIE CATCHER · INDUSTRY -->
+      <div class="field" style="margin-bottom:2rem;">
+        <div class="field__label"><span class="req">*</span> Industry · pick a flap</div>
+        <div class="field__hint">Click the cootie-catcher to open. Tap an inner triangle to choose your industry.</div>
+        <div class="cootie-wrap">
+          <div class="cootie" id="cootie" tabindex="0" role="button" aria-label="Open cootie catcher">
+            <svg class="cootie__svg" viewBox="0 0 280 280">
+              <!-- background paper -->
+              <rect x="2" y="2" width="276" height="276" fill="#fbf8f1" stroke="#1a1a1f" stroke-width="1.5" rx="6"/>
+              <!-- diagonals -->
+              <path d="M2 2 L 278 278 M 278 2 L 2 278" stroke="rgba(26,26,31,.18)" stroke-width="1" stroke-dasharray="4 4"/>
+              <!-- outer 8 inner triangles (industries) -->
+              <g id="cootie-picks">
+                <polygon class="cootie-pick" data-industry="SaaS"        points="140,140 70,70 140,70" />
+                <polygon class="cootie-pick" data-industry="eCommerce"   points="140,140 140,70 210,70" />
+                <polygon class="cootie-pick" data-industry="Fintech"     points="140,140 210,70 210,140" />
+                <polygon class="cootie-pick" data-industry="Healthtech"  points="140,140 210,140 210,210" />
+                <polygon class="cootie-pick" data-industry="Logistics"   points="140,140 210,210 140,210" />
+                <polygon class="cootie-pick" data-industry="Agency"      points="140,140 140,210 70,210" />
+                <polygon class="cootie-pick" data-industry="Education"   points="140,140 70,210 70,140" />
+                <polygon class="cootie-pick" data-industry="Realestate"  points="140,140 70,140 70,70" />
+              </g>
+              <!-- labels -->
+              <g font-family="JetBrains Mono, monospace" font-size="9" fill="#1a1a1f" font-weight="500">
+                <text x="105" y="83">SAAS</text>
+                <text x="160" y="83">E-COM</text>
+                <text x="178" y="118" transform="rotate(45 178 118)">FIN</text>
+                <text x="178" y="170" transform="rotate(45 178 170)">HEALTH</text>
+                <text x="158" y="200">LOGISTICS</text>
+                <text x="92" y="200">AGENCY</text>
+                <text x="72" y="170" transform="rotate(-45 72 170)">EDU</text>
+                <text x="72" y="118" transform="rotate(-45 72 118)">REAL-EST</text>
+              </g>
+              <!-- four flaps (outer corners) -->
+              <g>
+                <polygon class="cootie-flap cootie-flap--tl" points="2,2 140,2 70,70 2,140" fill="#e5b13a" fill-opacity=".55" stroke="#1a1a1f" stroke-width="1.5"/>
+                <polygon class="cootie-flap cootie-flap--tr" points="140,2 278,2 278,140 210,70" fill="#c5d3e6" fill-opacity=".65" stroke="#1a1a1f" stroke-width="1.5"/>
+                <polygon class="cootie-flap cootie-flap--bl" points="2,140 70,210 2,278 140,278" fill="#cdd6b8" fill-opacity=".7" stroke="#1a1a1f" stroke-width="1.5"/>
+                <polygon class="cootie-flap cootie-flap--br" points="278,140 278,278 140,278 210,210" fill="#f3c9c7" fill-opacity=".65" stroke="#1a1a1f" stroke-width="1.5"/>
+                <!-- center fold doodle -->
+                <circle cx="140" cy="140" r="6" fill="#1a1a1f"/>
+                <text x="140" y="144" text-anchor="middle" font-family="Caveat, cursive" font-size="14" fill="#fbf8f1">?</text>
+              </g>
+            </svg>
+            <div class="cootie__hint">↗ click to unfold</div>
+          </div>
+          <div>
+            <div class="cootie-out">
+              <div>// selected industry</div>
+              <div class="cootie-out__chosen" id="cootie-chosen">—</div>
+            </div>
+            <div class="cootie-other-row">
+              <div class="field">
+                <div class="field__label">Or type one we missed</div>
+                <div class="field__row">
+                  <input class="field__input" type="text" id="f-industry-other" placeholder="manufacturing · creator econ · weird-niche…">
+                </div>
+              </div>
+            </div>
+            <div class="field" style="margin-top:1.1rem;">
+              <div class="field__label"><span class="req">*</span> Sub-niche · "we make __ for __"</div>
+              <div class="field__row">
+                <input class="field__input" type="text" id="f-subniche" placeholder="we make CRMs for hair salons">
+              </div>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="f-industry" name="industry">
+      </div>
+
+      <!-- TAMAGOTCHI STAGE EVOLVER -->
+      <div class="field" style="margin-bottom:1.75rem;">
+        <div class="field__label"><span class="req">*</span> Stage · evolve your business pet</div>
+        <div class="field__hint">Click the creature that matches where you're at right now.</div>
+        <div class="tama" id="tama">
+          <div class="tama-cell" data-stage="idea">
+            <svg class="tama-icon" viewBox="0 0 48 48" fill="none">
+              <path d="M24 8 C 18 8 14 13 14 19 C 14 23 17 26 19 28 V32 H29 V28 C31 26 34 23 34 19 C34 13 30 8 24 8 Z" stroke="#1a1a1f" stroke-width="1.8" stroke-linejoin="round" fill="#f3e3b2"/>
+              <path d="M19 36 H29 M20 40 H28" stroke="#1a1a1f" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M24 4 V6 M14 12 L12 10 M34 12 L36 10 M10 22 H8 M38 22 H40" stroke="#e5b13a" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+            <div class="tama-label">Idea</div>
+          </div>
+          <div class="tama-cell" data-stage="mvp">
+            <svg class="tama-icon" viewBox="0 0 48 48" fill="none">
+              <path d="M24 38 C 22 30 22 22 24 14" stroke="#1a1a1f" stroke-width="2" stroke-linecap="round"/>
+              <path d="M24 22 C 16 18 12 24 18 28 Z" fill="#cdd6b8" stroke="#1a1a1f" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M24 18 C 32 14 36 20 30 24 Z" fill="#cdd6b8" stroke="#1a1a1f" stroke-width="1.8" stroke-linejoin="round"/>
+              <ellipse cx="24" cy="40" rx="10" ry="2" fill="#1a1a1f" opacity=".15"/>
+            </svg>
+            <div class="tama-label">MVP</div>
+          </div>
+          <div class="tama-cell" data-stage="revenue">
+            <svg class="tama-icon" viewBox="0 0 48 48" fill="none">
+              <path d="M24 40 V18" stroke="#1a1a1f" stroke-width="2" stroke-linecap="round"/>
+              <path d="M16 28 Q 24 20 32 26 Q 24 16 16 22 Q 20 26 16 28 Z" fill="#cdd6b8" stroke="#1a1a1f" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M24 14 Q 30 8 36 12" fill="none" stroke="#1a1a1f" stroke-width="1.6" stroke-linecap="round"/>
+              <ellipse cx="24" cy="42" rx="12" ry="2" fill="#1a1a1f" opacity=".15"/>
+            </svg>
+            <div class="tama-label">Revenue</div>
+          </div>
+          <div class="tama-cell" data-stage="scaling">
+            <svg class="tama-icon" viewBox="0 0 48 48" fill="none">
+              <path d="M24 40 V12" stroke="#1a1a1f" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M24 12 L18 18 M24 12 L30 18" stroke="#1a1a1f" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="14" cy="22" r="5" fill="#f3c9c7" stroke="#1a1a1f" stroke-width="1.5"/>
+              <circle cx="34" cy="22" r="5" fill="#f3c9c7" stroke="#1a1a1f" stroke-width="1.5"/>
+              <circle cx="24" cy="34" r="6" fill="#f3c9c7" stroke="#1a1a1f" stroke-width="1.5"/>
+              <ellipse cx="24" cy="42" rx="14" ry="2" fill="#1a1a1f" opacity=".15"/>
+            </svg>
+            <div class="tama-label">Scaling</div>
+          </div>
+          <div class="tama-cell" data-stage="established">
+            <svg class="tama-icon" viewBox="0 0 48 48" fill="none">
+              <rect x="10" y="20" width="28" height="20" fill="#c5d3e6" stroke="#1a1a1f" stroke-width="1.8"/>
+              <polygon points="10,20 24,8 38,20" fill="#1a1a1f" opacity=".75"/>
+              <rect x="15" y="26" width="5" height="6" fill="#1a1a1f"/>
+              <rect x="28" y="26" width="5" height="6" fill="#1a1a1f"/>
+              <rect x="22" y="32" width="4" height="8" fill="#1a1a1f"/>
+            </svg>
+            <div class="tama-label">Established</div>
+          </div>
+          <div class="tama-cell" data-stage="enterprise">
+            <svg class="tama-icon" viewBox="0 0 48 48" fill="none">
+              <rect x="4" y="22" width="10" height="18" fill="#c5d3e6" stroke="#1a1a1f" stroke-width="1.4"/>
+              <rect x="14" y="14" width="12" height="26" fill="#c5d3e6" stroke="#1a1a1f" stroke-width="1.4"/>
+              <rect x="26" y="8" width="10" height="32" fill="#c5d3e6" stroke="#1a1a1f" stroke-width="1.4"/>
+              <rect x="36" y="20" width="8" height="20" fill="#c5d3e6" stroke="#1a1a1f" stroke-width="1.4"/>
+              <g fill="#1a1a1f">
+                <rect x="6" y="26" width="2" height="2"/><rect x="10" y="26" width="2" height="2"/>
+                <rect x="6" y="32" width="2" height="2"/><rect x="10" y="32" width="2" height="2"/>
+                <rect x="16" y="18" width="2" height="2"/><rect x="20" y="18" width="2" height="2"/>
+                <rect x="16" y="24" width="2" height="2"/><rect x="20" y="24" width="2" height="2"/>
+                <rect x="16" y="30" width="2" height="2"/><rect x="20" y="30" width="2" height="2"/>
+                <rect x="28" y="12" width="2" height="2"/><rect x="32" y="12" width="2" height="2"/>
+                <rect x="28" y="18" width="2" height="2"/><rect x="32" y="18" width="2" height="2"/>
+                <rect x="28" y="24" width="2" height="2"/><rect x="32" y="24" width="2" height="2"/>
+              </g>
+            </svg>
+            <div class="tama-label">Enterprise</div>
+          </div>
+        </div>
+        <input type="hidden" id="f-stage" name="stage">
+      </div>
+
+      <!-- ROW: year, team size, geo, b2b/b2c -->
+      <div class="row-4" style="margin-bottom:1.25rem;">
+        <div class="field">
+          <div class="field__label">Year founded</div>
+          <div class="field__row">
+            <input class="field__input" type="number" id="f-year" min="1900" max="2099" placeholder="2024">
+          </div>
+        </div>
+        <div class="field">
+          <div class="field__label">Team size</div>
+          <div class="field__row">
+            <select class="field__select" id="f-team">
+              <option value="">…</option>
+              <option>Just me</option>
+              <option>2–5</option>
+              <option>6–20</option>
+              <option>21–50</option>
+              <option>51–200</option>
+              <option>200+</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field__label">Geo reach</div>
+          <div class="field__row">
+            <select class="field__select" id="f-geo">
+              <option value="">…</option>
+              <option>Local / city</option>
+              <option>National</option>
+              <option>Multi-country</option>
+              <option>Global</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field__label">Model</div>
+          <div class="field__row">
+            <select class="field__select" id="f-model">
+              <option value="">…</option>
+              <option>B2B</option>
+              <option>B2C</option>
+              <option>B2B2C</option>
+              <option>Internal only</option>
+              <option>Non-profit</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- REVENUE PENCIL SLIDER -->
+      <div class="field" style="margin-bottom:1.75rem;">
+        <div class="field__label">Revenue band <span class="help-tag">opt</span></div>
+        <div class="field__hint">Drag the pencil. The graphite line records where you stop.</div>
+        <div class="pencil-slider" data-slider="revenue"
+             data-stops='["pre-rev","< $100k","$100k–$1M","$1M–$10M","$10M+"]'>
+          <div class="pencil-slider__value" id="ps-revenue-val" style="left:0;">pre-rev</div>
+          <div class="pencil-slider__track"></div>
+          <div class="pencil-slider__trail" id="ps-revenue-trail"></div>
+          <div class="pencil-slider__ticks">
+            <span class="pencil-slider__tick"></span><span class="pencil-slider__tick"></span>
+            <span class="pencil-slider__tick"></span><span class="pencil-slider__tick"></span>
+            <span class="pencil-slider__tick"></span>
+          </div>
+          <svg class="pencil-slider__pencil" id="ps-revenue-pencil" viewBox="0 0 120 60">
+            <!-- eraser end -->
+            <rect x="2" y="22" width="14" height="16" rx="2" fill="#f3c9c7" stroke="#1a1a1f" stroke-width="1.5"/>
+            <rect x="14" y="22" width="6" height="16" fill="#c0504d" stroke="#1a1a1f" stroke-width="1.5"/>
+            <!-- pencil body -->
+            <rect x="20" y="22" width="70" height="16" fill="#e5b13a" stroke="#1a1a1f" stroke-width="1.5"/>
+            <line x1="30" y1="22" x2="30" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+            <line x1="60" y1="22" x2="60" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+            <line x1="80" y1="22" x2="80" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+            <!-- wood -->
+            <polygon points="90,22 110,28 110,32 90,38" fill="#dcc89a" stroke="#1a1a1f" stroke-width="1.5"/>
+            <!-- tip -->
+            <polygon points="110,28 118,30 110,32" fill="#1a1a1f"/>
+          </svg>
+          <div class="pencil-slider__labels">
+            <span>pre-rev</span><span>&lt;$100k</span><span>$100k–$1M</span><span>$1M–$10M</span><span>$10M+</span>
+          </div>
+        </div>
+        <input type="hidden" id="f-revenue" name="revenue">
+      </div>
+
+      <!-- LONG DESCRIPTION + MARGINALIA -->
+      <div class="field">
+        <div class="field__label"><span class="req">*</span> What does your business actually <em>do</em>?</div>
+        <div class="field__hint">Type freely — we'll doodle in the margin whenever you mention a topic we know.</div>
+        <div class="marginalia-wrap">
+          <textarea class="field__textarea" id="f-description" placeholder="we run a small ecommerce store selling vintage cameras, the AI part recommends lenses based on..." style="min-height:160px;"></textarea>
+          <div class="marginalia-margin" id="marginalia"></div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:1.25rem;">
+        <div class="field__label">Unfair advantage / moat <span class="help-tag">one line</span></div>
+        <div class="field__row">
+          <input class="field__input" type="text" id="f-moat" placeholder="exclusive supplier · founder insight · proprietary dataset · 'we got lucky'">
+        </div>
+      </div>
+    </section>
+
+    <div class="panel-divider">
+      <svg viewBox="0 0 18 18" fill="none"><path d="M2 9 H 16 M9 2 V 16" stroke="currentColor" stroke-width="1.2"/></svg>
+      <span>// next: the stack</span>
+      <svg viewBox="0 0 18 18" fill="none"><path d="M2 9 H 16 M9 2 V 16" stroke="currentColor" stroke-width="1.2"/></svg>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         PANEL 03 · the stack (npm install + Lego)
+    ════════════════════════════════════════════ -->
+    <section class="panel" id="panel-3" data-panel="3">
+      <div class="panel__tape">03 · stack</div>
+      <div class="panel__head">
+        <div>
+          <div class="panel__num">PANEL 03 / 06</div>
+          <h2 class="panel__title">The stack.</h2>
+          <p class="panel__sub">Tell us what you've got — or check the box and we'll prescribe one. Two ways to fill it: <code>npm install</code> terminal, or drag Lego bricks into the house.</p>
+        </div>
+        <div class="panel__meta">
+          <div>fields · <b>11</b></div>
+          <div>est · <b>~4 min</b></div>
+        </div>
+      </div>
+
+      <!-- "I don't have one yet" toggle -->
+      <label class="submit-opt" style="margin-bottom:1.5rem;">
+        <input type="checkbox" id="f-no-stack">
+        <span class="check-box"></span>
+        <span>
+          <strong>"We don't have a stack yet — you tell us."</strong><br/>
+          <span style="color:var(--muted);font-size:12px;">Tick this and skip the rest of this panel. We'll prescribe one based on your goals.</span>
+        </span>
+      </label>
+
+      <div id="stack-body">
+        <!-- NPM TERMINAL PICKER -->
+        <div class="field" style="margin-bottom:1.5rem;">
+          <div class="field__label">Quick-add via <code style="font-family:'JetBrains Mono',monospace;background:rgba(26,26,31,.08);padding:.05rem .35rem;border-radius:3px;">npm install</code></div>
+          <div class="field__hint">Type a package name. Tab to autocomplete. Enter to install. ↑↓ to navigate.</div>
+          <div class="term npm-term" id="npm-term">
+            <div class="term__bar">
+              <span class="term__dot term__dot--r"></span>
+              <span class="term__dot term__dot--y"></span>
+              <span class="term__dot term__dot--g"></span>
+              <span class="term__title">auditee@dsm: ~/your-stack · npm</span>
+            </div>
+            <div class="term__body" id="npm-body">
+              <div class="term__log" id="npm-log-init">// type a package name to install your stack</div>
+              <div class="term__line" style="border-bottom:none;">
+                <span class="term__prompt">$</span>
+                <span style="color:#9b9b9b;">npm install</span>
+                <input class="term__input" id="npm-input" placeholder="react…" autocomplete="off" spellcheck="false">
+                <span class="term__caret"></span>
+              </div>
+              <div class="term__autocomplete" id="npm-ac" style="display:none;"></div>
+              <div class="npm-installed" id="npm-installed"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LEGO BRICKS -->
+        <div class="field" style="margin-bottom:1.5rem;">
+          <div class="field__label">…or drag Lego bricks into your house</div>
+          <div class="field__hint">Drag a brick from the pile. Drop it onto the house. <em>Click a placed brick</em> to remove it.</div>
+          <div class="lego-wrap">
+            <div class="lego-pile" id="lego-pile">
+              <div class="lego-pile__title">// brick pile</div>
+              <div class="lego-bricks" id="lego-bricks">
+                <div class="lego-brick" draggable="true" data-brick="React"      data-color="b">React</div>
+                <div class="lego-brick" draggable="true" data-brick="Vue"        data-color="g">Vue</div>
+                <div class="lego-brick" draggable="true" data-brick="Svelte"     data-color="r">Svelte</div>
+                <div class="lego-brick" draggable="true" data-brick="Next.js"    data-color="b">Next.js</div>
+                <div class="lego-brick" draggable="true" data-brick="Node"       data-color="g">Node</div>
+                <div class="lego-brick" draggable="true" data-brick="Python"     data-color="y">Python</div>
+                <div class="lego-brick" draggable="true" data-brick="Go"         data-color="b">Go</div>
+                <div class="lego-brick" draggable="true" data-brick="Rails"      data-color="r">Rails</div>
+                <div class="lego-brick" draggable="true" data-brick="Postgres"   data-color="b">Postgres</div>
+                <div class="lego-brick" draggable="true" data-brick="MongoDB"    data-color="g">MongoDB</div>
+                <div class="lego-brick" draggable="true" data-brick="Redis"      data-color="r">Redis</div>
+                <div class="lego-brick" draggable="true" data-brick="GraphQL"    data-color="y">GraphQL</div>
+                <div class="lego-brick" draggable="true" data-brick="REST"       data-color="g">REST</div>
+                <div class="lego-brick" draggable="true" data-brick="Docker"     data-color="b">Docker</div>
+                <div class="lego-brick" draggable="true" data-brick="K8s"        data-color="b">K8s</div>
+                <div class="lego-brick" draggable="true" data-brick="Vercel"     data-color="y">Vercel</div>
+                <div class="lego-brick" draggable="true" data-brick="AWS"        data-color="y">AWS</div>
+                <div class="lego-brick" draggable="true" data-brick="GCP"        data-color="b">GCP</div>
+                <div class="lego-brick" draggable="true" data-brick="Supabase"   data-color="g">Supabase</div>
+                <div class="lego-brick" draggable="true" data-brick="Firebase"   data-color="y">Firebase</div>
+                <div class="lego-brick" draggable="true" data-brick="Auth0"      data-color="r">Auth0</div>
+                <div class="lego-brick" draggable="true" data-brick="Clerk"      data-color="r">Clerk</div>
+                <div class="lego-brick" draggable="true" data-brick="OpenAI"     data-color="g">OpenAI</div>
+                <div class="lego-brick" draggable="true" data-brick="Anthropic"  data-color="r">Anthropic</div>
+                <div class="lego-brick" draggable="true" data-brick="LangChain"  data-color="y">LangChain</div>
+              </div>
+            </div>
+            <div class="lego-house" id="lego-house">
+              <svg class="lego-house__svg" viewBox="0 0 300 280" preserveAspectRatio="xMidYMid meet">
+                <!-- roof -->
+                <path d="M 20 140 L 150 30 L 280 140" fill="none" stroke="#1a1a1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3 3"/>
+                <!-- walls -->
+                <path d="M 40 140 V 250 H 260 V 140" fill="none" stroke="#1a1a1f" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 3"/>
+                <!-- door -->
+                <path d="M 130 250 V 200 H 170 V 250" fill="none" stroke="#1a1a1f" stroke-width="1.5" stroke-dasharray="2 2"/>
+                <!-- window -->
+                <rect x="65" y="170" width="40" height="35" fill="none" stroke="#1a1a1f" stroke-width="1.5" stroke-dasharray="2 2"/>
+                <rect x="195" y="170" width="40" height="35" fill="none" stroke="#1a1a1f" stroke-width="1.5" stroke-dasharray="2 2"/>
+                <!-- ground -->
+                <line x1="10" y1="260" x2="290" y2="260" stroke="#1a1a1f" stroke-width="2" stroke-dasharray="6 4"/>
+                <!-- handwritten label -->
+                <text x="150" y="20" text-anchor="middle" font-family="Caveat, cursive" font-size="18" fill="#1a1a1f">your stack →</text>
+              </svg>
+              <div class="lego-house__title">// drop zone</div>
+              <div class="lego-house__drop" id="lego-drop"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- multi-select chips for the categories npm/Lego may not cover -->
+        <div class="row-2" style="margin-bottom:1.25rem;">
+          <div class="field">
+            <div class="field__label">Auth approach</div>
+            <div class="chips" data-multi="auth">
+              <label class="chip"><input type="checkbox" value="Custom built"><span>Custom built</span></label>
+              <label class="chip"><input type="checkbox" value="Auth0"><span>Auth0</span></label>
+              <label class="chip"><input type="checkbox" value="Clerk"><span>Clerk</span></label>
+              <label class="chip"><input type="checkbox" value="Supabase Auth"><span>Supabase Auth</span></label>
+              <label class="chip"><input type="checkbox" value="Firebase Auth"><span>Firebase Auth</span></label>
+              <label class="chip"><input type="checkbox" value="None / open"><span>None / open</span></label>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field__label">AI / ML layer</div>
+            <div class="chips" data-multi="ai">
+              <label class="chip"><input type="checkbox" value="OpenAI"><span>OpenAI</span></label>
+              <label class="chip"><input type="checkbox" value="Anthropic"><span>Anthropic</span></label>
+              <label class="chip"><input type="checkbox" value="Gemini"><span>Gemini</span></label>
+              <label class="chip"><input type="checkbox" value="OSS / self-hosted"><span>OSS / self-hosted</span></label>
+              <label class="chip"><input type="checkbox" value="None — want this"><span>None — want this</span></label>
+              <label class="chip"><input type="checkbox" value="None — don't need"><span>None — don't need</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row-2" style="margin-bottom:1.25rem;">
+          <div class="field">
+            <div class="field__label">Automation</div>
+            <div class="chips" data-multi="auto">
+              <label class="chip"><input type="checkbox" value="n8n"><span>n8n</span></label>
+              <label class="chip"><input type="checkbox" value="Make"><span>Make</span></label>
+              <label class="chip"><input type="checkbox" value="Zapier"><span>Zapier</span></label>
+              <label class="chip"><input type="checkbox" value="Custom code"><span>Custom code</span></label>
+              <label class="chip"><input type="checkbox" value="Cron jobs"><span>Cron jobs</span></label>
+              <label class="chip"><input type="checkbox" value="None"><span>None</span></label>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field__label">Observability</div>
+            <div class="chips" data-multi="obs">
+              <label class="chip"><input type="checkbox" value="Datadog"><span>Datadog</span></label>
+              <label class="chip"><input type="checkbox" value="Sentry"><span>Sentry</span></label>
+              <label class="chip"><input type="checkbox" value="PostHog"><span>PostHog</span></label>
+              <label class="chip"><input type="checkbox" value="Grafana"><span>Grafana</span></label>
+              <label class="chip"><input type="checkbox" value="console.log()"><span>console.log()</span></label>
+              <label class="chip"><input type="checkbox" value="None"><span>None</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row-2" style="margin-bottom:1.25rem;">
+          <div class="field">
+            <div class="field__label">CI / CD</div>
+            <div class="chips" data-multi="ci">
+              <label class="chip"><input type="checkbox" value="GitHub Actions"><span>GitHub Actions</span></label>
+              <label class="chip"><input type="checkbox" value="GitLab CI"><span>GitLab CI</span></label>
+              <label class="chip"><input type="checkbox" value="CircleCI"><span>CircleCI</span></label>
+              <label class="chip"><input type="checkbox" value="Vercel"><span>Vercel</span></label>
+              <label class="chip"><input type="checkbox" value="Manual deploy"><span>Manual deploy</span></label>
+              <label class="chip"><input type="checkbox" value="None"><span>None</span></label>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field__label">Data volume</div>
+            <div class="pencil-slider" data-slider="volume"
+                 data-stops='["tiny","small","medium","large","frightening"]'>
+              <div class="pencil-slider__value" id="ps-volume-val">tiny</div>
+              <div class="pencil-slider__track"></div>
+              <div class="pencil-slider__trail" id="ps-volume-trail"></div>
+              <div class="pencil-slider__ticks">
+                <span class="pencil-slider__tick"></span><span class="pencil-slider__tick"></span>
+                <span class="pencil-slider__tick"></span><span class="pencil-slider__tick"></span>
+                <span class="pencil-slider__tick"></span>
+              </div>
+              <svg class="pencil-slider__pencil" id="ps-volume-pencil" viewBox="0 0 120 60">
+                <rect x="2" y="22" width="14" height="16" rx="2" fill="#f3c9c7" stroke="#1a1a1f" stroke-width="1.5"/>
+                <rect x="14" y="22" width="6" height="16" fill="#c0504d" stroke="#1a1a1f" stroke-width="1.5"/>
+                <rect x="20" y="22" width="70" height="16" fill="#e5b13a" stroke="#1a1a1f" stroke-width="1.5"/>
+                <line x1="30" y1="22" x2="30" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+                <line x1="60" y1="22" x2="60" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+                <line x1="80" y1="22" x2="80" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+                <polygon points="90,22 110,28 110,32 90,38" fill="#dcc89a" stroke="#1a1a1f" stroke-width="1.5"/>
+                <polygon points="110,28 118,30 110,32" fill="#1a1a1f"/>
+              </svg>
+              <div class="pencil-slider__labels">
+                <span>tiny</span><span>small</span><span>medium</span><span>large</span><span>😬 frightening</span>
+              </div>
+            </div>
+            <input type="hidden" id="f-volume" name="volume">
+          </div>
+        </div>
+
+        <!-- 3rd-party APIs -->
+        <div class="field">
+          <div class="field__label">Critical 3rd-party APIs / integrations</div>
+          <div class="field__hint">Stripe, Twilio, Plaid, Shopify, Salesforce, anything you'd cry if it went down.</div>
+          <div class="field__row">
+            <input class="field__input" type="text" id="f-apis" placeholder="stripe, sendgrid, hubspot, that one webhook from accounting…">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="panel-divider">
+      <svg viewBox="0 0 18 18" fill="none"><path d="M2 9 H 16 M9 2 V 16" stroke="currentColor" stroke-width="1.2"/></svg>
+      <span>// next: pain &amp; goals</span>
+      <svg viewBox="0 0 18 18" fill="none"><path d="M2 9 H 16 M9 2 V 16" stroke="currentColor" stroke-width="1.2"/></svg>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         PANEL 04 · pain & goals (heatmap + git + punch + crystal + pin)
+    ════════════════════════════════════════════ -->
+    <section class="panel" id="panel-4" data-panel="4">
+      <div class="panel__tape">04 · pain</div>
+      <div class="panel__head">
+        <div>
+          <div class="panel__num">PANEL 04 / 06</div>
+          <h2 class="panel__title">Where it hurts.</h2>
+          <p class="panel__sub">Click the body. State the objective as a commit. Punch a card. Drag a pin. Look into the orb.</p>
+        </div>
+        <div class="panel__meta">
+          <div>fields · <b>8</b></div>
+          <div>est · <b>~5 min</b></div>
+        </div>
+      </div>
+
+      <!-- PAIN HEATMAP -->
+      <div class="field" style="margin-bottom:2rem;">
+        <div class="field__label"><span class="req">*</span> Pain heatmap · click where it hurts</div>
+        <div class="field__hint">Each click intensifies the bruise (max 3). Multiple body parts welcome.</div>
+        <div class="heatmap-wrap">
+          <div class="heatmap-svg-wrap">
+            <svg class="heatmap-svg" viewBox="0 0 220 360" xmlns="http://www.w3.org/2000/svg">
+              <!-- silhouette outline (hand-drawn dashed) -->
+              <g fill="none" stroke="#1a1a1f" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="3 3">
+                <circle cx="110" cy="38" r="24"/>
+                <path d="M86 62 Q 110 78 134 62 L 168 92 L 158 152 L 138 145 L 138 240 Q 138 280 130 320 L 130 350 L 118 350 L 116 280 L 110 240 L 104 280 L 102 350 L 90 350 L 90 320 Q 82 280 82 240 L 82 145 L 62 152 L 52 92 Z"/>
+                <line x1="138" y1="160" x2="200" y2="220"/>
+                <line x1="82"  y1="160" x2="20"  y2="220"/>
+                <circle cx="200" cy="226" r="10"/>
+                <circle cx="20"  cy="226" r="10"/>
+              </g>
+              <!-- clickable parts -->
+              <g>
+                <ellipse class="heatmap-part" data-part="head"      cx="110" cy="38"  rx="22" ry="22"/>
+                <ellipse class="heatmap-part" data-part="shoulders" cx="110" cy="80"  rx="42" ry="14"/>
+                <rect    class="heatmap-part" data-part="chest"     x="68"  y="92"   width="84" height="55" rx="8"/>
+                <rect    class="heatmap-part" data-part="gut"       x="80"  y="145"  width="60" height="60" rx="8"/>
+                <rect    class="heatmap-part" data-part="hips"      x="78"  y="205"  width="64" height="32" rx="6"/>
+                <rect    class="heatmap-part" data-part="legs"      x="82"  y="237"  width="56" height="80" rx="6"/>
+                <rect    class="heatmap-part" data-part="feet"      x="82"  y="317"  width="56" height="35" rx="6"/>
+                <ellipse class="heatmap-part" data-part="hand-r"    cx="200" cy="226" rx="12" ry="12"/>
+                <ellipse class="heatmap-part" data-part="hand-l"    cx="20"  cy="226" rx="12" ry="12"/>
+              </g>
+              <!-- annotations -->
+              <g font-family="Caveat, cursive" font-size="11" fill="#1a1a1f">
+                <text x="148" y="36">strategy →</text>
+                <line x1="146" y1="32" x2="134" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+                <text x="-2"  y="82" font-size="10">team →</text>
+                <text x="158" y="120">product</text>
+                <text x="160" y="180">ops</text>
+                <text x="160" y="226">delivery →</text>
+                <text x="158" y="280">infra</text>
+                <text x="158" y="335">scaling</text>
+              </g>
+            </svg>
+          </div>
+          <div>
+            <div class="heatmap-legend">
+              <div class="heatmap-legend__row"><span class="heatmap-legend__chip" style="background:rgba(192,80,77,.25);"></span><span>twinge · 1 click</span></div>
+              <div class="heatmap-legend__row"><span class="heatmap-legend__chip" style="background:rgba(192,80,77,.5);"></span><span>real ache · 2 clicks</span></div>
+              <div class="heatmap-legend__row"><span class="heatmap-legend__chip" style="background:rgba(192,80,77,.75);"></span><span>screaming · 3 clicks</span></div>
+            </div>
+            <div class="heatmap-readout" id="heatmap-readout">
+              <em>nothing hurts yet.</em> Click anywhere on the silhouette →
+            </div>
+            <button type="button" class="heatmap-reset" id="heatmap-reset">↻ reset all pain</button>
+            <input type="hidden" id="f-pain" name="pain">
+            <div class="field" style="margin-top:1.25rem;">
+              <div class="field__label">Free-text: describe the worst pain in one sentence</div>
+              <div class="field__row">
+                <input class="field__input" type="text" id="f-pain-note" placeholder="our deploys take 90 minutes and we ship on a friday">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GIT COMMIT OBJECTIVE -->
+      <div class="field" style="margin-bottom:2rem;">
+        <div class="field__label"><span class="req">*</span> Primary objective · written as a commit</div>
+        <div class="field__hint">50-char subject. 72-col wrapped body. Type matters. Yes, we're judging you.</div>
+        <div class="git-commit">
+          <div class="git-commit__head">
+            <span>branch · <span class="git-commit__branch">your-audit</span></span>
+            <span><span id="gc-files">0</span> files staged</span>
+          </div>
+          <div class="git-commit__row">
+            <span class="git-commit__key">type:</span>
+            <select class="git-commit__select" id="gc-type">
+              <option value="feat">feat — new capability</option>
+              <option value="fix">fix — something's broken</option>
+              <option value="refactor">refactor — rebuild what we have</option>
+              <option value="chore">chore — cleanup / migration</option>
+              <option value="perf">perf — make it faster / cheaper</option>
+              <option value="docs">docs — knowledge / SOP</option>
+              <option value="wtf">wtf — I don't know yet, that's why I'm here</option>
+            </select>
+          </div>
+          <div class="git-commit__row">
+            <span class="git-commit__key">subject:</span>
+            <input class="git-commit__input" id="gc-subject" placeholder="cut payment latency by 60% before Q3" maxlength="80">
+            <span class="git-commit__counter" id="gc-counter">0 / 50</span>
+          </div>
+          <div class="git-commit__row" style="align-items:flex-start;padding-top:.55rem;">
+            <span class="git-commit__key" style="padding-top:.3rem;">body:</span>
+            <div class="git-commit__body" style="flex:1;padding:0;">
+              <textarea id="gc-body" placeholder="explain the why · stakeholders involved · what 'done' looks like · why now · constraints you can't move…"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECONDARY OBJECTIVES · PUNCH CARD -->
+      <div class="field" style="margin-bottom:2rem;">
+        <div class="field__label">Secondary objectives · punch the card</div>
+        <div class="field__hint">Click the oval next to anything else you'd like to move the needle on. Multiple welcome.</div>
+        <div class="punch-card-wrap">
+          <div class="punch-card__head">
+            <span>IBM 5081 · DSM AUDIT DECK</span>
+            <span><span class="punch-card__counter" id="punch2-count">0</span> / 9 punched</span>
+          </div>
+          <div class="punch-grid" id="punch2-grid">
+            <div class="punch-row" data-pick="cut-cost">    <div class="punch-hole"></div><span class="punch-label">Cut infra cost</span></div>
+            <div class="punch-row" data-pick="ship-faster"> <div class="punch-hole"></div><span class="punch-label">Ship faster</span></div>
+            <div class="punch-row" data-pick="scale-traffic"><div class="punch-hole"></div><span class="punch-label">Scale traffic</span></div>
+            <div class="punch-row" data-pick="add-ai">      <div class="punch-hole"></div><span class="punch-label">Add AI / ML</span></div>
+            <div class="punch-row" data-pick="unblock-team"><div class="punch-hole"></div><span class="punch-label">Unblock team</span></div>
+            <div class="punch-row" data-pick="replatform">  <div class="punch-hole"></div><span class="punch-label">Replatform</span></div>
+            <div class="punch-row" data-pick="reduce-churn"><div class="punch-hole"></div><span class="punch-label">Reduce churn</span></div>
+            <div class="punch-row" data-pick="auth-sec">    <div class="punch-hole"></div><span class="punch-label">Auth / security</span></div>
+            <div class="punch-row" data-pick="data-pipeline"><div class="punch-hole"></div><span class="punch-label">Data pipeline</span></div>
+          </div>
+          <input type="hidden" id="f-secondary" name="secondary">
+        </div>
+      </div>
+
+      <!-- WHAT WORKS + KPI -->
+      <div class="row-2" style="margin-bottom:1.5rem;">
+        <div class="field">
+          <div class="field__label">What's working well · DON'T TOUCH</div>
+          <div class="field__row">
+            <input class="field__input" type="text" id="f-works" placeholder="our Postgres is fine — leave it alone">
+          </div>
+        </div>
+        <div class="field">
+          <div class="field__label">KPI you want to move</div>
+          <div class="field__row">
+            <select class="field__select" id="f-kpi">
+              <option value="">choose one…</option>
+              <option>Revenue / MRR</option>
+              <option>Churn / retention</option>
+              <option>Conversion rate</option>
+              <option>Page latency</option>
+              <option>Cost per request</option>
+              <option>Deploy frequency</option>
+              <option>MTTR (incident recovery)</option>
+              <option>Customer NPS</option>
+              <option>Hours of sleep / week</option>
+              <option>Other (free text below)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- CRYSTAL BALL · 6-MONTH WIN -->
+      <div class="field" style="margin-bottom:2rem;">
+        <div class="field__label">6-month win · type into the orb</div>
+        <div class="field__hint">"If this works, in 6 months we will ___" — let your imagination swirl.</div>
+        <div class="crystal" id="crystal">
+          <svg class="crystal__ball-svg" viewBox="0 0 520 380" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <!-- base / stand -->
+            <ellipse cx="260" cy="340" rx="90" ry="14" fill="none" stroke="#1a1a1f" stroke-width="2"/>
+            <path d="M 200 340 Q 200 360 260 360 Q 320 360 320 340" fill="#cdd6b8" stroke="#1a1a1f" stroke-width="2"/>
+            <!-- ball -->
+            <defs>
+              <radialGradient id="orb-grad" cx="40%" cy="35%" r="65%">
+                <stop offset="0%" stop-color="#fff" stop-opacity=".85"/>
+                <stop offset="60%" stop-color="#c5d3e6" stop-opacity=".35"/>
+                <stop offset="100%" stop-color="#4f81bd" stop-opacity=".25"/>
+              </radialGradient>
+            </defs>
+            <circle cx="260" cy="200" r="150" fill="url(#orb-grad)" stroke="#1a1a1f" stroke-width="2.5"/>
+            <!-- smoke swirl group -->
+            <g class="crystal__smoke">
+              <g transform="translate(260 200)">
+                <path d="M -90 0 Q -60 -60 0 -40 Q 60 -20 80 -70 Q 100 -120 40 -100" fill="none" stroke="#1a1a1f" stroke-width="1.5" opacity=".4"/>
+                <path d="M -70 30 Q -20 50 30 30 Q 80 10 100 40" fill="none" stroke="#c0504d" stroke-width="1.5" opacity=".4"/>
+                <path d="M 70 -30 Q 40 -50 -10 -30 Q -60 -10 -80 40" fill="none" stroke="#4f81bd" stroke-width="1.5" opacity=".4"/>
+              </g>
+            </g>
+            <!-- shine -->
+            <ellipse cx="220" cy="150" rx="40" ry="20" fill="#fff" opacity=".6"/>
+          </svg>
+          <textarea class="crystal__textarea" id="f-vision" placeholder="In 6 months we will…"></textarea>
+        </div>
+      </div>
+
+      <!-- SPECTRUM PIN · build vs buy -->
+      <div class="field" style="margin-bottom:1.5rem;">
+        <div class="field__label">Build ↔ Buy · drag the pin</div>
+        <div class="field__hint">Lean toward custom, or toward off-the-shelf. Or sit on the fence.</div>
+        <div class="spectrum" data-spectrum="buildbuy">
+          <div class="spectrum__line"></div>
+          <svg class="spectrum__pin" id="spec-buildbuy-pin" viewBox="0 0 46 60">
+            <!-- pin head -->
+            <circle cx="23" cy="14" r="10" fill="#c0504d" stroke="#1a1a1f" stroke-width="1.5"/>
+            <circle cx="20" cy="11" r="3" fill="#fff" opacity=".55"/>
+            <!-- needle -->
+            <path d="M23 22 L 23 56" stroke="#1a1a1f" stroke-width="2" stroke-linecap="round"/>
+            <path d="M21 54 L 25 54 L 23 60 Z" fill="#1a1a1f"/>
+          </svg>
+          <div class="spectrum__labels">
+            <span>← custom · build it ourselves</span>
+            <span>off-the-shelf · buy it →</span>
+          </div>
+        </div>
+        <input type="hidden" id="f-buildbuy" name="buildbuy" value="50">
+      </div>
+
+      <!-- RISK APPETITE PENCIL -->
+      <div class="field">
+        <div class="field__label">Risk appetite</div>
+        <div class="field__hint">"Move fast, break things" or "Measure twice, cut once."</div>
+        <div class="pencil-slider" data-slider="risk"
+             data-stops='["measure 3x","measure 2x","balanced","ship it","yolo"]'>
+          <div class="pencil-slider__value" id="ps-risk-val">measure 3x</div>
+          <div class="pencil-slider__track"></div>
+          <div class="pencil-slider__trail" id="ps-risk-trail"></div>
+          <div class="pencil-slider__ticks">
+            <span class="pencil-slider__tick"></span><span class="pencil-slider__tick"></span>
+            <span class="pencil-slider__tick"></span><span class="pencil-slider__tick"></span>
+            <span class="pencil-slider__tick"></span>
+          </div>
+          <svg class="pencil-slider__pencil" id="ps-risk-pencil" viewBox="0 0 120 60">
+            <rect x="2" y="22" width="14" height="16" rx="2" fill="#f3c9c7" stroke="#1a1a1f" stroke-width="1.5"/>
+            <rect x="14" y="22" width="6" height="16" fill="#c0504d" stroke="#1a1a1f" stroke-width="1.5"/>
+            <rect x="20" y="22" width="70" height="16" fill="#e5b13a" stroke="#1a1a1f" stroke-width="1.5"/>
+            <line x1="30" y1="22" x2="30" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+            <line x1="60" y1="22" x2="60" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+            <line x1="80" y1="22" x2="80" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+            <polygon points="90,22 110,28 110,32 90,38" fill="#dcc89a" stroke="#1a1a1f" stroke-width="1.5"/>
+            <polygon points="110,28 118,30 110,32" fill="#1a1a1f"/>
+          </svg>
+          <div class="pencil-slider__labels">
+            <span>measure 3x</span><span>measure 2x</span><span>balanced</span><span>ship it</span><span>🔥 yolo</span>
+          </div>
+        </div>
+        <input type="hidden" id="f-risk" name="risk">
+      </div>
+    </section>
+
+    <div class="panel-divider">
+      <svg viewBox="0 0 18 18" fill="none"><path d="M2 9 H 16 M9 2 V 16" stroke="currentColor" stroke-width="1.2"/></svg>
+      <span>// next: service fit</span>
+      <svg viewBox="0 0 18 18" fill="none"><path d="M2 9 H 16 M9 2 V 16" stroke="currentColor" stroke-width="1.2"/></svg>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         PANEL 05 · service fit (punch card + calculator)
+    ════════════════════════════════════════════ -->
+    <section class="panel" id="panel-5" data-panel="5">
+      <div class="panel__tape">05 · fit</div>
+      <div class="panel__head">
+        <div>
+          <div class="panel__num">PANEL 05 / 06</div>
+          <h2 class="panel__title">What you want from us.</h2>
+          <p class="panel__sub">Punch services. Tap your budget on the calculator. Tell us what's actually getting bought.</p>
+        </div>
+        <div class="panel__meta">
+          <div>fields · <b>6</b></div>
+          <div>est · <b>~2 min</b></div>
+        </div>
+      </div>
+
+      <!-- SERVICE PUNCH CARD -->
+      <div class="field" style="margin-bottom:2rem;">
+        <div class="field__label"><span class="req">*</span> Services · punch what you want</div>
+        <div class="field__hint">Multiple holes welcome. We'll triangulate from your goals.</div>
+        <div class="punch-card-wrap">
+          <div class="punch-card__head">
+            <span>DSM 9001 · SERVICE DECK</span>
+            <span><span class="punch-card__counter" id="punch-count">0</span> / 9 punched</span>
+          </div>
+          <div class="punch-grid" id="punch-grid">
+            <div class="punch-row" data-pick="audit-only">    <div class="punch-hole"></div><span class="punch-label">1-page audit only</span></div>
+            <div class="punch-row" data-pick="build-product"> <div class="punch-hole"></div><span class="punch-label">Build product</span></div>
+            <div class="punch-row" data-pick="build-auto">    <div class="punch-hole"></div><span class="punch-label">Build automation</span></div>
+            <div class="punch-row" data-pick="ai-integration"><div class="punch-hole"></div><span class="punch-label">AI integration</span></div>
+            <div class="punch-row" data-pick="staff-aug">     <div class="punch-hole"></div><span class="punch-label">Staff aug</span></div>
+            <div class="punch-row" data-pick="fract-cto">     <div class="punch-hole"></div><span class="punch-label">Fractional CTO</span></div>
+            <div class="punch-row" data-pick="data-pipe">     <div class="punch-hole"></div><span class="punch-label">Data pipelines</span></div>
+            <div class="punch-row" data-pick="security">      <div class="punch-hole"></div><span class="punch-label">Security review</span></div>
+            <div class="punch-row" data-pick="surprise">      <div class="punch-hole"></div><span class="punch-label">Surprise me</span></div>
+          </div>
+          <input type="hidden" id="f-services" name="services">
+        </div>
+      </div>
+
+      <!-- SPECIFIC PRODUCT TEXT -->
+      <div class="field" style="margin-bottom:1.5rem;">
+        <div class="field__label">Specific product / service you'd want built</div>
+        <div class="field__row">
+          <input class="field__input" type="text" id="f-product" placeholder="ai-powered customer support agent · internal admin dashboard · backend rewrite…">
+        </div>
+      </div>
+
+      <!-- TIMELINE PENCIL SLIDER -->
+      <div class="field" style="margin-bottom:1.75rem;">
+        <div class="field__label">Timeline urgency</div>
+        <div class="pencil-slider" data-slider="timeline"
+             data-stops='["this week","this month","this quarter","this year","no rush"]'>
+          <div class="pencil-slider__value" id="ps-timeline-val">this week</div>
+          <div class="pencil-slider__track"></div>
+          <div class="pencil-slider__trail" id="ps-timeline-trail"></div>
+          <div class="pencil-slider__ticks">
+            <span class="pencil-slider__tick"></span><span class="pencil-slider__tick"></span>
+            <span class="pencil-slider__tick"></span><span class="pencil-slider__tick"></span>
+            <span class="pencil-slider__tick"></span>
+          </div>
+          <svg class="pencil-slider__pencil" id="ps-timeline-pencil" viewBox="0 0 120 60">
+            <rect x="2" y="22" width="14" height="16" rx="2" fill="#f3c9c7" stroke="#1a1a1f" stroke-width="1.5"/>
+            <rect x="14" y="22" width="6" height="16" fill="#c0504d" stroke="#1a1a1f" stroke-width="1.5"/>
+            <rect x="20" y="22" width="70" height="16" fill="#e5b13a" stroke="#1a1a1f" stroke-width="1.5"/>
+            <line x1="30" y1="22" x2="30" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+            <line x1="60" y1="22" x2="60" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+            <line x1="80" y1="22" x2="80" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+            <polygon points="90,22 110,28 110,32 90,38" fill="#dcc89a" stroke="#1a1a1f" stroke-width="1.5"/>
+            <polygon points="110,28 118,30 110,32" fill="#1a1a1f"/>
+          </svg>
+          <div class="pencil-slider__labels">
+            <span>🚨 this week</span><span>this month</span><span>this quarter</span><span>this year</span><span>no rush</span>
+          </div>
+        </div>
+        <input type="hidden" id="f-timeline" name="timeline">
+      </div>
+
+      <!-- POCKET CALCULATOR · BUDGET -->
+      <div class="field" style="margin-bottom:1.75rem;">
+        <div class="field__label">Budget · tap it in <span class="help-tag">opt</span></div>
+        <div class="field__hint">Punch digits. Press <code style="font-family:'JetBrains Mono',monospace;background:rgba(26,26,31,.08);padding:.05rem .35rem;border-radius:3px;">=</code> to seal it. Or skip — it'll stay between us either way.</div>
+        <div class="calc-wrap">
+          <div class="calc" id="calc">
+            <div class="calc__brand">
+              <span>DSM-AUDIT · MK.IV</span>
+              <span class="calc__solar"></span>
+            </div>
+            <div class="calc__lcd-mini" id="calc-lcd-mini">budget · USD</div>
+            <div class="calc__lcd" id="calc-lcd">0</div>
+            <div class="calc__keys">
+              <div class="calc__key calc__key--clr" data-k="C">C</div>
+              <div class="calc__key calc__key--clr" data-k="DEL">⌫</div>
+              <div class="calc__key calc__key--op"  data-k="K">000</div>
+              <div class="calc__key calc__key--op"  data-k="M">,000K</div>
+              <div class="calc__key" data-k="7">7</div>
+              <div class="calc__key" data-k="8">8</div>
+              <div class="calc__key" data-k="9">9</div>
+              <div class="calc__key calc__key--op"  data-k="MM">M</div>
+              <div class="calc__key" data-k="4">4</div>
+              <div class="calc__key" data-k="5">5</div>
+              <div class="calc__key" data-k="6">6</div>
+              <div class="calc__key calc__key--op"  data-k="?">?</div>
+              <div class="calc__key" data-k="1">1</div>
+              <div class="calc__key" data-k="2">2</div>
+              <div class="calc__key" data-k="3">3</div>
+              <div class="calc__key calc__key--op"  data-k="X">×</div>
+              <div class="calc__key" data-k="0" style="grid-column:span 2;">0</div>
+              <div class="calc__key" data-k=".">.</div>
+              <div class="calc__key calc__key--eq" data-k="=" style="grid-column:span 1;">=</div>
+            </div>
+          </div>
+          <div class="calc-result" id="calc-result">
+            <div class="calc-readout" id="calc-readout">
+              Tap a digit. We're cool with <em>"not sure"</em> too.
+            </div>
+            <svg class="wax-seal" id="wax-seal" viewBox="0 0 100 100">
+              <!-- ragged wax outer -->
+              <path d="M50 6 L60 10 L66 4 L72 12 L82 10 L84 22 L94 26 L88 36 L96 44 L86 50 L94 60 L84 64 L86 76 L74 76 L70 86 L60 80 L54 92 L46 86 L36 92 L30 82 L20 80 L18 70 L8 68 L14 58 L4 50 L14 44 L6 34 L18 30 L18 18 L30 18 L34 8 L42 12 Z"
+                    fill="#c0504d" stroke="#7a2624" stroke-width="1.5" stroke-linejoin="round"/>
+              <!-- inner stamp -->
+              <circle cx="50" cy="50" r="22" fill="none" stroke="#fbf8f1" stroke-width="1.5" stroke-dasharray="2 2"/>
+              <text x="50" y="44" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="6" fill="#fbf8f1" letter-spacing="2">DSM</text>
+              <text x="50" y="56" text-anchor="middle" font-family="Caveat, cursive" font-size="14" fill="#fbf8f1" font-weight="700">recorded</text>
+              <text x="50" y="66" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="5" fill="#fbf8f1" letter-spacing="1.5">· 48H ·</text>
+            </svg>
+          </div>
+        </div>
+        <input type="hidden" id="f-budget" name="budget">
+      </div>
+
+      <!-- DECISION ALIGNMENT + OTHER AGENCIES -->
+      <div class="row-2">
+        <div class="field">
+          <div class="field__label">Decision-maker alignment</div>
+          <div class="field__row">
+            <select class="field__select" id="f-decision">
+              <option value="">…</option>
+              <option>Solo — I decide alone</option>
+              <option>Partner / co-founder aligned</option>
+              <option>Board-approved</option>
+              <option>Need to sell internally</option>
+              <option>Procurement will be involved</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field__label">Other agencies you've talked to <span class="help-tag">opt · we don't waste your time</span></div>
+          <div class="field__row">
+            <input class="field__input" type="text" id="f-others" placeholder="we already chatted with X and Y">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="panel-divider">
+      <svg viewBox="0 0 18 18" fill="none"><path d="M2 9 H 16 M9 2 V 16" stroke="currentColor" stroke-width="1.2"/></svg>
+      <span>// final: squishy stuff</span>
+      <svg viewBox="0 0 18 18" fill="none"><path d="M2 9 H 16 M9 2 V 16" stroke="currentColor" stroke-width="1.2"/></svg>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         PANEL 06 · squishy stuff (mood ring + cassette + extras)
+    ════════════════════════════════════════════ -->
+    <section class="panel" id="panel-6" data-panel="6">
+      <div class="panel__tape">06 · vibe</div>
+      <div class="panel__head">
+        <div>
+          <div class="panel__num">PANEL 06 / 06</div>
+          <h2 class="panel__title">The squishy stuff.</h2>
+          <p class="panel__sub">The part nobody asks. Mood. Fears. The site you secretly wish you looked like. Optional voice memo to the architect.</p>
+        </div>
+        <div class="panel__meta">
+          <div>fields · <b>8</b></div>
+          <div>est · <b>~3 min</b></div>
+        </div>
+      </div>
+
+      <!-- MOOD RING · current state -->
+      <div class="field" style="margin-bottom:2rem;">
+        <div class="field__label"><span class="req">*</span> Current vibe of your business · mood ring</div>
+        <div class="field__hint">Hover for labels. Click the one that matches today — be honest.</div>
+        <div class="mood-ring-wrap">
+          <div class="mood-ring" id="mood-ring">
+            <svg class="mood-ring__bg" viewBox="0 0 280 280" aria-hidden="true">
+              <circle cx="140" cy="140" r="130" fill="none" stroke="#1a1a1f" stroke-width="1.5" stroke-dasharray="4 4"/>
+              <circle cx="140" cy="140" r="80" fill="none" stroke="#1a1a1f" stroke-width="1" stroke-dasharray="2 3" opacity=".4"/>
+              <circle cx="140" cy="140" r="6" fill="#1a1a1f"/>
+              <text x="140" y="174" text-anchor="middle" font-family="Caveat, cursive" font-size="18" fill="#1a1a1f">pick one →</text>
+            </svg>
+            <!-- 7 emoji moods placed around the ring -->
+            <div class="mood-cell" data-mood="panic"     data-emoji="😵"  style="top:10%;  left:50%;">😵<span class="mood-cell__label">panic mode</span></div>
+            <div class="mood-cell" data-mood="thinking"  data-emoji="🧠"  style="top:25%;  left:84%;">🧠<span class="mood-cell__label">deep think</span></div>
+            <div class="mood-cell" data-mood="shipping"  data-emoji="🚀"  style="top:60%;  left:90%;">🚀<span class="mood-cell__label">shipping</span></div>
+            <div class="mood-cell" data-mood="stuck"     data-emoji="😴"  style="top:90%;  left:70%;">😴<span class="mood-cell__label">stuck</span></div>
+            <div class="mood-cell" data-mood="ramen"     data-emoji="🍜"  style="top:90%;  left:30%;">🍜<span class="mood-cell__label">ramen mode</span></div>
+            <div class="mood-cell" data-mood="burning"   data-emoji="🔥"  style="top:60%;  left:10%;">🔥<span class="mood-cell__label">on fire (bad)</span></div>
+            <div class="mood-cell" data-mood="chill"     data-emoji="🧘"  style="top:25%;  left:16%;">🧘<span class="mood-cell__label">chill</span></div>
+          </div>
+          <div>
+            <div class="mood-readout" id="mood-readout">
+              <em>...waiting for a vibe.</em>
+            </div>
+            <div class="field" style="margin-top:1rem;">
+              <div class="field__label">Biggest fear about your stack <span class="req">*</span></div>
+              <div class="field__row">
+                <textarea class="field__textarea" id="f-fear" placeholder="if [thing] breaks we lose [other thing] and our team would..." style="min-height:80px;"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="f-mood" name="mood">
+      </div>
+
+      <!-- DO NOT DO + VIBE URL -->
+      <div class="row-2" style="margin-bottom:1.5rem;">
+        <div class="field">
+          <div class="field__label">One thing we should NOT do</div>
+          <div class="field__row">
+            <input class="field__input" type="text" id="f-dont" placeholder="don't rewrite from scratch · don't suggest Kubernetes…">
+          </div>
+        </div>
+        <div class="field">
+          <div class="field__label">A site / product you secretly love</div>
+          <div class="field__row">
+            <input class="field__input" type="url" id="f-vibe-url" placeholder="https://linear.app  ·  https://stripe.com">
+          </div>
+        </div>
+      </div>
+
+      <!-- TECHNICALITY PENCIL SLIDER -->
+      <div class="field" style="margin-bottom:1.75rem;">
+        <div class="field__label">How technical is the leadership?</div>
+        <div class="pencil-slider" data-slider="tech"
+             data-stops='["non-tech","reads docs","can prompt-debug","ships PRs","ssh @ 2am"]'>
+          <div class="pencil-slider__value" id="ps-tech-val">non-tech</div>
+          <div class="pencil-slider__track"></div>
+          <div class="pencil-slider__trail" id="ps-tech-trail"></div>
+          <div class="pencil-slider__ticks">
+            <span class="pencil-slider__tick"></span><span class="pencil-slider__tick"></span>
+            <span class="pencil-slider__tick"></span><span class="pencil-slider__tick"></span>
+            <span class="pencil-slider__tick"></span>
+          </div>
+          <svg class="pencil-slider__pencil" id="ps-tech-pencil" viewBox="0 0 120 60">
+            <rect x="2" y="22" width="14" height="16" rx="2" fill="#f3c9c7" stroke="#1a1a1f" stroke-width="1.5"/>
+            <rect x="14" y="22" width="6" height="16" fill="#c0504d" stroke="#1a1a1f" stroke-width="1.5"/>
+            <rect x="20" y="22" width="70" height="16" fill="#e5b13a" stroke="#1a1a1f" stroke-width="1.5"/>
+            <line x1="30" y1="22" x2="30" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+            <line x1="60" y1="22" x2="60" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+            <line x1="80" y1="22" x2="80" y2="38" stroke="#1a1a1f" stroke-width="1"/>
+            <polygon points="90,22 110,28 110,32 90,38" fill="#dcc89a" stroke="#1a1a1f" stroke-width="1.5"/>
+            <polygon points="110,28 118,30 110,32" fill="#1a1a1f"/>
+          </svg>
+          <div class="pencil-slider__labels">
+            <span>non-tech</span><span>reads docs</span><span>prompt-debugs</span><span>ships PRs</span><span>SSH @ 2am</span>
+          </div>
+        </div>
+        <input type="hidden" id="f-tech" name="tech">
+      </div>
+
+      <!-- HOW HEARD -->
+      <div class="field" style="margin-bottom:1.5rem;">
+        <div class="field__label">How'd you hear about us?</div>
+        <div class="chips" data-multi="heard">
+          <label class="chip"><input type="checkbox" value="X / Twitter"><span>X / Twitter</span></label>
+          <label class="chip"><input type="checkbox" value="LinkedIn"><span>LinkedIn</span></label>
+          <label class="chip"><input type="checkbox" value="Friend / referral"><span>Friend referral</span></label>
+          <label class="chip"><input type="checkbox" value="Google"><span>Google</span></label>
+          <label class="chip"><input type="checkbox" value="YouTube / podcast"><span>YouTube / podcast</span></label>
+          <label class="chip"><input type="checkbox" value="Saw the website"><span>Saw the site</span></label>
+          <label class="chip"><input type="checkbox" value="No idea"><span>No idea</span></label>
+        </div>
+      </div>
+
+      <!-- CASSETTE VOICE MEMO -->
+      <div class="field" style="margin-bottom:1.5rem;">
+        <div class="field__label">Voice memo to the architect <span class="help-tag">opt · 30s</span></div>
+        <div class="field__hint">Tell us anything you couldn't fit into a text box. Mic permission required — we don't keep audio you don't send.</div>
+        <div class="cassette-wrap">
+          <div class="cassette" id="cassette">
+            <svg class="cassette__svg" viewBox="0 0 300 170" preserveAspectRatio="xMidYMid meet">
+              <!-- shell -->
+              <rect x="6" y="6" width="288" height="158" rx="8" fill="#f3e3b2" stroke="#1a1a1f" stroke-width="2"/>
+              <rect x="14" y="14" width="272" height="142" rx="6" fill="#fbf8f1" stroke="#1a1a1f" stroke-width="1" stroke-dasharray="3 3"/>
+              <!-- label window -->
+              <rect x="40" y="20" width="220" height="42" fill="#fff" stroke="#1a1a1f" stroke-width="1.2"/>
+              <!-- reels -->
+              <g class="cassette__reel-l" transform-origin="76 110" style="transform-origin:76px 110px;">
+                <circle cx="76" cy="110" r="32" fill="#fbf8f1" stroke="#1a1a1f" stroke-width="1.6"/>
+                <circle cx="76" cy="110" r="22" fill="#dcd6c4" stroke="#1a1a1f" stroke-width="1.2"/>
+                <g fill="#1a1a1f">
+                  <circle cx="76" cy="92" r="3"/><circle cx="76" cy="128" r="3"/>
+                  <circle cx="58" cy="110" r="3"/><circle cx="94" cy="110" r="3"/>
+                  <circle cx="76" cy="110" r="4"/>
+                </g>
+              </g>
+              <g class="cassette__reel-r" transform-origin="224 110" style="transform-origin:224px 110px;">
+                <circle cx="224" cy="110" r="32" fill="#fbf8f1" stroke="#1a1a1f" stroke-width="1.6"/>
+                <circle cx="224" cy="110" r="22" fill="#dcd6c4" stroke="#1a1a1f" stroke-width="1.2"/>
+                <g fill="#1a1a1f">
+                  <circle cx="224" cy="92" r="3"/><circle cx="224" cy="128" r="3"/>
+                  <circle cx="206" cy="110" r="3"/><circle cx="242" cy="110" r="3"/>
+                  <circle cx="224" cy="110" r="4"/>
+                </g>
+              </g>
+              <!-- tape line -->
+              <path d="M 108 110 Q 150 100 192 110" fill="none" stroke="#1a1a1f" stroke-width="1.5" stroke-dasharray="2 2"/>
+              <!-- caption -->
+              <text x="150" y="158" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#1a1a1f" letter-spacing="2">DSM AUDIT · TYPE I · 30s</text>
+            </svg>
+            <input class="cassette__label-input" type="text" id="f-cassette-label" placeholder="memo title…" maxlength="40">
+          </div>
+          <div>
+            <div class="cassette-ctrls">
+              <button type="button" class="cassette-btn rec" id="cas-rec"><span>● rec</span></button>
+              <button type="button" class="cassette-btn" id="cas-stop" disabled><span>■ stop</span></button>
+              <button type="button" class="cassette-btn" id="cas-play" disabled><span>▶ play</span></button>
+              <button type="button" class="cassette-btn" id="cas-clear" disabled><span>⟲ erase</span></button>
+              <div class="cassette-time" id="cas-time">00:00 / 00:30</div>
+            </div>
+            <div class="cassette-status" id="cas-status">Click ● rec to start.</div>
+            <div class="cassette-transcript" id="cas-transcript"></div>
+            <audio id="cas-audio" hidden></audio>
+            <input type="hidden" id="f-voicelen" name="voicelen">
+          </div>
+        </div>
+      </div>
+
+      <!-- CATCH-ALL -->
+      <div class="field">
+        <div class="field__label">Anything else we should know</div>
+        <div class="field__row">
+          <textarea class="field__textarea" id="f-anything" placeholder="that one weird thing about your business · the legacy system you're afraid of · whatever didn't fit above" style="min-height:90px;"></textarea>
+        </div>
+      </div>
+    </section>
+  </form>
+
+  <!-- ════════════════════════════════════════════
+       SUBMIT · paper plane
+  ════════════════════════════════════════════ -->
+  <section class="submit-panel">
+    <div id="submit-default">
+      <h2>One last fold and it's in the post.</h2>
+      <p>Click the paper square. We'll fold it into a plane and ship it to the architects. Expect ink back within 48h.</p>
+      <div class="submit-opts">
+        <label class="submit-opt">
+          <input type="checkbox" id="opt-email" checked>
+          <span class="check-box"></span>
+          <span>Email me the audit PDF when ready.</span>
+        </label>
+        <label class="submit-opt">
+          <input type="checkbox" id="opt-newsletter">
+          <span class="check-box"></span>
+          <span>Add me to the <em>geek list</em> — once-a-month dispatch of architecture notes &amp; case studies. Unsub anytime.</span>
+        </label>
+        <label class="submit-opt">
+          <input type="checkbox" id="opt-consent" checked>
+          <span class="check-box"></span>
+          <span style="font-size:11px;color:var(--graphite);">I agree to DSM × TechRealm processing my submission to prepare the audit. No spam, no resale, no second-call ambush.</span>
+        </label>
+      </div>
+      <div class="plane-zone">
+        <button type="submit" class="plane-btn" id="plane-btn" form="audit-form">
+          <svg class="plane-paper" viewBox="0 0 80 80">
+            <!-- folded plane: built from a square, animated into a plane -->
+            <g id="plane-shape">
+              <!-- starts square, will morph via group rotation -->
+              <polygon points="6,72 40,8 74,72 40,58" fill="#fbf8f1" stroke="#1a1a1f" stroke-width="1.8" stroke-linejoin="round"/>
+              <polygon points="40,8 40,58 6,72" fill="#f3e3b2" stroke="#1a1a1f" stroke-width="1.6" stroke-linejoin="round" opacity=".9"/>
+              <line x1="40" y1="8" x2="40" y2="58" stroke="#1a1a1f" stroke-width="1.2"/>
+              <line x1="40" y1="58" x2="20" y2="68" stroke="#1a1a1f" stroke-width=".9" stroke-dasharray="2 2"/>
+            </g>
+          </svg>
+          <span class="plane-label">→ fold &amp; send</span>
+        </button>
+      </div>
+    </div>
+    <div class="thanks" id="thanks">
+      <div class="thanks-ticker">✏ received.</div>
+      <div class="thanks-sub">expect ink in 48h</div>
+      <div class="thanks-id" id="thanks-id">ref · DSM-AUD-0000</div>
+      <p style="font-size:13px;color:var(--graphite);margin-top:1rem;max-width:24rem;line-height:1.55;">
+        We'll triage your submission today, draft your 1-page sketch within 48h, and email it as a PDF. If we don't think you need us, we'll tell you that too.
+      </p>
+      <a href="dsmAIFinal.html" class="back-link" style="margin-top:1.2rem;">← back to the site</a>
+    </div>
+  </section>
+
+  <p class="footnote">
+    🖋 hand-built in pencil &amp; pixels · DSM × TechRealm · <a class="field-link" href="mailto:hello@digitalsoftwaremarket.ai">hello@digitalsoftwaremarket.ai</a>
+  </p>
+
+  <div class="sticky-note" id="sticky-note">
+    permission granted ✓
+    <small>sudo audit initialized</small>
+  </div>
+
+  <script>
+    /* ───────────────────────────────────────────────
+       GLOBAL STATE
+    ─────────────────────────────────────────────── */
+    const S = {
+      data: {
+        // panel 01
+        name:'', email:'', role:'', company:'', url:'', social:'', tz:'', channel:'', window:'',
+        // panel 02
+        industry:'', industry_other:'', subniche:'', stage:'',
+        year:'', team:'', geo:'', model:'', revenue:'', description:'', moat:'',
+        // panel 03
+        no_stack:false, npm_stack:[], lego_stack:[],
+        auth:[], ai:[], auto:[], obs:[], ci:[], volume:'', apis:'',
+        // panel 04
+        pain:{}, pain_note:'',
+        gc_type:'feat', gc_subject:'', gc_body:'',
+        secondary:[], works:'', kpi:'', vision:'',
+        buildbuy:50, risk:'',
+        // panel 05
+        services:[], product:'', timeline:'', budget:'', decision:'', others:'',
+        // panel 06
+        mood:'', fear:'', dont:'', vibe_url:'', tech:'', heard:[],
+        voicelen:0, voiceblob:null, voicelabel:'', anything:'',
+        // submit
+        opt_email:true, opt_news:false, opt_consent:true,
+      },
+      panelHits: { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0 },
+      // weight per panel for progress meter (sum 100)
+      panelWeights: { 1:14, 2:18, 3:18, 4:22, 5:14, 6:14 },
+    };
+    window.AUDIT_STATE = S;
+
+    /* ───────────────────────────────────────────────
+       HELPERS
+    ─────────────────────────────────────────────── */
+    const $  = (s, c=document) => c.querySelector(s);
+    const $$ = (s, c=document) => [...c.querySelectorAll(s)];
+    const on = (el, ev, fn) => el && el.addEventListener(ev, fn);
+    const clamp = (n,a,b) => Math.max(a, Math.min(b,n));
+    const pctOf = (v, max) => clamp(v/max, 0, 1);
+
+    function attachEraser(field) {
+      // Skip eraser for non-erasable fields (custom widgets)
+      if (field.dataset.noEraser === '1') return;
+      // Skip fields whose primary control is a widget (cootie, tama, lego, heatmap, punch, calc, mood, cassette, crystal, spectrum, pencil slider, terminal, git-commit)
+      const widgetSelectors = ['.cootie-wrap','.tama','.heatmap-wrap','.lego-wrap','.punch-card-wrap','.crystal','.spectrum','.pencil-slider','.mood-ring','.cassette-wrap','.calc-wrap','.term','.git-commit','.chips'];
+      if (widgetSelectors.some(s => field.querySelector(s))) return;
+      // find the active input in the field (input/textarea/select)
+      const ctrl = field.querySelector('input:not([type="hidden"]), textarea, select');
+      if (!ctrl) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'field__eraser';
+      btn.setAttribute('aria-label', 'Erase field');
+      btn.innerHTML = `<svg viewBox="0 0 28 18" xmlns="http://www.w3.org/2000/svg" fill="none">
+        <rect x="4" y="3" width="14" height="10" fill="#f3c9c7" stroke="#1a1a1f" stroke-width="1.4" rx="2"/>
+        <rect x="14" y="3" width="6" height="10" fill="#c0504d" stroke="#1a1a1f" stroke-width="1.4"/>
+        <line x1="20" y1="14" x2="26" y2="16" stroke="#1a1a1f" stroke-width="1.2" stroke-dasharray="1 2"/>
+      </svg>`;
+      const smudge = document.createElement('div');
+      smudge.className = 'field__smudge';
+      field.appendChild(btn);
+      field.appendChild(smudge);
+      on(btn, 'click', e => {
+        e.preventDefault();
+        btn.classList.add('erasing');
+        smudge.classList.add('show');
+        setTimeout(()=>btn.classList.remove('erasing'), 520);
+        setTimeout(()=>smudge.classList.remove('show'), 1500);
+        if (ctrl.type === 'checkbox' || ctrl.type === 'radio') ctrl.checked = false;
+        else ctrl.value = '';
+        ctrl.dispatchEvent(new Event('input', {bubbles:true}));
+        ctrl.dispatchEvent(new Event('change', {bubbles:true}));
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       PROGRESS METER
+    ─────────────────────────────────────────────── */
+    function paintProgress(){
+      // recompute panel hit percentages 0..1 each
+      const c1 = computePanel1(); const c2 = computePanel2(); const c3 = computePanel3();
+      const c4 = computePanel4(); const c5 = computePanel5(); const c6 = computePanel6();
+      const w = S.panelWeights;
+      const total = c1*w[1] + c2*w[2] + c3*w[3] + c4*w[4] + c5*w[5] + c6*w[6];
+      const pct = Math.round(total);
+      $('#prog-pct').textContent = pct + '%';
+      // each scratch represents 33% of the total. Length of dasharray ~ 280 (path len)
+      const len = 280;
+      const fillFor = p => Math.max(0, len - (len * clamp(p,0,1)));
+      $('#prog-1').style.strokeDashoffset = fillFor(pct/33.33);
+      $('#prog-2').style.strokeDashoffset = fillFor((pct-33.33)/33.33);
+      $('#prog-3').style.strokeDashoffset = fillFor((pct-66.66)/33.34);
+      if ($('#ready-flag')) {
+        const ready = c1 > .9 && c2 > .7 && c4 > .5 && c5 > .5 && c6 > .5;
+        $('#ready-flag').textContent = ready ? 'true' : 'false';
+        $('#ready-flag').style.color = ready ? '#7a8c5c' : '#e96a5c';
+      }
+    }
+    function computePanel1(){
+      const required = ['name','email'];
+      const all = ['name','email','role','company','url','social','tz','channel','window'];
+      let filled = 0; all.forEach(k => { if (S.data[k]) filled++; });
+      const reqOk = required.every(k => S.data[k]);
+      return reqOk ? Math.max(.7, filled/all.length) : (filled/all.length)*.6;
+    }
+    function computePanel2(){
+      const all = ['industry','subniche','stage','year','team','geo','model','revenue','description','moat'];
+      let filled = 0; all.forEach(k => { if (S.data[k]) filled++; });
+      return filled/all.length;
+    }
+    function computePanel3(){
+      if (S.data.no_stack) return 1;
+      const lists = ['auth','ai','auto','obs','ci'];
+      const npm = S.data.npm_stack.length > 0 ? 1 : 0;
+      const lego = S.data.lego_stack.length > 0 ? 1 : 0;
+      const vol = S.data.volume ? 1 : 0;
+      const apis = S.data.apis ? 1 : 0;
+      const listFill = lists.reduce((a,k)=>a + (S.data[k].length ? 1 : 0), 0) / lists.length;
+      const stackTotal = (npm + lego + vol + apis) / 4;
+      return (listFill + stackTotal) / 2;
+    }
+    function computePanel4(){
+      const pieces = [
+        Object.keys(S.data.pain).length ? 1 : 0,
+        S.data.pain_note ? 1 : 0,
+        S.data.gc_subject ? 1 : 0,
+        S.data.gc_body ? 1 : 0,
+        S.data.secondary.length ? 1 : 0,
+        S.data.works ? 1 : 0,
+        S.data.kpi ? 1 : 0,
+        S.data.vision ? 1 : 0,
+        S.data.risk ? 1 : 0,
+        1 /* buildbuy always has a value */,
+      ];
+      return pieces.reduce((a,b)=>a+b,0) / pieces.length;
+    }
+    function computePanel5(){
+      const pieces = [
+        S.data.services.length ? 1 : 0,
+        S.data.product ? 1 : 0,
+        S.data.timeline ? 1 : 0,
+        S.data.budget ? 1 : 0,
+        S.data.decision ? 1 : 0,
+        S.data.others ? 1 : 0,
+      ];
+      return pieces.reduce((a,b)=>a+b,0) / pieces.length;
+    }
+    function computePanel6(){
+      const pieces = [
+        S.data.mood ? 1 : 0,
+        S.data.fear ? 1 : 0,
+        S.data.dont ? 1 : 0,
+        S.data.vibe_url ? 1 : 0,
+        S.data.tech ? 1 : 0,
+        S.data.heard.length ? 1 : 0,
+        S.data.anything ? 1 : 0,
+      ];
+      return pieces.reduce((a,b)=>a+b,0) / pieces.length;
+    }
+
+    /* ───────────────────────────────────────────────
+       PANEL 01 · TERMINAL whoami
+    ─────────────────────────────────────────────── */
+    function initTerminalWhoami(){
+      const lines = $$('.term__line[data-key]', $('#whoami-term'));
+      lines.forEach(line => {
+        const ctrl = line.querySelector('input, select');
+        if (!ctrl) return;
+        const key = line.dataset.key;
+        const updateDone = () => {
+          if (ctrl.value && ctrl.value.trim()) line.classList.add('done');
+          else line.classList.remove('done');
+        };
+        on(ctrl, 'input', () => { S.data[key] = ctrl.value; updateDone(); paintProgress(); });
+        on(ctrl, 'change', () => { S.data[key] = ctrl.value; updateDone(); paintProgress(); });
+      });
+      // auto-detect timezone
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+        const tzEl = $('#f-tz');
+        if (tz && tzEl && !tzEl.value) {
+          tzEl.value = tz;
+          tzEl.dispatchEvent(new Event('input', {bubbles:true}));
+        }
+      } catch(e){}
+    }
+
+    /* ───────────────────────────────────────────────
+       PANEL 02 · COOTIE CATCHER
+    ─────────────────────────────────────────────── */
+    function initCootie(){
+      const c = $('#cootie');
+      on(c, 'click', e => {
+        // open/close when clicking on flap (not on inner picks)
+        if (e.target.closest('.cootie-pick')) return;
+        c.classList.toggle('open');
+      });
+      on(c, 'keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.classList.toggle('open'); }
+      });
+      $$('#cootie-picks .cootie-pick').forEach(p => {
+        on(p, 'click', e => {
+          e.stopPropagation();
+          $$('#cootie-picks .cootie-pick').forEach(x => x.classList.remove('selected'));
+          p.classList.add('selected');
+          const v = p.dataset.industry;
+          $('#cootie-chosen').textContent = v;
+          $('#f-industry').value = v;
+          S.data.industry = v;
+          paintProgress();
+        });
+      });
+      on($('#f-industry-other'), 'input', e => {
+        S.data.industry_other = e.target.value;
+        if (e.target.value && !S.data.industry) {
+          $('#cootie-chosen').textContent = e.target.value;
+          $('#f-industry').value = e.target.value;
+          S.data.industry = e.target.value;
+        }
+        paintProgress();
+      });
+      on($('#f-subniche'), 'input', e => { S.data.subniche = e.target.value; paintProgress(); });
+      on($('#f-moat'),     'input', e => { S.data.moat = e.target.value; paintProgress(); });
+      on($('#f-year'),     'input', e => { S.data.year = e.target.value; paintProgress(); });
+      on($('#f-team'),     'change',e => { S.data.team = e.target.value; paintProgress(); });
+      on($('#f-geo'),      'change',e => { S.data.geo = e.target.value; paintProgress(); });
+      on($('#f-model'),    'change',e => { S.data.model = e.target.value; paintProgress(); });
+    }
+
+    /* ───────────────────────────────────────────────
+       PANEL 02 · TAMAGOTCHI
+    ─────────────────────────────────────────────── */
+    function initTama(){
+      $$('.tama-cell', $('#tama')).forEach(cell => {
+        on(cell, 'click', () => {
+          $$('.tama-cell', $('#tama')).forEach(x => x.classList.remove('selected'));
+          cell.classList.add('selected');
+          const v = cell.dataset.stage;
+          $('#f-stage').value = v;
+          S.data.stage = v;
+          paintProgress();
+        });
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       PENCIL SLIDERS (shared)
+    ─────────────────────────────────────────────── */
+    function initPencilSliders(){
+      $$('.pencil-slider').forEach(slider => {
+        const key = slider.dataset.slider;
+        const stops = JSON.parse(slider.dataset.stops);
+        const pencil = slider.querySelector('.pencil-slider__pencil');
+        const trail  = slider.querySelector('.pencil-slider__trail');
+        const valEl  = slider.querySelector('.pencil-slider__value');
+        const hidden = $('#f-' + key);
+        let idx = 0;
+        const place = i => {
+          idx = clamp(i, 0, stops.length-1);
+          const pct = stops.length === 1 ? 0 : idx/(stops.length-1);
+          const w = slider.clientWidth;
+          // pencil tip is right end; position the pencil so its tip reaches the pct
+          // pencil graphic is 120px wide, tip at ~x=118 / scale to its 120 box
+          // We position .pencil-slider__pencil so its translateX moves the tip
+          // To simplify: align pencil tip with track position
+          const trackPad = 8;
+          const usable = w - trackPad*2;
+          const tipX = trackPad + usable * pct;
+          // pencil element is positioned with translateX(-50%), but we want tip at tipX
+          // So we place at tipX, then offset by tip-from-center (~tip is at x=118 in a 120 viewBox; center is 60, so tip is +58 from center)
+          // Pencil box is 120px wide visual; its rendered width depends on width prop in CSS (=120). So tip is 60-58 = offset of -58 from translate(-50%) center. Hence move pencil right by 58 (tip-to-center) relative to translate(-50%).
+          pencil.style.left = (tipX) + 'px';
+          pencil.style.transform = 'translateX(calc(-100% + 2px))';
+          trail.style.width = (tipX - trackPad) + 'px';
+          valEl.textContent = stops[idx];
+          valEl.style.left = tipX + 'px';
+          if (hidden) hidden.value = stops[idx];
+          S.data[key] = stops[idx];
+          paintProgress();
+        };
+        // initial
+        requestAnimationFrame(()=>place(0));
+        // drag
+        let dragging = false;
+        const startDrag = e => { dragging = true; pencil.style.cursor = 'grabbing'; document.body.style.userSelect = 'none'; };
+        const endDrag   = () => { dragging = false; pencil.style.cursor = 'grab'; document.body.style.userSelect = ''; };
+        on(pencil, 'mousedown', startDrag);
+        on(pencil, 'touchstart', startDrag, {passive:true});
+        on(window, 'mouseup', endDrag);
+        on(window, 'touchend', endDrag);
+        const moveTo = clientX => {
+          const rect = slider.getBoundingClientRect();
+          const trackPad = 8;
+          const usable = rect.width - trackPad*2;
+          const x = clientX - rect.left - trackPad;
+          const pct = clamp(x / usable, 0, 1);
+          // snap to nearest stop
+          const i = Math.round(pct * (stops.length-1));
+          place(i);
+        };
+        on(window, 'mousemove', e => { if (dragging) moveTo(e.clientX); });
+        on(window, 'touchmove', e => { if (dragging && e.touches[0]) moveTo(e.touches[0].clientX); }, {passive:true});
+        // click track to jump
+        on(slider, 'click', e => {
+          if (e.target === pencil || e.target.closest('.pencil-slider__pencil')) return;
+          moveTo(e.clientX);
+        });
+        // tap label to jump
+        const labels = slider.querySelectorAll('.pencil-slider__labels span');
+        labels.forEach((sp,i) => on(sp, 'click', e => { e.stopPropagation(); place(i); }));
+        // reposition on resize
+        on(window, 'resize', () => place(idx));
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       MARGINALIA AUTO-DOODLES
+    ─────────────────────────────────────────────── */
+    const MARG_RULES = [
+      { kw:/\b(ecom|e-com|ecommerce|shop|cart|store|retail)\b/i, doodle:`<svg viewBox="0 0 42 42"><path d="M6 10 H10 L14 30 H34 L38 14 H14" fill="none" stroke="#1a1a1f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="36" r="2.5" fill="#c0504d" stroke="#1a1a1f" stroke-width="1.4"/><circle cx="32" cy="36" r="2.5" fill="#c0504d" stroke="#1a1a1f" stroke-width="1.4"/></svg>` },
+      { kw:/\b(saas|subscription|recurring|mrr)\b/i, doodle:`<svg viewBox="0 0 42 42"><rect x="6" y="10" width="30" height="22" rx="2" fill="none" stroke="#1a1a1f" stroke-width="1.6"/><line x1="6" y1="16" x2="36" y2="16" stroke="#1a1a1f" stroke-width="1.6"/><circle cx="10" cy="13" r="1.2" fill="#1a1a1f"/><circle cx="14" cy="13" r="1.2" fill="#1a1a1f"/><line x1="10" y1="22" x2="32" y2="22" stroke="#4f81bd" stroke-width="2"/><line x1="10" y1="26" x2="24" y2="26" stroke="#1a1a1f" stroke-width="1.4"/></svg>` },
+      { kw:/\b(ai|ml|llm|gpt|model|prompt|neural)\b/i, doodle:`<svg viewBox="0 0 42 42"><rect x="10" y="10" width="22" height="22" rx="3" fill="#f3e3b2" stroke="#1a1a1f" stroke-width="1.8"/><circle cx="18" cy="20" r="2" fill="#1a1a1f"/><circle cx="26" cy="20" r="2" fill="#1a1a1f"/><path d="M16 28 Q 21 31 26 28" fill="none" stroke="#1a1a1f" stroke-width="1.6" stroke-linecap="round"/><line x1="13" y1="6" x2="13" y2="10" stroke="#1a1a1f" stroke-width="1.6"/><line x1="29" y1="6" x2="29" y2="10" stroke="#1a1a1f" stroke-width="1.6"/></svg>` },
+      { kw:/\b(api|integration|webhook|endpoint)\b/i, doodle:`<svg viewBox="0 0 42 42"><circle cx="14" cy="14" r="5" fill="none" stroke="#1a1a1f" stroke-width="1.8"/><circle cx="30" cy="30" r="5" fill="none" stroke="#1a1a1f" stroke-width="1.8"/><circle cx="30" cy="14" r="5" fill="#cdd6b8" stroke="#1a1a1f" stroke-width="1.8"/><circle cx="14" cy="30" r="5" fill="#cdd6b8" stroke="#1a1a1f" stroke-width="1.8"/><line x1="14" y1="14" x2="30" y2="30" stroke="#1a1a1f" stroke-width="1.4" stroke-dasharray="2 2"/></svg>` },
+      { kw:/\b(database|db|postgres|mysql|mongo|sql|nosql)\b/i, doodle:`<svg viewBox="0 0 42 42"><ellipse cx="21" cy="10" rx="14" ry="4" fill="#c5d3e6" stroke="#1a1a1f" stroke-width="1.8"/><path d="M7 10 V 32 Q 7 36 21 36 Q 35 36 35 32 V 10" fill="#c5d3e6" stroke="#1a1a1f" stroke-width="1.8"/><path d="M7 18 Q 7 22 21 22 Q 35 22 35 18 M 7 26 Q 7 30 21 30 Q 35 30 35 26" fill="none" stroke="#1a1a1f" stroke-width="1.6"/></svg>` },
+      { kw:/\b(money|revenue|profit|dollar|cash|charge|payment|invoice)\b/i, doodle:`<svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="14" fill="#f3e3b2" stroke="#1a1a1f" stroke-width="1.8"/><text x="21" y="28" text-anchor="middle" font-family="Caveat, cursive" font-size="22" fill="#1a1a1f" font-weight="700">$</text></svg>` },
+      { kw:/\b(robot|automation|bot|automated|workflow)\b/i, doodle:`<svg viewBox="0 0 42 42"><rect x="10" y="14" width="22" height="18" rx="3" fill="#dcd6c4" stroke="#1a1a1f" stroke-width="1.8"/><rect x="17" y="6" width="8" height="8" fill="#dcd6c4" stroke="#1a1a1f" stroke-width="1.6"/><line x1="21" y1="4" x2="21" y2="6" stroke="#1a1a1f" stroke-width="1.6"/><circle cx="16" cy="22" r="2" fill="#c0504d"/><circle cx="26" cy="22" r="2" fill="#c0504d"/><line x1="6" y1="20" x2="10" y2="20" stroke="#1a1a1f" stroke-width="1.6"/><line x1="32" y1="20" x2="36" y2="20" stroke="#1a1a1f" stroke-width="1.6"/></svg>` },
+      { kw:/\b(team|hire|employee|staff|people|founder|engineer|developer)\b/i, doodle:`<svg viewBox="0 0 42 42"><circle cx="14" cy="14" r="5" fill="#f3c9c7" stroke="#1a1a1f" stroke-width="1.6"/><circle cx="28" cy="16" r="4" fill="#cdd6b8" stroke="#1a1a1f" stroke-width="1.6"/><path d="M4 36 V 30 Q 4 22 14 22 Q 24 22 24 30 V 36" fill="#f3c9c7" stroke="#1a1a1f" stroke-width="1.6"/><path d="M22 36 V 30 Q 22 24 28 24 Q 38 24 38 30 V 36" fill="#cdd6b8" stroke="#1a1a1f" stroke-width="1.6"/></svg>` },
+      { kw:/\b(growth|scale|scaling|chart|graph|trend|metric|kpi)\b/i, doodle:`<svg viewBox="0 0 42 42"><line x1="6" y1="36" x2="36" y2="36" stroke="#1a1a1f" stroke-width="1.6"/><line x1="6" y1="36" x2="6" y2="6" stroke="#1a1a1f" stroke-width="1.6"/><path d="M8 32 L 16 24 L 22 28 L 30 14 L 36 10" fill="none" stroke="#c0504d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="36" cy="10" r="2.5" fill="#c0504d" stroke="#1a1a1f" stroke-width="1.4"/></svg>` },
+      { kw:/\b(cloud|aws|gcp|azure|server|infra|infrastructure|hosting)\b/i, doodle:`<svg viewBox="0 0 42 42"><path d="M10 28 Q 4 28 4 22 Q 4 16 12 16 Q 14 8 24 8 Q 34 8 34 18 Q 40 18 40 24 Q 40 30 32 30 Z" fill="#c5d3e6" stroke="#1a1a1f" stroke-width="1.8" stroke-linejoin="round"/></svg>` },
+      { kw:/\b(security|auth|login|password|encryption|gdpr|compliance)\b/i, doodle:`<svg viewBox="0 0 42 42"><path d="M21 6 L 8 12 V 22 Q 8 32 21 38 Q 34 32 34 22 V 12 Z" fill="#cdd6b8" stroke="#1a1a1f" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 22 L 19 27 L 28 18" fill="none" stroke="#1a1a1f" stroke-width="2" stroke-linecap="round"/></svg>` },
+      { kw:/\b(mobile|ios|android|app|swift|kotlin|flutter)\b/i, doodle:`<svg viewBox="0 0 42 42"><rect x="12" y="4" width="18" height="34" rx="3" fill="#fbf8f1" stroke="#1a1a1f" stroke-width="1.8"/><line x1="14" y1="9" x2="28" y2="9" stroke="#1a1a1f" stroke-width="1.4"/><circle cx="21" cy="34" r="1.5" fill="#1a1a1f"/></svg>` },
+      { kw:/\b(dashboard|admin|cms|panel|interface|ui)\b/i, doodle:`<svg viewBox="0 0 42 42"><rect x="4" y="8" width="34" height="26" rx="2" fill="none" stroke="#1a1a1f" stroke-width="1.6"/><rect x="6" y="10" width="10" height="22" fill="#c5d3e6" opacity=".5"/><rect x="18" y="12" width="18" height="6" fill="#f3e3b2" opacity=".7"/><rect x="18" y="20" width="18" height="6" fill="#cdd6b8" opacity=".7"/></svg>` },
+      { kw:/\b(customer|user|client|patient|guest)\b/i, doodle:`<svg viewBox="0 0 42 42"><circle cx="21" cy="14" r="6" fill="#f3c9c7" stroke="#1a1a1f" stroke-width="1.6"/><path d="M6 36 V 30 Q 6 22 21 22 Q 36 22 36 30 V 36" fill="#f3c9c7" stroke="#1a1a1f" stroke-width="1.6"/></svg>` },
+      { kw:/\b(slow|broken|crash|bug|fail|incident|outage|down)\b/i, doodle:`<svg viewBox="0 0 42 42"><polygon points="21,4 24,16 38,16 27,24 31,38 21,30 11,38 15,24 4,16 18,16" fill="#c0504d" stroke="#1a1a1f" stroke-width="1.8" stroke-linejoin="round"/><text x="21" y="26" text-anchor="middle" font-family="Caveat, cursive" font-size="18" fill="#fbf8f1" font-weight="700">!</text></svg>` },
+    ];
+    function initMarginalia(){
+      const ta = $('#f-description');
+      const margin = $('#marginalia');
+      if (!ta || !margin) return;
+      const placed = new Set();
+      on(ta, 'input', () => {
+        S.data.description = ta.value;
+        const val = ta.value;
+        MARG_RULES.forEach((rule, idx) => {
+          if (placed.has(idx)) return;
+          if (rule.kw.test(val)) {
+            placed.add(idx);
+            const div = document.createElement('div');
+            div.className = 'marginalia-doodle';
+            div.innerHTML = rule.doodle;
+            margin.appendChild(div);
+          }
+        });
+        paintProgress();
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       PANEL 03 · NPM TERMINAL PICKER
+    ─────────────────────────────────────────────── */
+    const NPM_PACKAGES = [
+      // frontend
+      ['react','frontend','18.2.0'], ['vue','frontend','3.4.0'], ['svelte','frontend','4.2.0'],
+      ['next','frontend','14.0.0'], ['nuxt','frontend','3.8.0'], ['remix','frontend','2.5.0'],
+      ['angular','frontend','17.0.0'], ['solid','frontend','1.8.0'], ['astro','frontend','4.2.0'],
+      // backend
+      ['node','backend','20.10.0'], ['express','backend','4.18.0'], ['fastify','backend','4.25.0'],
+      ['nestjs','backend','10.3.0'], ['python','backend','3.12'], ['fastapi','backend','0.108.0'],
+      ['django','backend','5.0.0'], ['flask','backend','3.0.0'], ['go','backend','1.21'],
+      ['rails','backend','7.1.0'], ['phoenix','backend','1.7.0'], ['laravel','backend','10.0'],
+      ['dotnet','backend','8.0.0'], ['spring','backend','6.1.0'],
+      // db
+      ['postgres','database','16.1'], ['mysql','database','8.0'], ['mongodb','database','7.0'],
+      ['redis','database','7.2'], ['sqlite','database','3.44'], ['dynamodb','database','aws'],
+      ['firestore','database','gcp'], ['supabase','database','latest'], ['planetscale','database','latest'],
+      ['neon','database','latest'], ['turso','database','latest'],
+      // host
+      ['vercel','host','latest'], ['netlify','host','latest'], ['aws','host','latest'],
+      ['gcp','host','latest'], ['azure','host','latest'], ['render','host','latest'],
+      ['fly','host','latest'], ['railway','host','latest'], ['cloudflare','host','latest'],
+      // ai
+      ['openai','ai','4.24.0'], ['anthropic','ai','0.12.0'], ['langchain','ai','0.1.0'],
+      ['llamaindex','ai','0.1.0'], ['huggingface','ai','latest'], ['gemini','ai','latest'],
+      // tools
+      ['docker','tools','24.0'], ['kubernetes','tools','1.29'], ['terraform','tools','1.6'],
+      ['github-actions','tools','latest'], ['sentry','tools','latest'], ['datadog','tools','latest'],
+      ['posthog','tools','latest'], ['stripe','tools','latest'], ['twilio','tools','latest'],
+      ['shopify','tools','latest'], ['hubspot','tools','latest'], ['salesforce','tools','latest'],
+      ['n8n','tools','latest'], ['zapier','tools','latest'], ['make','tools','latest'],
+    ];
+    function initNpmTerm(){
+      const input = $('#npm-input');
+      const ac = $('#npm-ac');
+      const body = $('#npm-body');
+      const installed = $('#npm-installed');
+      const log = $('#npm-log-init');
+      let acIdx = -1;
+      let acRows = [];
+
+      const renderInstalled = () => {
+        installed.innerHTML = '';
+        S.data.npm_stack.forEach((p, i) => {
+          const pkg = document.createElement('span');
+          pkg.className = 'npm-pkg';
+          pkg.innerHTML = `<span>${p.name}</span><span class="npm-pkg__v">@${p.version}</span><span class="npm-pkg__x" data-i="${i}">×</span>`;
+          installed.appendChild(pkg);
+        });
+        $$('.npm-pkg__x', installed).forEach(x => {
+          on(x, 'click', e => {
+            const i = +x.dataset.i;
+            S.data.npm_stack.splice(i, 1);
+            renderInstalled();
+            paintProgress();
+          });
+        });
+      };
+
+      const closeAc = () => { ac.style.display='none'; ac.innerHTML=''; acRows=[]; acIdx=-1; };
+      const refreshAc = () => {
+        const q = input.value.trim().toLowerCase();
+        if (!q) { closeAc(); return; }
+        const taken = new Set(S.data.npm_stack.map(p=>p.name));
+        const matches = NPM_PACKAGES.filter(([n]) => !taken.has(n) && n.toLowerCase().includes(q)).slice(0,8);
+        if (!matches.length) { closeAc(); return; }
+        ac.style.display = 'block';
+        ac.innerHTML = matches.map(([n,c,v],i) => `<div class="ac-row${i===0?' active':''}" data-name="${n}" data-cat="${c}" data-ver="${v}"><span class="ac-name">${n}</span><span class="ac-cat">${c} · ${v}</span></div>`).join('');
+        acRows = $$('.ac-row', ac);
+        acIdx = 0;
+        acRows.forEach((row,i) => {
+          on(row, 'mouseenter', () => { acRows.forEach(r=>r.classList.remove('active')); row.classList.add('active'); acIdx=i; });
+          on(row, 'click', () => installFromRow(row));
+        });
+      };
+
+      const installFromRow = row => {
+        const name = row.dataset.name;
+        const cat  = row.dataset.cat;
+        const ver  = row.dataset.ver;
+        installPackage(name, cat, ver);
+      };
+
+      const installPackage = (name, cat, ver) => {
+        // append log "fetching..."
+        const log1 = document.createElement('div');
+        log1.className = 'term__log term__log--warn';
+        log1.textContent = `▱▱▱▱▱ fetching ${name}@${ver}…`;
+        body.insertBefore(log1, $('.term__line', body));
+        setTimeout(() => {
+          log1.textContent = `▰▰▰▰▰ installed`;
+          log1.className = 'term__log';
+          const log2 = document.createElement('div');
+          log2.className = 'term__log';
+          log2.textContent = `+ ${name}@${ver}  · ${cat}`;
+          body.insertBefore(log2, $('.term__line', body));
+          S.data.npm_stack.push({name, cat, version:ver});
+          renderInstalled();
+          paintProgress();
+        }, 380);
+        input.value = '';
+        closeAc();
+      };
+
+      on(input, 'input', refreshAc);
+      on(input, 'keydown', e => {
+        if (e.key === 'ArrowDown' && acRows.length) {
+          e.preventDefault();
+          acRows.forEach(r=>r.classList.remove('active'));
+          acIdx = (acIdx + 1) % acRows.length;
+          acRows[acIdx].classList.add('active');
+        } else if (e.key === 'ArrowUp' && acRows.length) {
+          e.preventDefault();
+          acRows.forEach(r=>r.classList.remove('active'));
+          acIdx = (acIdx - 1 + acRows.length) % acRows.length;
+          acRows[acIdx].classList.add('active');
+        } else if (e.key === 'Tab' && acRows.length) {
+          e.preventDefault();
+          input.value = acRows[acIdx].dataset.name;
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (acRows.length) installFromRow(acRows[acIdx]);
+          else if (input.value.trim()) {
+            // free-form
+            const n = input.value.trim().toLowerCase();
+            installPackage(n, 'custom', 'latest');
+          }
+        } else if (e.key === 'Escape') {
+          closeAc();
+        }
+      });
+      on(input, 'blur', () => setTimeout(closeAc, 180));
+    }
+
+    /* ───────────────────────────────────────────────
+       PANEL 03 · LEGO DRAG-DROP
+    ─────────────────────────────────────────────── */
+    function initLego(){
+      const pile  = $('#lego-bricks');
+      const house = $('#lego-house');
+      const drop  = $('#lego-drop');
+      let dragged = null;
+
+      $$('.lego-brick', pile).forEach(b => {
+        on(b, 'dragstart', e => {
+          dragged = b;
+          b.classList.add('dragging');
+          e.dataTransfer.setData('text/plain', b.dataset.brick);
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        on(b, 'dragend', () => {
+          dragged = null;
+          b.classList.remove('dragging');
+        });
+      });
+
+      on(house, 'dragover', e => { e.preventDefault(); house.classList.add('drag-over'); });
+      on(house, 'dragleave', e => { if (e.target === house) house.classList.remove('drag-over'); });
+      on(house, 'drop', e => {
+        e.preventDefault();
+        house.classList.remove('drag-over');
+        if (!dragged) return;
+        if (dragged.dataset.placed === '1') return;
+        const clone = dragged.cloneNode(true);
+        clone.classList.add('placed');
+        clone.removeAttribute('draggable');
+        clone.dataset.placed = '1';
+        dragged.style.display = 'none';
+        dragged.dataset.placed = '1';
+        clone.dataset.placed = '1';
+        clone.style.cursor = 'pointer';
+        on(clone, 'click', () => {
+          // remove from house, restore to pile
+          const b = dragged && dragged.dataset.brick === clone.dataset.brick
+            ? dragged
+            : $$('.lego-brick', pile).find(x => x.dataset.brick === clone.dataset.brick);
+          if (b) { b.style.display = ''; delete b.dataset.placed; }
+          S.data.lego_stack = S.data.lego_stack.filter(n => n !== clone.dataset.brick);
+          clone.remove();
+          paintProgress();
+        });
+        drop.appendChild(clone);
+        if (!S.data.lego_stack.includes(clone.dataset.brick)) S.data.lego_stack.push(clone.dataset.brick);
+        paintProgress();
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       CHIP MULTI-SELECT
+    ─────────────────────────────────────────────── */
+    function initChips(){
+      $$('.chips').forEach(group => {
+        const key = group.dataset.multi;
+        $$('.chip', group).forEach(chip => {
+          const inp = chip.querySelector('input');
+          if (!inp) return;
+          const sync = () => {
+            chip.classList.toggle('selected', inp.checked);
+            S.data[key] = $$('input[type="checkbox"]', group).filter(i=>i.checked).map(i=>i.value);
+            paintProgress();
+          };
+          // Rely on the native <label>→<input> default toggle. Only sync on change.
+          on(inp, 'change', sync);
+        });
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       NO-STACK TOGGLE
+    ─────────────────────────────────────────────── */
+    function initNoStack(){
+      const cb = $('#f-no-stack');
+      const body = $('#stack-body');
+      on(cb, 'change', () => {
+        S.data.no_stack = cb.checked;
+        body.style.opacity = cb.checked ? '.35' : '1';
+        body.style.pointerEvents = cb.checked ? 'none' : '';
+        paintProgress();
+      });
+    }
+
+    // simple input wiring for free-text fields not in a custom widget
+    function bindBasic(){
+      const map = {
+        'f-apis':'apis', 'f-pain-note':'pain_note', 'f-works':'works', 'f-kpi':'kpi',
+        'f-vision':'vision', 'f-product':'product', 'f-decision':'decision', 'f-others':'others',
+        'f-fear':'fear', 'f-dont':'dont', 'f-vibe-url':'vibe_url', 'f-anything':'anything',
+        'f-cassette-label':'voicelabel'
+      };
+      Object.entries(map).forEach(([id, key]) => {
+        const el = $('#'+id);
+        if (!el) return;
+        on(el, 'input', () => { S.data[key] = el.value; paintProgress(); });
+        on(el, 'change', () => { S.data[key] = el.value; paintProgress(); });
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       PANEL 04 · PAIN HEATMAP
+    ─────────────────────────────────────────────── */
+    const PAIN_LABELS = {
+      head:'strategy', shoulders:'team', chest:'product', gut:'ops', hips:'org',
+      legs:'infra', feet:'scaling', 'hand-r':'delivery', 'hand-l':'communication'
+    };
+    function initHeatmap(){
+      $$('.heatmap-part').forEach(part => {
+        on(part, 'click', () => {
+          const k = part.dataset.part;
+          const cur = S.data.pain[k] || 0;
+          const next = cur >= 3 ? 0 : cur + 1;
+          if (next === 0) delete S.data.pain[k];
+          else S.data.pain[k] = next;
+          part.classList.remove('pain-1','pain-2','pain-3');
+          if (next) part.classList.add('pain-' + next);
+          updateHeatReadout();
+          paintProgress();
+        });
+      });
+      on($('#heatmap-reset'), 'click', () => {
+        S.data.pain = {};
+        $$('.heatmap-part').forEach(p => p.classList.remove('pain-1','pain-2','pain-3'));
+        updateHeatReadout();
+        paintProgress();
+      });
+    }
+    function updateHeatReadout(){
+      const entries = Object.entries(S.data.pain);
+      const readout = $('#heatmap-readout');
+      $('#f-pain').value = JSON.stringify(S.data.pain);
+      if (!entries.length) { readout.innerHTML = '<em>nothing hurts yet.</em> Click anywhere on the silhouette →'; return; }
+      const sorted = entries.sort((a,b) => b[1]-a[1]);
+      const txt = sorted.map(([k,v]) => {
+        const intensity = v === 3 ? 'screaming' : v === 2 ? 'real ache' : 'twinge';
+        return `<em>${PAIN_LABELS[k] || k}</em> · ${intensity}`;
+      }).join(' &nbsp;·&nbsp; ');
+      readout.innerHTML = txt;
+    }
+
+    /* ───────────────────────────────────────────────
+       PANEL 04 · GIT COMMIT
+    ─────────────────────────────────────────────── */
+    function initGitCommit(){
+      const type = $('#gc-type');
+      const sub  = $('#gc-subject');
+      const body = $('#gc-body');
+      const ctr  = $('#gc-counter');
+      const filesEl = $('#gc-files');
+
+      const updateCounter = () => {
+        const n = sub.value.length;
+        ctr.textContent = `${n} / 50`;
+        ctr.classList.remove('warn','err');
+        if (n > 50 && n <= 72) ctr.classList.add('warn');
+        else if (n > 72) ctr.classList.add('err');
+      };
+      const updateFiles = () => {
+        let n = 0;
+        if (sub.value) n++;
+        if (body.value) n++;
+        if (type.value && type.value !== 'feat') n++;
+        filesEl.textContent = n;
+      };
+
+      on(type, 'change', () => { S.data.gc_type = type.value; updateFiles(); paintProgress(); });
+      on(sub, 'input',  () => { S.data.gc_subject = sub.value; updateCounter(); updateFiles(); paintProgress(); });
+      on(body, 'input', () => { S.data.gc_body = body.value; updateFiles(); paintProgress(); });
+      updateCounter();
+    }
+
+    /* ───────────────────────────────────────────────
+       PUNCH CARDS (services + secondary objectives)
+    ─────────────────────────────────────────────── */
+    function initPunchCard(gridSel, key, counterSel, hiddenSel){
+      const grid = $(gridSel);
+      const counter = $(counterSel);
+      const hidden = $(hiddenSel);
+      const sync = () => {
+        const picked = $$('.punch-row.punched', grid).map(r => r.dataset.pick);
+        S.data[key] = picked;
+        counter.textContent = picked.length;
+        if (hidden) hidden.value = picked.join(',');
+        paintProgress();
+      };
+      $$('.punch-row', grid).forEach(row => {
+        on(row, 'click', () => {
+          row.classList.toggle('punched');
+          sync();
+        });
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       SPECTRUM PIN (build vs buy)
+    ─────────────────────────────────────────────── */
+    function initSpectrum(){
+      $$('.spectrum').forEach(spec => {
+        const key = spec.dataset.spectrum;
+        const pin = spec.querySelector('.spectrum__pin');
+        let dragging = false;
+        const place = pct => {
+          pct = clamp(pct, 0, 1);
+          const w = spec.clientWidth;
+          const trackPad = 12;
+          const usable = w - trackPad*2;
+          const x = trackPad + usable * pct;
+          pin.style.left = x + 'px';
+          // tilt toward whichever side wins (mirror of distance from center)
+          const tilt = (pct - 0.5) * 30; // -15..+15 deg
+          pin.style.transform = `translateX(-50%) rotate(${tilt}deg)`;
+          const val = Math.round(pct * 100);
+          $('#f-' + key).value = val;
+          S.data[key] = val;
+          paintProgress();
+        };
+        requestAnimationFrame(() => place(0.5));
+        const startDrag = () => { dragging = true; document.body.style.userSelect='none'; };
+        const endDrag   = () => { dragging = false; document.body.style.userSelect=''; };
+        on(pin, 'mousedown', startDrag);
+        on(pin, 'touchstart', startDrag, {passive:true});
+        on(window, 'mouseup', endDrag);
+        on(window, 'touchend', endDrag);
+        const moveTo = clientX => {
+          const rect = spec.getBoundingClientRect();
+          const trackPad = 12;
+          const usable = rect.width - trackPad*2;
+          const x = clientX - rect.left - trackPad;
+          place(x / usable);
+        };
+        on(window, 'mousemove', e => { if (dragging) moveTo(e.clientX); });
+        on(window, 'touchmove', e => { if (dragging && e.touches[0]) moveTo(e.touches[0].clientX); }, {passive:true});
+        on(spec, 'click', e => {
+          if (e.target === pin || e.target.closest('.spectrum__pin')) return;
+          moveTo(e.clientX);
+        });
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       CRYSTAL BALL
+    ─────────────────────────────────────────────── */
+    function initCrystal(){
+      const ta = $('#f-vision');
+      const wrap = $('#crystal');
+      let t;
+      on(ta, 'input', () => {
+        S.data.vision = ta.value;
+        wrap.classList.add('typing');
+        clearTimeout(t);
+        t = setTimeout(() => wrap.classList.remove('typing'), 1200);
+        paintProgress();
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       POCKET CALCULATOR
+    ─────────────────────────────────────────────── */
+    function initCalc(){
+      const lcd = $('#calc-lcd');
+      const readout = $('#calc-readout');
+      const seal = $('#wax-seal');
+      let display = '0';
+      let sealed = false;
+
+      const fmtUSD = n => {
+        if (!isFinite(n)) return '0';
+        if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+        if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+        return '$' + n.toLocaleString();
+      };
+      const refreshLcd = () => {
+        if (display === '?') { lcd.textContent = '???'; return; }
+        if (display === '') { lcd.textContent = '0'; return; }
+        const n = parseFloat(display);
+        lcd.textContent = isNaN(n) ? display : fmtUSD(n);
+      };
+      const punch = k => {
+        if (sealed && k !== 'C') return; // sealed locks input until cleared
+        if (k === 'C') {
+          display = '0'; sealed = false; seal.classList.remove('show');
+          readout.innerHTML = 'Tap a digit. We\'re cool with <em>"not sure"</em> too.';
+          S.data.budget = '';
+        } else if (k === 'DEL') {
+          display = display.length > 1 ? display.slice(0,-1) : '0';
+        } else if (k === 'K') { // append 000
+          if (display === '0') display = '0';
+          else display = display + '000';
+        } else if (k === 'M') { // append ,000K -> *1000
+          const n = parseFloat(display || '0') * 1000;
+          display = '' + n;
+        } else if (k === 'MM') { // *1,000,000
+          const n = parseFloat(display || '0') * 1000000;
+          display = '' + n;
+        } else if (k === 'X') {
+          const n = parseFloat(display || '0') * 10;
+          display = '' + n;
+        } else if (k === '?') {
+          display = '?';
+        } else if (k === '=') {
+          sealed = true;
+          seal.classList.add('show');
+          const valTxt = lcd.textContent;
+          if (display === '?') {
+            S.data.budget = 'unsure';
+            readout.innerHTML = `<em>"not sure yet"</em> — totally fine. We'll suggest tiers.`;
+          } else {
+            S.data.budget = display;
+            readout.innerHTML = `Budget recorded · <em>${valTxt}</em>`;
+          }
+          paintProgress();
+          return;
+        } else if (/^[0-9.]$/.test(k)) {
+          if (display === '0') display = k === '.' ? '0.' : k;
+          else display = display + k;
+        }
+        refreshLcd();
+      };
+      $$('.calc__key', $('#calc')).forEach(k => on(k, 'click', () => punch(k.dataset.k)));
+      // keyboard typing
+      on(window, 'keydown', e => {
+        if (document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.id !== 'calc-focus') return;
+        if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') return;
+        const target = document.activeElement;
+        const inCalc = target && target.closest && target.closest('#calc');
+        if (!inCalc && !e.target.closest('#calc')) return;
+        if (/^[0-9.]$/.test(e.key)) punch(e.key);
+        else if (e.key === 'Backspace') punch('DEL');
+        else if (e.key === 'Enter') punch('=');
+        else if (e.key.toLowerCase() === 'c') punch('C');
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       MOOD RING
+    ─────────────────────────────────────────────── */
+    const MOOD_READOUTS = {
+      panic:    'Got it — we\'ll skip the small talk and lead with the fastest unblock.',
+      thinking: 'A planner. We\'ll bring options, not opinions.',
+      shipping: 'On a roll. We\'ll fit around your cadence, not interrupt it.',
+      stuck:    'Stuck is fixable. We\'ll show you where the friction actually lives.',
+      ramen:    'Lean season. We\'ll lead with the cheapest path to revenue.',
+      burning:  'Triage first, refactor second. We\'ll get you out of the fire.',
+      chill:    'Calm seas. Good time to invest in the foundation.',
+    };
+    function initMood(){
+      $$('.mood-cell', $('#mood-ring')).forEach(c => {
+        on(c, 'click', () => {
+          $$('.mood-cell', $('#mood-ring')).forEach(x => x.classList.remove('selected'));
+          c.classList.add('selected');
+          const v = c.dataset.mood;
+          $('#f-mood').value = v;
+          S.data.mood = v;
+          $('#mood-readout').innerHTML = `Vibe: <em style="font-style:normal;color:var(--dsm-red)">${v}</em>. ${MOOD_READOUTS[v] || ''}`;
+          paintProgress();
+        });
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       CASSETTE TAPE · VOICE MEMO
+    ─────────────────────────────────────────────── */
+    function initCassette(){
+      const cas = $('#cassette');
+      const rec = $('#cas-rec');
+      const stop= $('#cas-stop');
+      const play= $('#cas-play');
+      const clr = $('#cas-clear');
+      const timeEl = $('#cas-time');
+      const status = $('#cas-status');
+      const audio  = $('#cas-audio');
+      const tEl = $('#cas-transcript');
+
+      let mediaRec = null;
+      let chunks = [];
+      let timer = null;
+      let elapsed = 0;
+      let recognition = null;
+      let transcript = '';
+
+      const fmt = s => {
+        const m = String(Math.floor(s/60)).padStart(2,'0');
+        const ss = String(s%60).padStart(2,'0');
+        return `${m}:${ss}`;
+      };
+      const updTime = () => timeEl.textContent = `${fmt(elapsed)} / 00:30`;
+      const setUI = state => {
+        rec.disabled  = state !== 'idle' && state !== 'stopped';
+        stop.disabled = state !== 'recording';
+        play.disabled = state !== 'stopped';
+        clr.disabled  = state === 'idle' || state === 'recording';
+      };
+      setUI('idle');
+
+      // Web Speech for live transcript (best-effort, no audio kept until user submits)
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const buildRecognition = () => {
+        if (!SR) return null;
+        const r = new SR();
+        r.continuous = true;
+        r.interimResults = true;
+        r.lang = 'en-US';
+        r.onresult = ev => {
+          let out = '';
+          for (let i=0; i<ev.results.length; i++) out += ev.results[i][0].transcript + ' ';
+          transcript = out;
+          tEl.textContent = transcript;
+        };
+        r.onerror = () => {};
+        return r;
+      };
+
+      on(rec, 'click', async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          status.textContent = 'Browser doesn\'t support mic recording. Skip this one.';
+          return;
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+          chunks = [];
+          mediaRec = new MediaRecorder(stream);
+          mediaRec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+          mediaRec.onstop = () => {
+            stream.getTracks().forEach(t => t.stop());
+            const blob = new Blob(chunks, {type:'audio/webm'});
+            S.data.voiceblob = blob;
+            S.data.voicelen = elapsed;
+            $('#f-voicelen').value = elapsed;
+            audio.src = URL.createObjectURL(blob);
+            status.innerHTML = `Cassette wound. <em>${fmt(elapsed)}</em> captured.`;
+            setUI('stopped');
+            paintProgress();
+          };
+          mediaRec.start();
+          recognition = buildRecognition();
+          if (recognition) recognition.start();
+          elapsed = 0;
+          updTime();
+          status.textContent = 'Recording… 30s max.';
+          cas.classList.add('recording');
+          setUI('recording');
+          timer = setInterval(() => {
+            elapsed++;
+            updTime();
+            if (elapsed >= 30) doStop();
+          }, 1000);
+        } catch(err) {
+          status.textContent = 'Mic permission denied. Totally fine — skip this one.';
+        }
+      });
+      const doStop = () => {
+        if (mediaRec && mediaRec.state === 'recording') mediaRec.stop();
+        if (recognition) { try { recognition.stop(); } catch(e){} }
+        cas.classList.remove('recording');
+        clearInterval(timer);
+      };
+      on(stop, 'click', doStop);
+      on(play, 'click', () => audio.play());
+      on(clr,  'click', () => {
+        S.data.voiceblob = null; S.data.voicelen = 0;
+        $('#f-voicelen').value = 0;
+        transcript = ''; tEl.textContent = '';
+        audio.removeAttribute('src');
+        elapsed = 0; updTime();
+        status.textContent = 'Erased. Click ● rec to try again.';
+        setUI('idle');
+        paintProgress();
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       PAPER PLANE SUBMIT
+    ─────────────────────────────────────────────── */
+    function initSubmit(){
+      const btn = $('#plane-btn');
+      const form = $('#audit-form');
+      const thanks = $('#thanks');
+      const defaultBlock = $('#submit-default');
+      const optEmail = $('#opt-email');
+      const optNews  = $('#opt-newsletter');
+      const optCons  = $('#opt-consent');
+
+      on(optEmail, 'change', () => { S.data.opt_email = optEmail.checked; });
+      on(optNews,  'change', () => { S.data.opt_news = optNews.checked; });
+      on(optCons,  'change', () => { S.data.opt_consent = optCons.checked; });
+
+      const validate = () => {
+        const missing = [];
+        if (!S.data.name) missing.push('your name');
+        if (!S.data.email) missing.push('email');
+        if (!S.data.industry && !S.data.industry_other) missing.push('industry');
+        if (!S.data.stage) missing.push('stage');
+        if (!S.data.description) missing.push('what your business does');
+        if (!S.data.gc_subject) missing.push('objective (commit subject)');
+        if (!S.data.services.length) missing.push('services punch card');
+        if (!S.data.mood) missing.push('mood ring');
+        if (!S.data.fear) missing.push('biggest fear');
+        if (!S.data.opt_consent) missing.push('consent checkbox');
+        return missing;
+      };
+
+      const showError = msg => {
+        const note = document.createElement('div');
+        note.style.cssText = 'margin-top:1rem;padding:.75rem 1rem;border:1.5px dashed var(--dsm-red);border-radius:8px;background:rgba(192,80,77,.08);color:#7a2624;font-family:JetBrains Mono,monospace;font-size:12px;line-height:1.5;text-align:left;max-width:30rem;margin-left:auto;margin-right:auto;';
+        note.innerHTML = msg;
+        defaultBlock.appendChild(note);
+        setTimeout(() => note.remove(), 6000);
+      };
+
+      on(form, 'submit', e => {
+        e.preventDefault();
+        const missing = validate();
+        if (missing.length) {
+          showError(`<strong>One more pass:</strong><br/>· ${missing.join('<br/>· ')}`);
+          return;
+        }
+        // generate ref id
+        const ref = 'DSM-AUD-' + Math.floor(Math.random()*9000 + 1000);
+        $('#thanks-id').textContent = 'ref · ' + ref;
+        // persist locally (so user can refresh)
+        try {
+          const blobless = {...S.data}; blobless.voiceblob = blobless.voiceblob ? 'attached' : null;
+          localStorage.setItem('dsm-audit-' + ref, JSON.stringify({ref, ts:Date.now(), data:blobless}));
+        } catch(err){}
+        // fold animation
+        btn.classList.add('folding');
+        setTimeout(() => {
+          defaultBlock.style.display = 'none';
+          thanks.classList.add('show');
+          window.scrollTo({top: thanks.getBoundingClientRect().top + window.scrollY - 100, behavior:'smooth'});
+        }, 1200);
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       EASTER EGG · sudo audit me
+    ─────────────────────────────────────────────── */
+    function initEasterEgg(){
+      const note = $('#sticky-note');
+      let buf = '';
+      const phrase = 'sudo audit me';
+      const trigger = () => {
+        document.body.classList.add('shake');
+        note.classList.add('show');
+        setTimeout(() => document.body.classList.remove('shake'), 600);
+        setTimeout(() => note.classList.remove('show'), 2800);
+      };
+      on(window, 'input', e => {
+        const v = (e.target && (e.target.value || '')) + '';
+        if (!v) return;
+        buf = (buf + v.slice(-1)).slice(-20).toLowerCase();
+        if (buf.includes(phrase)) {
+          buf = '';
+          trigger();
+        }
+      });
+      on(window, 'keydown', e => {
+        if (e.key && e.key.length === 1) {
+          buf = (buf + e.key).slice(-20).toLowerCase();
+          if (buf.includes(phrase)) { buf=''; trigger(); }
+        }
+      });
+    }
+
+    /* ───────────────────────────────────────────────
+       ATTACH ERASERS TO ALL .field BLOCKS
+    ─────────────────────────────────────────────── */
+    function initErasers(){
+      $$('.field').forEach(attachEraser);
+    }
+
+    /* ───────────────────────────────────────────────
+       BOOT
+    ─────────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', () => {
+      initTerminalWhoami();
+      initCootie();
+      initTama();
+      initPencilSliders();
+      initMarginalia();
+      initNpmTerm();
+      initLego();
+      initChips();
+      initNoStack();
+      bindBasic();
+      initHeatmap();
+      initGitCommit();
+      initPunchCard('#punch-grid',  'services',  '#punch-count',  '#f-services');
+      initPunchCard('#punch2-grid', 'secondary', '#punch2-count', '#f-secondary');
+      initSpectrum();
+      initCrystal();
+      initCalc();
+      initMood();
+      initCassette();
+      initSubmit();
+      initEasterEgg();
+      initErasers();
+      paintProgress();
+    });
+  </script>
+</body>
+</html>

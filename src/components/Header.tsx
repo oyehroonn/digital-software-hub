@@ -147,6 +147,7 @@ const Header = () => {
 
             <Link to="/store" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Store</Link>
             <Link to="/marketing" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>DSM Marketing</Link>
+            <Link to="/services" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>DSM Services</Link>
             <a href="#" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Enterprise</a>
             <a href="#" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Support</a>
             <a href="#" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>About</a>

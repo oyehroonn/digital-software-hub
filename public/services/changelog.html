@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Research & Case Studies | Enterprise Agent Results | DSM AI Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#fafafa; --text:#09090b; --line:#18181b; --muted:#71717a; --dsm-red:#c0504d; --dsm-yellow:#e5b13a; --dsm-blue:#4f81bd; }
+    *,*::before,*::after { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); margin:0; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+    .font-mono { font-family:'JetBrains Mono',monospace; }
+    .sketch-grid { position:fixed; inset:0; background-image:linear-gradient(rgba(0,0,0,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.028) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+    .wire-panel { background:rgba(255,255,255,.88); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:1.5rem; box-shadow:8px 8px 0 rgba(0,0,0,.03); transition:all .4s ease; }
+    .wire-panel:hover { box-shadow:14px 14px 0 rgba(0,0,0,.05); transform:translate(-2px,-2px); }
+    .pill-label { border:1px solid var(--line); border-radius:9999px; padding:.25rem .75rem; font-size:.75rem; text-transform:uppercase; letter-spacing:.1em; background:white; display:inline-flex; align-items:center; gap:.5rem; font-family:'JetBrains Mono',monospace; }
+    .reveal { opacity:0; transform:translateY(28px); }
+    #cl-progress { position:fixed; top:0; left:0; width:2px; height:0; z-index:50; background:linear-gradient(180deg,var(--dsm-red) 0%,var(--dsm-yellow) 50%,var(--dsm-blue) 100%); opacity:.75; }
+    .cl-entry { position:relative; padding-left:2rem; }
+    .cl-entry::before { content:''; position:absolute; left:0; top:.6rem; width:8px; height:8px; border:1.5px solid var(--line); border-radius:50%; background:white; }
+    .cl-entry::after { content:''; position:absolute; left:3.5px; top:1.6rem; width:1px; height:calc(100% - .6rem); background:rgba(24,24,27,.1); }
+    .cl-entry:last-child::after { display:none; }
+    .cl-tag { display:inline-flex; align-items:center; gap:.3rem; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.12em; text-transform:uppercase; border:1px solid; border-radius:3px; padding:.15rem .45rem; }
+    .cl-tag-research { border-color:var(--dsm-blue); color:var(--dsm-blue); }
+    .cl-tag-technical { border-color:var(--dsm-yellow); color:#9a8a2e; }
+    .cl-tag-update { border-color:rgba(24,24,27,.25); color:#71717a; }
+    .cl-tag-case { border-color:var(--dsm-red); color:var(--dsm-red); }
+    .cl-btn { display:inline-flex; align-items:center; gap:.4rem; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; text-decoration:none; color:var(--line); border:1px solid var(--line); border-radius:4px; padding:.45rem .7rem; background:#fff; transition:all .3s ease; }
+    .cl-btn:hover { background:var(--line); color:white; }
+    .filter-pill { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; border:1px solid rgba(24,24,27,.2); border-radius:9999px; padding:.35rem .75rem; background:white; color:#71717a; cursor:pointer; transition:all .25s; }
+    .filter-pill:hover, .filter-pill.active { border-color:var(--line); color:var(--text); background:rgba(24,24,27,.04); }
+    .cl-entry--linked { transition:transform .25s ease; }
+    .cl-entry--linked:hover { transform:translateX(2px); }
+    .cl-entry--linked:hover::before { background:var(--dsm-red); border-color:var(--dsm-red); }
+    .cl-entry__link {
+      display:block; color:inherit; text-decoration:none;
+      padding:.4rem 1rem .55rem .25rem; margin:-.4rem -1rem -.55rem -.25rem;
+      border-radius:6px;
+      transition:background .25s ease, box-shadow .25s ease;
+    }
+    .cl-entry__link:hover { background:rgba(24,24,27,.025); box-shadow:8px 8px 0 rgba(0,0,0,.04); }
+    .cl-entry__link:hover h3 { text-decoration:underline; text-underline-offset:3px; }
+    .cl-entry__cta {
+      display:inline-flex; align-items:center; gap:.35rem;
+      margin-top:.85rem;
+      font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+      color:#18181b;
+      border-bottom:1px solid #18181b; padding-bottom:1px;
+    }
+    .cl-entry__link:hover .cl-entry__cta { color:var(--dsm-red); border-color:var(--dsm-red); }
+    @media (prefers-reduced-motion:reduce) { .reveal { opacity:1; transform:none; } }
+  </style>
+</head>
+<body class="relative z-10">
+  <div class="sketch-grid" aria-hidden="true"></div>
+  <div id="cl-progress" aria-hidden="true"></div>
+
+  <!-- Navigation -->
+  <header class="fixed top-0 left-0 right-0 z-40 px-4 md:px-10 py-4 flex justify-between items-center bg-[#fafafa]/90 backdrop-blur-md border-b border-zinc-200/80">
+    <a href="dsmAIFinal.html" class="flex items-center gap-3" aria-label="DSM Home">
+      <img src="assets/dsm-logo.png" alt="DSM" class="h-6 md:h-7 w-auto object-contain" width="180" height="48"/>
+    </a>
+    <nav class="hidden md:flex text-[10px] font-mono tracking-[.18em] gap-5 text-zinc-500 items-center uppercase">
+      <a href="dsmAIFinal.html" class="hover:text-zinc-900 transition-colors">Home</a>
+      <a href="offerings.html" class="hover:text-zinc-900 transition-colors">Services</a>
+      <a href="changelog.html" class="text-zinc-900 border-b border-zinc-900 pb-0.5">Research</a>
+    </nav>
+    <a href="offerings.html" class="pill-label text-[10px] tracking-[.15em] hover:bg-zinc-900 hover:text-white transition-colors duration-300 no-underline">
+      <i data-lucide="arrow-right" class="w-3 h-3" stroke-width="1.5"></i> Services
+    </a>
+  </header>
+
+  <main class="relative z-10 pt-28 pb-20">
+    <!-- Hero -->
+    <section class="px-6 md:px-12 pb-16 md:pb-20 max-w-5xl mx-auto">
+      <div class="reveal">
+        <div class="pill-label mb-6"><i data-lucide="book-open" class="w-3.5 h-3.5" stroke-width="1.5"></i> Research & Proof</div>
+        <h1 class="text-5xl sm:text-6xl md:text-7xl font-medium tracking-tight text-zinc-900 leading-[1.05] mb-6">Changelog.</h1>
+        <p class="text-lg text-zinc-500 font-light max-w-2xl leading-relaxed">Published research, production case studies, and real deployment metrics from enterprise AI agent projects. Healthcare workflow automation, multi-channel acquisition optimization, and operational efficiency data — from our actual engagements, not hypotheticals.</p>
+      </div>
+    </section>
+
+    <!-- Filters -->
+    <section class="px-6 md:px-12 pb-10 max-w-5xl mx-auto">
+      <div class="reveal flex flex-wrap gap-2">
+        <button class="filter-pill active" data-filter="all">All</button>
+        <button class="filter-pill" data-filter="research">Research</button>
+        <button class="filter-pill" data-filter="technical">Technical Notes</button>
+        <button class="filter-pill" data-filter="update">Updates</button>
+        <button class="filter-pill" data-filter="case">Case Studies</button>
+      </div>
+    </section>
+
+    <!-- Entries -->
+    <section class="px-6 md:px-12 max-w-5xl mx-auto">
+      <div class="space-y-10" id="changelog-entries">
+
+        <!-- Research Paper 1 -->
+        <article class="cl-entry reveal" data-type="research">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="cl-tag cl-tag-research">Research</span>
+            <span class="font-mono text-[9px] text-zinc-400 tracking-[.1em]">2026-04-08</span>
+          </div>
+          <h3 class="text-xl font-medium text-zinc-900 tracking-tight mb-2">Agentic Workflow Automation: Operational Efficiency Through Autonomous Task Orchestration</h3>
+          <p class="text-sm text-zinc-500 font-light leading-relaxed mb-4 max-w-2xl">This paper examines the deployment of autonomous AI agents within enterprise workflow environments. We present a framework for agentic task orchestration that achieves 40–60% reduction in manual processing time while maintaining compliance and audit requirements across regulated industries.</p>
+          <div class="flex flex-wrap gap-3">
+            <a href="resources/papers/agentic-workflow-automation.html" class="cl-btn" target="_blank"><i data-lucide="download" class="w-3 h-3" stroke-width="1.5"></i> Download Paper</a>
+            <a href="resources/graphs/workflow-efficiency.html" class="cl-btn"><i data-lucide="bar-chart-3" class="w-3 h-3" stroke-width="1.5"></i> View Data</a>
+          </div>
+        </article>
+
+        <!-- Research Paper 2 -->
+        <article class="cl-entry reveal" data-type="research">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="cl-tag cl-tag-research">Research</span>
+            <span class="font-mono text-[9px] text-zinc-400 tracking-[.1em]">2026-03-22</span>
+          </div>
+          <h3 class="text-xl font-medium text-zinc-900 tracking-tight mb-2">Multi-Channel AI Acquisition Systems: Behavioral Targeting and Conversion Pipeline Optimization</h3>
+          <p class="text-sm text-zinc-500 font-light leading-relaxed mb-4 max-w-2xl">An analysis of AI-driven multi-channel acquisition systems that leverage behavioral signals for real-time funnel optimization. Results show 3.2x improvement over industry benchmark conversion rates when combining predictive lead scoring with automated follow-up orchestration.</p>
+          <div class="flex flex-wrap gap-3">
+            <a href="resources/papers/multichannel-ai-acquisition.html" class="cl-btn" target="_blank"><i data-lucide="download" class="w-3 h-3" stroke-width="1.5"></i> Download Paper</a>
+            <a href="resources/graphs/conversion-funnel.html" class="cl-btn"><i data-lucide="bar-chart-3" class="w-3 h-3" stroke-width="1.5"></i> View Data</a>
+          </div>
+        </article>
+
+        <!-- Research Paper 3 -->
+        <article class="cl-entry reveal" data-type="research">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="cl-tag cl-tag-research">Research</span>
+            <span class="font-mono text-[9px] text-zinc-400 tracking-[.1em]">2026-03-10</span>
+          </div>
+          <h3 class="text-xl font-medium text-zinc-900 tracking-tight mb-2">FloAI: A Governed Orchestration Platform for Production-Ready Enterprise AI Agents</h3>
+          <p class="text-sm text-zinc-500 font-light leading-relaxed mb-4 max-w-2xl">This paper presents FloAI, a four-layer control plane for building, deploying, and governing enterprise AI agents. The platform integrates visual composition, runtime execution, trust enforcement, and end-to-end observability — enabling approval-ready agent deployment in regulated industries with zero compliance violations across 47 production deployments.</p>
+          <div class="flex flex-wrap gap-3">
+            <a href="resources/papers/flo-ai-capabilities.html" class="cl-btn" target="_blank"><i data-lucide="download" class="w-3 h-3" stroke-width="1.5"></i> Download Paper</a>
+            <a href="flo-ai-agents.html" class="cl-btn"><i data-lucide="file-text" class="w-3 h-3" stroke-width="1.5"></i> Product page</a>
+          </div>
+        </article>
+
+        <!-- Technical Note -->
+        <article class="cl-entry reveal" data-type="technical">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="cl-tag cl-tag-technical">Technical Note</span>
+            <span class="font-mono text-[9px] text-zinc-400 tracking-[.1em]">2026-03-01</span>
+          </div>
+          <h3 class="text-lg font-medium text-zinc-900 tracking-tight mb-2">Agent Governance Patterns for Regulated Industries</h3>
+          <p class="text-sm text-zinc-500 font-light leading-relaxed max-w-2xl">Design patterns for implementing human-in-the-loop controls, audit trails, and compliance hooks in agentic AI systems. Applicable to healthcare, finance, and legal deployments where every AI decision must be traceable and reversible.</p>
+        </article>
+
+        <!-- Update -->
+        <article class="cl-entry reveal" data-type="update">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="cl-tag cl-tag-update">Update</span>
+            <span class="font-mono text-[9px] text-zinc-400 tracking-[.1em]">2026-02-15</span>
+          </div>
+          <h3 class="text-lg font-medium text-zinc-900 tracking-tight mb-2">Platform v2.1 — Enhanced Delivery Framework</h3>
+          <p class="text-sm text-zinc-500 font-light leading-relaxed max-w-2xl">Shipped updated delivery pipeline with AI-assisted code review, automated test generation, and intelligent deployment routing. Average deployment time reduced from 45 minutes to 8 minutes across client projects.</p>
+        </article>
+
+        <!-- Technical Note 2 -->
+        <article class="cl-entry reveal" data-type="technical">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="cl-tag cl-tag-technical">Technical Note</span>
+            <span class="font-mono text-[9px] text-zinc-400 tracking-[.1em]">2026-02-02</span>
+          </div>
+          <h3 class="text-lg font-medium text-zinc-900 tracking-tight mb-2">Behavioral Signal Architecture for Multi-Channel Funnels</h3>
+          <p class="text-sm text-zinc-500 font-light leading-relaxed max-w-2xl">How we instrument cross-channel behavioral signals — click patterns, engagement depth, response timing — into a unified scoring model that drives real-time funnel optimization across paid and organic channels.</p>
+        </article>
+
+        <!-- Case Study · DSM_CASE / 01 — Healthcare · UAE -->
+        <article class="cl-entry reveal cl-entry--linked" data-type="case">
+          <a href="case-dental-voice-agent.html" class="cl-entry__link" aria-label="Read DSM_CASE / 01 — Healthcare voice booking agent">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="cl-tag cl-tag-case">Case Study</span>
+              <span class="font-mono text-[10px] text-zinc-500 tracking-[.18em] uppercase">DSM_CASE / 01 · Healthcare · UAE</span>
+              <span class="font-mono text-[9px] text-zinc-400 tracking-[.1em]">2026-04-02</span>
+            </div>
+            <h3 class="text-lg font-medium text-zinc-900 tracking-tight mb-2 group-hover:underline">Voice booking agent for a 12-clinic dental group.</h3>
+            <p class="text-sm text-zinc-500 font-light leading-relaxed max-w-2xl">Bilingual voice agent handling intake, scheduling, and confirmations across 12 dental clinics in the UAE. End-to-end pipeline from inbound call to Cal.com booking, with operator handoff inside 1.4s when a real human is needed. Shipped in 4 weeks against three prior failed attempts.</p>
+            <blockquote class="mt-3 pl-3 border-l-2 border-zinc-900 text-zinc-700 text-sm font-light italic max-w-2xl">
+              “They shipped what 3 prior agencies couldn’t.”
+              <span class="block not-italic text-[10px] font-mono tracking-[.14em] uppercase text-zinc-500 mt-1">— Dir. of Operations · MENA dental group</span>
+            </blockquote>
+            <div class="flex flex-wrap gap-6 mt-3 font-mono text-[10px] uppercase tracking-[.1em]">
+              <span class="text-zinc-400"><span class="text-zinc-900 font-medium">−41%</span> admin time</span>
+              <span class="text-zinc-400"><span class="text-zinc-900 font-medium">4 wks</span> to live</span>
+              <span class="text-zinc-400"><span class="text-zinc-900 font-medium">92%</span> call-handoff accuracy</span>
+            </div>
+            <p class="mt-3 font-mono text-[10px] text-zinc-500 tracking-[.06em]">stack: GPT-4o · 11labs · Twilio · Postgres · Cal.com</p>
+            <span class="cl-entry__cta">Read the build →</span>
+          </a>
+        </article>
+
+        <!-- Update 2 -->
+        <article class="cl-entry reveal" data-type="update">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="cl-tag cl-tag-update">Update</span>
+            <span class="font-mono text-[9px] text-zinc-400 tracking-[.1em]">2026-01-05</span>
+          </div>
+          <h3 class="text-lg font-medium text-zinc-900 tracking-tight mb-2">Platform v2.0 — Agentic AI Core Launch</h3>
+          <p class="text-sm text-zinc-500 font-light leading-relaxed max-w-2xl">Released the core agentic AI framework powering our workflow automation offering. Includes task reasoning engine, policy-aware execution, and real-time observability dashboard. Now deployed across 12 enterprise clients.</p>
+        </article>
+
+        <!-- Case Study · DSM_CASE / 02 — Logistics · KSA -->
+        <article class="cl-entry reveal cl-entry--linked" data-type="case">
+          <a href="case-logistics-routing.html" class="cl-entry__link" aria-label="Read DSM_CASE / 02 — Predictive last-mile routing">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="cl-tag cl-tag-case">Case Study</span>
+              <span class="font-mono text-[10px] text-zinc-500 tracking-[.18em] uppercase">DSM_CASE / 02 · Logistics · KSA</span>
+              <span class="font-mono text-[9px] text-zinc-400 tracking-[.1em]">2026-02-18</span>
+            </div>
+            <h3 class="text-lg font-medium text-zinc-900 tracking-tight mb-2 group-hover:underline">Predictive routing platform for last-mile delivery fleet.</h3>
+            <p class="text-sm text-zinc-500 font-light leading-relaxed max-w-2xl">Route-optimizer + live re-ranker for a KSA last-mile operator. Daily route generation that accounts for traffic, drop windows, vehicle constraints, and dispatcher overrides — with a 90-second human-in-the-loop review window before routes go live.</p>
+            <blockquote class="mt-3 pl-3 border-l-2 border-zinc-900 text-zinc-700 text-sm font-light italic max-w-2xl">
+              “The routing engine paid for itself in the first quarter.”
+              <span class="block not-italic text-[10px] font-mono tracking-[.14em] uppercase text-zinc-500 mt-1">— COO · KSA logistics operator</span>
+            </blockquote>
+            <div class="flex flex-wrap gap-6 mt-3 font-mono text-[10px] uppercase tracking-[.1em]">
+              <span class="text-zinc-400"><span class="text-zinc-900 font-medium">−22%</span> fuel cost</span>
+              <span class="text-zinc-400"><span class="text-zinc-900 font-medium">6 wks</span> to delivery</span>
+              <span class="text-zinc-400"><span class="text-zinc-900 font-medium">99.7%</span> on-time generation</span>
+            </div>
+            <p class="mt-3 font-mono text-[10px] text-zinc-500 tracking-[.06em]">stack: Python · OR-tools · FastAPI · TimescaleDB · Mapbox</p>
+            <span class="cl-entry__cta">Read the build →</span>
+          </a>
+        </article>
+
+        <!-- Case Study · DSM_CASE / 03 — E-commerce · NA -->
+        <article class="cl-entry reveal cl-entry--linked" data-type="case">
+          <a href="case-dtc-erp.html" class="cl-entry__link" aria-label="Read DSM_CASE / 03 — Custom ERP and analytics for a DTC brand">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="cl-tag cl-tag-case">Case Study</span>
+              <span class="font-mono text-[10px] text-zinc-500 tracking-[.18em] uppercase">DSM_CASE / 03 · E-commerce · NA</span>
+              <span class="font-mono text-[9px] text-zinc-400 tracking-[.1em]">2025-12-10</span>
+            </div>
+            <h3 class="text-lg font-medium text-zinc-900 tracking-tight mb-2 group-hover:underline">Custom ERP + analytics for a 50-SKU DTC brand.</h3>
+            <p class="text-sm text-zinc-500 font-light leading-relaxed max-w-2xl">A purpose-built ERP and analytics layer reconciling Shopify, Klaviyo, Stripe, and 3PL inventory into one source of truth. Operators read one dashboard and stop arguing about which number is right — reporting hours collapsed from weekly to ambient.</p>
+            <blockquote class="mt-3 pl-3 border-l-2 border-zinc-900 text-zinc-700 text-sm font-light italic max-w-2xl">
+              “We finally trust our numbers without an ops meeting.”
+              <span class="block not-italic text-[10px] font-mono tracking-[.14em] uppercase text-zinc-500 mt-1">— Founder · NA e-commerce brand</span>
+            </blockquote>
+            <div class="flex flex-wrap gap-6 mt-3 font-mono text-[10px] uppercase tracking-[.1em]">
+              <span class="text-zinc-400"><span class="text-zinc-900 font-medium">3.8×</span> ROAS</span>
+              <span class="text-zinc-400"><span class="text-zinc-900 font-medium">−60%</span> manual reporting hours</span>
+              <span class="text-zinc-400"><span class="text-zinc-900 font-medium">4</span> channels unified</span>
+            </div>
+            <p class="mt-3 font-mono text-[10px] text-zinc-500 tracking-[.06em]">stack: Next.js · Postgres · ClickHouse · Stripe · Klaviyo</p>
+            <span class="cl-entry__cta">Read the build →</span>
+          </a>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- Proof visualizations -->
+    <section class="px-6 md:px-12 py-20 md:py-28 max-w-5xl mx-auto border-t border-dashed border-zinc-200 mt-16">
+      <div class="reveal text-center mb-12">
+        <p class="font-mono text-[10px] uppercase tracking-[.25em] text-zinc-400 mb-3">Data & Visualizations</p>
+        <h2 class="text-2xl md:text-3xl font-medium text-zinc-900 tracking-tight">Research Graphs</h2>
+      </div>
+      <div class="grid sm:grid-cols-2 gap-6">
+        <a href="resources/graphs/workflow-efficiency.html" class="reveal wire-panel p-6 no-underline block group">
+          <i data-lucide="bar-chart-3" class="w-8 h-8 text-zinc-400 mb-3 group-hover:text-zinc-900 transition-colors" stroke-width="1"></i>
+          <h3 class="text-sm font-medium text-zinc-900 mb-1">Workflow Efficiency Gains</h3>
+          <p class="text-xs text-zinc-500 font-light">Manual vs. automated process times across 5 enterprise workflows</p>
+        </a>
+        <a href="resources/graphs/delivery-acceleration.html" class="reveal wire-panel p-6 no-underline block group">
+          <i data-lucide="trending-up" class="w-8 h-8 text-zinc-400 mb-3 group-hover:text-zinc-900 transition-colors" stroke-width="1"></i>
+          <h3 class="text-sm font-medium text-zinc-900 mb-1">Delivery Acceleration</h3>
+          <p class="text-xs text-zinc-500 font-light">Traditional vs. AI-enhanced project delivery timelines</p>
+        </a>
+        <a href="resources/graphs/conversion-funnel.html" class="reveal wire-panel p-6 no-underline block group">
+          <i data-lucide="filter" class="w-8 h-8 text-zinc-400 mb-3 group-hover:text-zinc-900 transition-colors" stroke-width="1"></i>
+          <h3 class="text-sm font-medium text-zinc-900 mb-1">Conversion Funnel Performance</h3>
+          <p class="text-xs text-zinc-500 font-light">Multi-channel AI acquisition funnel benchmarks</p>
+        </a>
+        <a href="resources/graphs/ai-operations.html" class="reveal wire-panel p-6 no-underline block group">
+          <i data-lucide="activity" class="w-8 h-8 text-zinc-400 mb-3 group-hover:text-zinc-900 transition-colors" stroke-width="1"></i>
+          <h3 class="text-sm font-medium text-zinc-900 mb-1">AI Operational Impact</h3>
+          <p class="text-xs text-zinc-500 font-light">Production metrics: response time, throughput, cost reduction</p>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="relative z-10 px-6 py-12 text-center border-t border-zinc-200">
+    <p class="font-mono text-[9px] tracking-[.35em] uppercase text-zinc-400">DSM Techrealm Systems © 2026 · <a href="dsmAIFinal.html" class="hover:text-zinc-900 transition-colors">Home</a> · <a href="offerings.html" class="hover:text-zinc-900 transition-colors">Services</a></p>
+  </footer>
+
+  <script>
+  lucide.createIcons();
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduced) {
+    document.querySelectorAll('.reveal').forEach(el => {
+      gsap.fromTo(el, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.85, ease: 'power3.out',
+        scrollTrigger: { trigger: el, start: 'top 90%' }
+      });
+    });
+    ScrollTrigger.create({ trigger: document.body, start: 'top top', end: 'bottom bottom',
+      onUpdate: s => { const bar = document.getElementById('cl-progress'); if (bar) bar.style.height = (s.progress * 100) + '%'; }
+    });
+  } else {
+    document.querySelectorAll('.reveal').forEach(el => { el.style.opacity = '1'; el.style.transform = 'none'; });
+  }
+
+  // Filter logic
+  document.querySelectorAll('.filter-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filter = btn.dataset.filter;
+      document.querySelectorAll('#changelog-entries article').forEach(entry => {
+        if (filter === 'all' || entry.dataset.type === filter) {
+          entry.style.display = '';
+        } else {
+          entry.style.display = 'none';
+        }
+      });
+    });
+  });
+
+  setTimeout(() => lucide.createIcons(), 500);
+  </script>
+</body>
+</html>
