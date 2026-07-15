@@ -148,3 +148,52 @@ export const OWN_PRODUCTS: OwnProduct[] = [
     accentTo: "#14532d",
   },
 ];
+
+// ── Own-product detection ─────────────────────────────────────────────────────
+//
+// The checkout branches on WHO owns the product: DSM's OWN products (Pointblank,
+// Virtual Sizing, VPO, …) route to a "book a meeting" flow with no redirect,
+// while third-party LICENSING products (Microsoft, Autodesk, Corel, …) route to
+// the legacy storefront to complete purchase. This helper decides which bucket a
+// cart line / product id / name falls into.
+
+const normalize = (v: unknown): string =>
+  String(v ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+// Precomputed lookups so detection is O(1) per item.
+const OWN_ID_SET = new Set(OWN_PRODUCTS.map((p) => normalize(p.id)));
+const OWN_NAME_SET = new Set(OWN_PRODUCTS.map((p) => normalize(p.name)));
+
+/** Find the matching own-product for an id/name, or `undefined`. */
+export function matchOwnProduct(
+  ref: { id?: string | number; name?: string } | string | number | null | undefined,
+): OwnProduct | undefined {
+  if (ref == null) return undefined;
+  const id = typeof ref === 'object' ? ref.id : ref;
+  const name = typeof ref === 'object' ? ref.name : ref;
+  const nId = normalize(id);
+  const nName = normalize(name);
+  return OWN_PRODUCTS.find(
+    (p) =>
+      (nId && (normalize(p.id) === nId || normalize(p.name) === nId)) ||
+      (nName && (normalize(p.name) === nName || normalize(p.id) === nName)),
+  );
+}
+
+/**
+ * True when a product is one of DSM's OWN products (vs a third-party license we
+ * resell). Matches on id or display name, case/punctuation-insensitively.
+ */
+export function isOwnProduct(
+  ref: { id?: string | number; name?: string } | string | number | null | undefined,
+): boolean {
+  // Cheap set check first (covers exact id/name), then the fuzzy matcher.
+  if (typeof ref === 'string' || typeof ref === 'number') {
+    const n = normalize(ref);
+    if (OWN_ID_SET.has(n) || OWN_NAME_SET.has(n)) return true;
+  }
+  return matchOwnProduct(ref) !== undefined;
+}

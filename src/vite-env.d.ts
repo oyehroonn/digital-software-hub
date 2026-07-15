@@ -15,6 +15,12 @@ interface ImportMetaEnv {
   readonly VITE_SIMLI_HEALTH_URL?: string;
   /** Simli session-proxy base for the TalkingAdvisor (default same-origin "/api/simli") */
   readonly VITE_SIMLI_PROXY_BASE?: string;
+  /** Full email-proxy URL (default `{VITE_API_BASE}/api/email`). Forwards to the stable email Apps Script. */
+  readonly VITE_EMAIL_PROXY_URL?: string;
+  /** Base of the ORIGINAL DSM licensing storefront that license purchases redirect to. FLAG: assumed. */
+  readonly VITE_OLD_WEB_BASE?: string;
+  /** Calendly (or other) scheduling link for the DSM own-product "book a meeting" flow. FLAG: placeholder. */
+  readonly VITE_CALENDLY_URL?: string;
 }
 
 interface ImportMeta {
