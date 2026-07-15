@@ -27,21 +27,34 @@ FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 FONT_REG  = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 # ── Product catalogue (DSM originals) ─────────────────────────────────────
-# id, name, tagline, glyph, accent_top(hex), accent_bottom(hex)
+# id, name, tagline, glyph, accent_top(hex), accent_bottom(hex), [features]
 PRODUCTS = [
-    (90001, "DSM",              "Digital Software Market", "DSM", "1e3a8a", "2563eb"),
-    (90002, "Virtual Sizing",   "AI Body Measurement",     "VS",  "0d9488", "14b8a6"),
-    (90003, "Virtual Try-On",   "AR Fashion Fitting",      "VT",  "7c3aed", "db2777"),
-    (90004, "Pointblank",       "Precision Analytics",     "PB",  "b91c1c", "ef4444"),
-    (90005, "PreserveMy.World", "Digital Legacy Vault",    "PW",  "047857", "10b981"),
-    (90006, "VPO",              "Virtual Print Office",    "VPO", "c2410c", "f97316"),
-    (90007, "TechRealm",        "Cloud & AI Platform",     "TR",  "4338ca", "6366f1"),
-    (90008, "LogicPacks",       "Automation Toolkit",      "LP",  "1d4ed8", "3b82f6"),
-    (90009, "Lazyware",         "Effortless Workflows",    "LZ",  "0e7490", "06b6d4"),
-    (90010, "Bringit",          "On-Demand Delivery",      "B",   "15803d", "22c55e"),
-    (90011, "FlyAquab",         "Aquatic Drone Systems",   "FA",  "0369a1", "0ea5e9"),
-    (90012, "Apex",             "Performance Suite",       "AX",  "334155", "d97706"),
-    (90013, "Ummah Directory",  "Community Directory",     "UD",  "a16207", "eab308"),
+    (90001, "DSM",              "Digital Software Market", "DSM", "1e3a8a", "2563eb",
+        ["Instant licenses", "Genuine & supported", "50,000+ titles"]),
+    (90002, "Virtual Sizing",   "AI Body Measurement",     "VS",  "0d9488", "14b8a6",
+        ["AI body scan", "No tape measure", "99% fit accuracy"]),
+    (90003, "Virtual Try-On",   "AR Fashion Fitting",      "VT",  "7c3aed", "db2777",
+        ["AR live preview", "Any garment", "Cut returns 40%"]),
+    (90004, "Pointblank",       "Precision Analytics",     "PB",  "b91c1c", "ef4444",
+        ["Real-time metrics", "Predictive models", "One dashboard"]),
+    (90005, "PreserveMy.World", "Digital Legacy Vault",    "PW",  "047857", "10b981",
+        ["Encrypted vault", "Legacy handover", "Lifetime storage"]),
+    (90006, "VPO",              "Virtual Print Office",    "VPO", "c2410c", "f97316",
+        ["Cloud print jobs", "Any device", "Zero setup"]),
+    (90007, "TechRealm",        "Cloud & AI Platform",     "TR",  "4338ca", "6366f1",
+        ["Cloud + AI", "Auto-scaling", "99.9% uptime"]),
+    (90008, "LogicPacks",       "Automation Toolkit",      "LP",  "1d4ed8", "3b82f6",
+        ["Drag-drop flows", "500+ connectors", "No code"]),
+    (90009, "Lazyware",         "Effortless Workflows",    "LZ",  "0e7490", "06b6d4",
+        ["Automate anything", "Set & forget", "Save 10h/week"]),
+    (90010, "Bringit",          "On-Demand Delivery",      "B",   "15803d", "22c55e",
+        ["On-demand drops", "Live tracking", "30-min delivery"]),
+    (90011, "FlyAquab",         "Aquatic Drone Systems",   "FA",  "0369a1", "0ea5e9",
+        ["Aquatic drones", "Autonomous survey", "4K capture"]),
+    (90012, "Apex",             "Performance Suite",       "AX",  "334155", "d97706",
+        ["Peak performance", "All-in-one suite", "Team ready"]),
+    (90013, "Ummah Directory",  "Community Directory",     "UD",  "a16207", "eab308",
+        ["Verified listings", "Community first", "Global reach"]),
 ]
 
 W = H = 1024
@@ -103,8 +116,9 @@ def wrap(draw, text, font, max_w):
     return lines
 
 
-def make_cover(name, tagline, glyph, atop, abot):
+def make_cover(name, tagline, glyph, atop, abot, features=None):
     top, bot = hx(atop), hx(abot)
+    features = features or []
     img = Image.new("RGB", (W, H), (255, 255, 255))
 
     # subtle main-area vertical wash
@@ -147,6 +161,18 @@ def make_cover(name, tagline, glyph, atop, abot):
     except Exception as e:
         print("  face logo skipped:", e)
 
+    # ── "2026 EDITION" pill badge, top-right of the face ──
+    bf = ImageFont.truetype(FONT_BOLD, 26)
+    btxt = "2026 EDITION"
+    btw = d.textlength(btxt, font=bf)
+    bpx, bph = 26, 46
+    bx1 = W - 60
+    bx0 = bx1 - (btw + bpx * 2)
+    by0 = 74
+    d.rounded_rectangle([bx0, by0, bx1, by0 + bph], radius=bph // 2, fill=top)
+    d.text((bx0 + bpx, by0 + (bph - 26) // 2 - 2), btxt, font=bf,
+           fill=(255, 255, 255, 245))
+
     # ── product name (big, wrapped) ──
     name_font = fit_font(FONT_BOLD, max(name.split(), key=len), W - mx - 60, 92, 52)
     lines = wrap(d, name, name_font, W - mx - 60)
@@ -156,13 +182,35 @@ def make_cover(name, tagline, glyph, atop, abot):
         d.text((mx, y), ln, font=name_font, fill=(24, 28, 34))
         y += lh
 
+    # thin accent rule under the name
+    d.rounded_rectangle([mx + 2, y + 6, mx + 110, y + 12], radius=3, fill=bot)
+
     # tagline
     tag_font = ImageFont.truetype(FONT_REG, 40)
-    d.text((mx, y + 8), tagline, font=tag_font, fill=(107, 114, 128))
+    d.text((mx, y + 30), tagline, font=tag_font, fill=(107, 114, 128))
+
+    # ── feature bullets (left column, accent check-dots) ──
+    fy = y + 100
+    ff = ImageFont.truetype(FONT_REG, 28)
+    for feat in features[:3]:
+        cy = fy + 15
+        d.ellipse([mx, cy - 9, mx + 18, cy + 9], fill=top)
+        # small check mark inside the dot
+        d.line([(mx + 4, cy), (mx + 8, cy + 5), (mx + 14, cy - 5)],
+               fill=(255, 255, 255), width=3, joint="curve")
+        d.text((mx + 34, fy), feat, font=ff, fill=(60, 66, 74))
+        fy += 52
 
     # ── centre app-icon (rounded square, accent gradient, glyph) ──
     iw = 320
     ix, iy = W - iw - 90, 470
+    # faint concentric-ring motif behind the icon for depth
+    ic = (ix + iw // 2, iy + iw // 2)
+    faint = tuple(int(c + (245 - c) * 0.82) for c in top)  # top tinted toward white
+    for rr in range(iw, iw + 210, 30):
+        d.ellipse([ic[0] - rr // 2, ic[1] - rr // 2,
+                   ic[0] + rr // 2, ic[1] + rr // 2],
+                  outline=faint, width=2)
     # soft shadow
     sh = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     ImageDraw.Draw(sh).rounded_rectangle(
@@ -248,13 +296,13 @@ def main():
     existing_ids = {str(m.get("id")) for m in manifest}
 
     created = []
-    for pid, name, tagline, glyph, atop, abot in PRODUCTS:
+    for pid, name, tagline, glyph, atop, abot, features in PRODUCTS:
         slug = sanitize(name)
         folder = MODELS_DIR / f"{pid}_{slug}"
         folder.mkdir(parents=True, exist_ok=True)
         out = folder / "model.glb"
         print(f"[{pid}] {name}")
-        cover = make_cover(name, tagline, glyph, atop, abot)
+        cover = make_cover(name, tagline, glyph, atop, abot, features)
         cover.save(folder / "cover.png")
         apply_texture(BASE_GLB, cover, out)
         if flat:
