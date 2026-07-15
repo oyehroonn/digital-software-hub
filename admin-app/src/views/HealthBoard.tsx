@@ -92,7 +92,7 @@ function buildProbes(cfg: AppConfig): ProbeDef[] {
       label: "VPS Flask API",
       kind: "unstable",
       target: VPS_STATUS_URL,
-      run: () => httpGet(VPS_STATUS_URL, { timeoutMs: 2500 }),
+      run: () => httpGet(VPS_STATUS_URL, { timeoutMs: 8000 }),
     },
     {
       key: "codex",
