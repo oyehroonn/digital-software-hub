@@ -561,27 +561,59 @@ model-viewer::part(default-ar-button) { display: none; }
   width: var(--w);
   height: var(--h);
   perspective: 900px;
-  perspective-origin: 50% 40%;
+  perspective-origin: 50% 42%;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
+/* Bring the box forward on hover/focus (the "lift" is on the scene so it
+   composes with the inner spin + tilt transforms). */
+.own-box-card:hover .own-box-scene,
+.own-box-card:focus-visible .own-box-scene {
+  transform: translateY(-8px) scale(1.05);
+}
+/* Spin layer — continuous auto-rotate around Y; paused while interacting. */
+.own-box-spin {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: ownBoxSpin 22s linear infinite;
+  animation-delay: var(--spin-delay, 0s);
+  will-change: transform;
+}
+.own-box-card:hover .own-box-spin,
+.own-box-card:focus-visible .own-box-spin {
+  /* Stop (not just pause) so the transform below wins the cascade, and snap
+     the front face toward the viewer before the pointer takes over. */
+  animation: none;
+  transform: rotateY(0deg);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* Tilt layer — base pose + live pointer-driven parallax spin via CSS vars. */
 .own-box {
   position: relative;
   width: var(--w);
   height: var(--h);
   transform-style: preserve-3d;
-  transform: rotateX(-13deg) rotateY(-26deg);
-  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform;
+  transform: rotateX(-11deg) rotateY(-18deg);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   animation: ownBoxFloat 7s ease-in-out infinite;
 }
-.own-box-card:hover .own-box,
+.own-box-card:hover .own-box {
+  /* --tilt-x / --tilt-y are set live by the pointer handler. animation:none
+     lets this transform win over the (otherwise-overriding) float keyframe. */
+  transform: rotateX(calc(-9deg + var(--tilt-x, 0deg)))
+    rotateY(calc(-14deg + var(--tilt-y, 0deg)));
+  transition-duration: 0.12s;
+  animation: none;
+}
 .own-box-card:focus-visible .own-box {
-  transform: rotateX(-8deg) rotateY(-18deg) translateY(-6px) scale(1.04);
-  animation-play-state: paused;
+  transform: rotateX(-8deg) rotateY(22deg);
+  animation: none;
 }
 .own-box-face {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 50%;
+  left: 50%;
   border-radius: 4px;
   backface-visibility: hidden;
 }
@@ -589,7 +621,7 @@ model-viewer::part(default-ar-button) { display: none; }
 .own-box-front {
   width: var(--w);
   height: var(--h);
-  transform: translateZ(calc(var(--d) / 2));
+  transform: translate(-50%, -50%) translateZ(calc(var(--d) / 2));
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -636,25 +668,71 @@ model-viewer::part(default-ar-button) { display: none; }
 .own-box-card:hover .own-box-shine {
   transform: translateX(120%);
 }
-/* Top surface — folds back from the front's top edge */
-.own-box-top {
+/* Back cover — darker, carries a faint wordmark. */
+.own-box-back {
+  width: var(--w);
+  height: var(--h);
+  transform: translate(-50%, -50%) rotateY(180deg) translateZ(calc(var(--d) / 2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background:
+    linear-gradient(150deg, var(--accent-to) 0%, rgba(0, 0, 0, 0.92) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.5);
+}
+.own-box-back-mark {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  font-weight: 700;
+  font-size: 1.4rem;
+  letter-spacing: -0.02em;
+  color: rgba(255, 255, 255, 0.14);
+}
+/* Top / bottom pages */
+.own-box-top,
+.own-box-bottom {
   width: var(--w);
   height: var(--d);
-  transform-origin: top;
-  transform: rotateX(90deg);
   background: linear-gradient(180deg, #f4f4f5, #d4d4d8);
   box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.15);
 }
-/* Spine / right side — folds back from the front's right edge */
-.own-box-side {
+.own-box-top {
+  transform: translate(-50%, -50%) rotateX(90deg) translateZ(calc(var(--h) / 2));
+}
+.own-box-bottom {
+  transform: translate(-50%, -50%) rotateX(-90deg) translateZ(calc(var(--h) / 2));
+  background: linear-gradient(180deg, #d4d4d8, #a1a1aa);
+}
+/* Spine (right) + fore-edge (left) */
+.own-box-right,
+.own-box-left {
   width: var(--d);
   height: var(--h);
-  left: auto;
-  right: 0;
-  transform-origin: right;
-  transform: rotateY(-90deg);
-  background: linear-gradient(180deg, var(--accent-to), rgba(0, 0, 0, 0.85));
-  box-shadow: inset 6px 0 12px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.own-box-right {
+  transform: translate(-50%, -50%) rotateY(90deg) translateZ(calc(var(--w) / 2));
+  background: linear-gradient(180deg, var(--accent), var(--accent-to));
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.own-box-spine-text {
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  transform: rotate(90deg);
+}
+.own-box-left {
+  transform: translate(-50%, -50%) rotateY(-90deg) translateZ(calc(var(--w) / 2));
+  background: linear-gradient(90deg, #fafafa, #d4d4d8);
+  box-shadow: inset 4px 0 8px rgba(0, 0, 0, 0.12);
 }
 .own-box-label {
   display: flex;
@@ -681,10 +759,19 @@ model-viewer::part(default-ar-button) { display: none; }
 @keyframes ownBoxFloat {
   0%,
   100% {
-    transform: rotateX(-13deg) rotateY(-26deg) translateY(0);
+    transform: rotateX(-11deg) rotateY(-18deg) translateY(0);
   }
   50% {
-    transform: rotateX(-13deg) rotateY(-22deg) translateY(-7px);
+    transform: rotateX(-11deg) rotateY(-18deg) translateY(-7px);
+  }
+}
+/* Continuous auto-rotate of the whole box around its Y axis. */
+@keyframes ownBoxSpin {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
   }
 }
 
@@ -770,9 +857,28 @@ model-viewer::part(default-ar-button) { display: none; }
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .own-box {
+/* Coarse-pointer / touch devices: the continuous 360° spin is the most
+   expensive part to composite, so drop it (keep the cheaper float + drift)
+   and hold a nice static angle. Hover-spin is irrelevant without a pointer. */
+@media (hover: none), (pointer: coarse) {
+  .own-box-spin {
     animation: none;
+    transform: rotateY(-4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .own-box,
+  .own-box-spin {
+    animation: none;
+  }
+  .own-box-spin {
+    transform: none;
+  }
+  .own-box-card:hover .own-box,
+  .own-box-card:focus-visible .own-box {
+    /* Keep a subtle brought-forward pose but no live pointer spin. */
+    transform: rotateX(-9deg) rotateY(-14deg);
   }
   .own-box-marquee.is-active .own-box-marquee-track {
     animation: none;
