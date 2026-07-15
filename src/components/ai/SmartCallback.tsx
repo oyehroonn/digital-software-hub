@@ -627,7 +627,6 @@ export default function SmartCallback({ className }: SmartCallbackProps) {
       backend="codex"
       feature="smart-callback"
       recheckMs={60_000}
-      fallback={<CallbackForm mode="beta" className={className} />}
     >
       <CallbackForm mode="ai" className={className} />
     </AIFeature>

@@ -35,7 +35,7 @@ const BrandSpotlight = () => {
               {/* 3D Model - enlarged */}
               <div className="absolute inset-0 z-10 scale-110">
                 <ProductModelViewer
-                  glbSrc="/models/Autodesk_AEC_Collection_2026.glb"
+                  glbSrc="https://dsm-api.techrealm.ai/models/8706/8706_Architecture_Engineering_and_Construction_AEC_Collection_202/model.glb"
                   fallbackIcon={
                     <div className="w-32 h-32 rounded-xl bg-azure/10 border border-azure/20 flex items-center justify-center">
                       <span className="text-4xl font-bold text-azure/40">A</span>

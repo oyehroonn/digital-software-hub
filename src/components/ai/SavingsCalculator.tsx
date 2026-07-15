@@ -822,7 +822,6 @@ export default function SavingsCalculator({ className }: SavingsCalculatorProps)
     <AIFeature
       backend="codex"
       feature="savings-calculator"
-      fallback={<SavingsBetaSignup className={className} />}
     >
       <SavingsCalculatorInner className={className} />
     </AIFeature>

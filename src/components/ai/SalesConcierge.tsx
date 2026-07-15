@@ -764,7 +764,6 @@ export default function SalesConcierge() {
       backend="codex"
       feature="sales-concierge"
       recheckMs={60_000}
-      fallback={<ConciergeBeta />}
     >
       <ConciergeWidget />
     </AIFeature>

@@ -135,7 +135,7 @@ function OwnBox({ product, spinDelay }: { product: OwnProduct; spinDelay: number
               <span className="own-box-back-mark">{product.wordmark}</span>
             </div>
             <div className="own-box-face own-box-right" aria-hidden="true">
-              <span className="own-box-spine-text">{product.name}</span>
+              <span className="own-box-spine-text">{product.wordmark}</span>
             </div>
             <div className="own-box-face own-box-left" aria-hidden="true" />
             <div className="own-box-face own-box-top" aria-hidden="true" />

@@ -416,10 +416,13 @@ function BulkQuoteBuilderInner() {
         metadata: { lines: result.length, seats: result.reduce((s, l) => s + l.quantity, 0) },
       });
     } catch (err) {
+      // Never surface a raw proxy/transport error (e.g. "LLM proxy returned
+      // HTTP 404"). Keep only our own buyer-facing guidance (thrown without a
+      // status and not prefixed "LLM "); everything else gets a friendly line.
       const msg =
-        err instanceof LLMError || err instanceof Error
+        err instanceof LLMError && !err.status && !err.message.startsWith('LLM ')
           ? err.message
-          : 'Something went wrong building your order. Please try again.';
+          : 'We could not build your order just now. Please try again in a moment.';
       setError(msg);
     } finally {
       setBuilding(false);
@@ -933,7 +936,6 @@ export default function BulkQuoteBuilder() {
       backend="codex"
       feature={FEATURE}
       recheckMs={30000}
-      fallback={<BulkQuoteBetaSignup />}
     >
       <BulkQuoteBuilderInner />
     </AIFeature>

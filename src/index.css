@@ -689,6 +689,9 @@ model-viewer::part(default-ar-button) { display: none; }
   font-size: 1.4rem;
   letter-spacing: -0.02em;
   color: rgba(255, 255, 255, 0.14);
+  /* The back face is rotateY(180deg); un-mirror the mark so it never reads
+     reversed as the box spins past. */
+  transform: scaleX(-1);
 }
 /* Top / bottom pages */
 .own-box-top,

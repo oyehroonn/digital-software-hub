@@ -364,7 +364,6 @@ function InstantQuoteInner() {
         <QuoteBetaSignup
           reason="error"
           prefillNeed={trimmed}
-          detail={errorMsg}
           onRetry={() => {
             setErrorMsg('');
             setPhase('idle');
@@ -626,11 +625,10 @@ interface BetaSignupProps {
   /** Why we're degrading — tunes the copy and the telemetry. */
   reason: 'offline' | 'error';
   prefillNeed?: string;
-  detail?: string;
   onRetry?: () => void;
 }
 
-function QuoteBetaSignup({ reason, prefillNeed = '', detail, onRetry }: BetaSignupProps) {
+function QuoteBetaSignup({ reason, prefillNeed = '', onRetry }: BetaSignupProps) {
   const [need, setNeed] = useState(prefillNeed);
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
@@ -742,10 +740,6 @@ function QuoteBetaSignup({ reason, prefillNeed = '', detail, onRetry }: BetaSign
           Try the instant quote again
         </button>
       )}
-
-      {detail && (
-        <p className="mt-3 text-xs opacity-60">{detail}</p>
-      )}
     </div>
   );
 }
@@ -828,11 +822,6 @@ export default function InstantQuote() {
       backend="codex"
       feature="quote-genie"
       recheckMs={60000}
-      fallback={
-        <QuoteShell>
-          <QuoteBetaSignup reason="offline" />
-        </QuoteShell>
-      }
     >
       <InstantQuoteInner />
     </AIFeature>
