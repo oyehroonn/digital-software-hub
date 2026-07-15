@@ -4,6 +4,7 @@ import ProductModelViewer from './ProductModelViewer';
 import { Badge } from './ui/badge';
 import { useAccount } from '@/hooks/useAccount';
 import { memberPrice } from '@/lib/account';
+import { useProductModal } from '@/contexts/ProductModalContext';
 
 interface ProductCardProps {
   product: Product;
@@ -17,10 +18,21 @@ export default function ProductCard({ product, viewMode = 'grid', onClick }: Pro
   const { isMember } = useAccount();
   const mp = isMember ? memberPrice(product.price) : null;
 
+  // Clicking a card opens the rich detail popup. useProductModal is a safe
+  // no-op until <ProductModalProvider> is mounted (integration step), so this
+  // never crashes. A caller-supplied `onClick` still runs (e.g. legacy modal /
+  // deep-link sync) — the two are additive.
+  const { openProductModal } = useProductModal();
+  const handleOpen = () => {
+    openProductModal(product);
+    onClick?.();
+  };
+
   if (viewMode === 'list') {
     return (
       <div
-        onClick={onClick}
+        onClick={handleOpen}
+        data-product-id={product.id}
         className="group flex gap-4 p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg hover:border-crimson/30 hover:bg-white/[0.04] transition-all cursor-pointer"
       >
         {/* Image/Model */}
@@ -80,7 +92,8 @@ export default function ProductCard({ product, viewMode = 'grid', onClick }: Pro
   // Grid view (default)
   return (
     <div
-      onClick={onClick}
+      onClick={handleOpen}
+      data-product-id={product.id}
       className="group relative cursor-pointer"
     >
       <div className="relative aspect-[3/4] bg-white/[0.02] border border-white/[0.06] rounded-md overflow-hidden mb-4 shadow-[0_1px_3px_hsl(0_0%_0%/0.04),0_4px_16px_hsl(0_0%_0%/0.03)] transition-all duration-500 group-hover:shadow-[0_2px_6px_hsl(0_0%_0%/0.06),0_12px_40px_hsl(0_0%_0%/0.08)] group-hover:border-crimson/30">
