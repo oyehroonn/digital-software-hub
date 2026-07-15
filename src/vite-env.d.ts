@@ -13,6 +13,8 @@ interface ImportMetaEnv {
   readonly VITE_LLM_MODEL?: string;
   /** Simli health endpoint (default same-origin "/api/simli/health") */
   readonly VITE_SIMLI_HEALTH_URL?: string;
+  /** Simli session-proxy base for the TalkingAdvisor (default same-origin "/api/simli") */
+  readonly VITE_SIMLI_PROXY_BASE?: string;
 }
 
 interface ImportMeta {
