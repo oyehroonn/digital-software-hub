@@ -1,28 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { AlertTriangle, BarChart3, RefreshCw } from "lucide-react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 import type { AppConfig } from "@/lib/config";
-import { fetchTelemetry, type TelemetryEvent } from "@/lib/ecommerce";
-import { buildFunnel, extractOutages, outagesByService } from "@/lib/analytics";
+import { fetchOrders, fetchTelemetry, type Order, type TelemetryEvent } from "@/lib/ecommerce";
+import { extractOutages, outagesByService } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Empty } from "@/components/Empty";
+import { FunnelChart } from "@/components/FunnelChart";
+import { ClickHeatmap } from "@/views/analytics/ClickHeatmap";
+import { ProductAnalytics } from "@/views/ProductAnalytics";
 import { timeAgo } from "@/lib/utils";
-
-const FUNNEL_COLORS = ["#4b93ff", "#4bc0c0", "#f0b429", "#f78e3d", "#d9414f"];
 
 export function AnalyticsView({ config }: { config: AppConfig }) {
   const [events, setEvents] = useState<TelemetryEvent[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +23,12 @@ export function AnalyticsView({ config }: { config: AppConfig }) {
     setLoading(true);
     setError(null);
     try {
-      setEvents(await fetchTelemetry(config));
+      const [ev, ords] = await Promise.all([
+        fetchTelemetry(config),
+        fetchOrders(config).catch(() => [] as Order[]),
+      ]);
+      setEvents(ev);
+      setOrders(ords);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -42,7 +40,6 @@ export function AnalyticsView({ config }: { config: AppConfig }) {
     load();
   }, [load]);
 
-  const funnel = useMemo(() => buildFunnel(events), [events]);
   const outages = useMemo(() => extractOutages(events), [events]);
   const outageBuckets = useMemo(() => outagesByService(outages), [outages]);
 
@@ -64,61 +61,11 @@ export function AnalyticsView({ config }: { config: AppConfig }) {
         <Empty title="Couldn't load telemetry" hint={error} />
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Conversion funnel</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {events.length === 0 ? (
-                <Empty icon={<BarChart3 className="h-8 w-8" />} title="No telemetry yet" />
-              ) : (
-                <>
-                  <div className="h-56 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={funnel} layout="vertical" margin={{ left: 8, right: 24 }}>
-                        <XAxis type="number" hide />
-                        <YAxis
-                          type="category"
-                          dataKey="label"
-                          width={100}
-                          tick={{ fill: "#9aa0a6", fontSize: 12 }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <Tooltip
-                          cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                          contentStyle={{
-                            background: "#14161a",
-                            border: "1px solid #262a30",
-                            borderRadius: 8,
-                            fontSize: 12,
-                          }}
-                        />
-                        <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                          {funnel.map((_, i) => (
-                            <Cell key={i} fill={FUNNEL_COLORS[i % FUNNEL_COLORS.length]} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="mt-3 grid grid-cols-5 gap-2 text-center">
-                    {funnel.map((s) => (
-                      <div key={s.key}>
-                        <div className="text-lg font-semibold tabular-nums">{s.count}</div>
-                        <div className="text-[10px] uppercase text-muted-foreground">{s.label}</div>
-                        <div className="text-[11px] text-muted-foreground">
-                          {(s.rate * 100).toFixed(0)}%
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          <div className="lg:col-span-2">
+            <FunnelChart events={events} />
+          </div>
 
-          <Card>
+          <Card className="h-fit">
             <CardHeader>
               <CardTitle>AI outages by service</CardTitle>
             </CardHeader>
@@ -182,6 +129,30 @@ export function AnalyticsView({ config }: { config: AppConfig }) {
           )}
         </CardContent>
       </Card>
+
+      {!error && (
+        <div className="pt-2">
+          <div className="mb-2">
+            <h2 className="text-base font-semibold">Click heatmap</h2>
+            <p className="text-xs text-muted-foreground">
+              Per-page click density from telemetry — hover a hotspot for counts & the top element.
+            </p>
+          </div>
+          <ClickHeatmap events={events} />
+        </div>
+      )}
+
+      {!error && (
+        <div className="pt-2">
+          <div className="mb-2">
+            <h2 className="text-base font-semibold">Product analytics</h2>
+            <p className="text-xs text-muted-foreground">
+              Views, clicks, CTR, conversions & revenue per product, with daily-views trend.
+            </p>
+          </div>
+          <ProductAnalytics config={config} events={events} orders={orders} />
+        </div>
+      )}
     </div>
   );
 }

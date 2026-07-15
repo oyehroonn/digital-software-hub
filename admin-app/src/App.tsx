@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { Boxes, ClipboardList, BarChart3, HeartPulse, Settings2, RefreshCw } from "lucide-react";
+import {
+  Boxes,
+  ClipboardList,
+  BarChart3,
+  MoveVertical,
+  HeartPulse,
+  Settings2,
+  RefreshCw,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { loadConfig, type AppConfig } from "@/lib/config";
 import { checkAll, type ServiceStatus } from "@/lib/health";
@@ -8,15 +16,17 @@ import { StatusDot } from "@/components/StatusDot";
 import { ProductsView } from "@/views/ProductsView";
 import { OrdersView } from "@/views/OrdersView";
 import { AnalyticsView } from "@/views/AnalyticsView";
-import { HealthView } from "@/views/HealthView";
+import { ScrollMap } from "@/views/ScrollMap";
+import { HealthBoard } from "@/views/HealthBoard";
 import { SettingsView } from "@/views/SettingsView";
 
-type TabKey = "products" | "orders" | "analytics" | "health" | "settings";
+type TabKey = "products" | "orders" | "analytics" | "scroll" | "health" | "settings";
 
 const TABS: { key: TabKey; label: string; icon: typeof Boxes }[] = [
   { key: "products", label: "Products", icon: Boxes },
   { key: "orders", label: "Orders", icon: ClipboardList },
   { key: "analytics", label: "Analytics", icon: BarChart3 },
+  { key: "scroll", label: "Scroll map", icon: MoveVertical },
   { key: "health", label: "Health", icon: HeartPulse },
   { key: "settings", label: "Settings", icon: Settings2 },
 ];
@@ -124,8 +134,10 @@ export default function App() {
             <OrdersView config={config} />
           ) : tab === "analytics" ? (
             <AnalyticsView config={config} />
+          ) : tab === "scroll" ? (
+            <ScrollMap config={config} />
           ) : tab === "health" ? (
-            <HealthView config={config} statuses={statuses} onRefresh={refreshHealth} />
+            <HealthBoard config={config} />
           ) : (
             <SettingsView config={config} onSaved={setConfig} />
           )}
