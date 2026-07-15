@@ -451,3 +451,145 @@ export async function hasActiveLicense(email?: string): Promise<boolean> {
   const licenses = await getLicenses(email);
   return licenses.some((l) => l.status !== 'expired');
 }
+
+/**
+ * Licenses that carry a real expiry and fall due within `withinDays`. Lifetime
+ * and already-expired licenses are excluded. Sorted soonest-first — this is the
+ * exact set the renewal-reminder cron and the portal "expiring soon" strip use.
+ */
+export async function getExpiringLicenses(
+  withinDays = 30,
+  email?: string,
+): Promise<License[]> {
+  const licenses = await getLicenses(email);
+  const now = Date.now();
+  const horizon = now + withinDays * 24 * 60 * 60 * 1000;
+  return licenses
+    .filter((l) => {
+      if (!l.expiresAt) return false; // lifetime — never "expiring"
+      const t = Date.parse(l.expiresAt);
+      return !Number.isNaN(t) && t > now && t <= horizon;
+    })
+    .sort((a, b) => Date.parse(a.expiresAt!) - Date.parse(b.expiresAt!));
+}
+
+/** Whole days until an ISO expiry (negative if already lapsed). */
+export function daysUntil(expiresAt?: string): number | undefined {
+  if (!expiresAt) return undefined;
+  const t = Date.parse(expiresAt);
+  if (Number.isNaN(t)) return undefined;
+  return Math.ceil((t - Date.now()) / (24 * 60 * 60 * 1000));
+}
+
+// ── Member perks: insider opt-in ──────────────────────────────────────────────
+//
+// "Insiders" get new-launch alerts + renewal reminders by email. The opt-in is a
+// free, reversible preference. It is held client-side (so the UI is instant and
+// works with the STABLE backend only) AND mirrored to the Apps Script as a
+// telemetry event + a best-effort `type:"member"` row, so the server-side email
+// cron can read who to email from the same sheet the admin app reads.
+
+const INSIDER_KEY = 'dsm.account.insider';
+
+/** Is the given email (default: signed-in user) opted into insider emails? */
+export function isInsider(email?: string): boolean {
+  const target = (email ?? currentUser()?.email ?? '').trim().toLowerCase();
+  if (!target) return false;
+  const map = readJSON<Record<string, boolean>>(INSIDER_KEY) ?? {};
+  return map[target] === true;
+}
+
+/**
+ * Opt the member in/out of insider emails (new-launch alerts + renewal
+ * reminders). Records the preference durably on the STABLE Apps Script so the
+ * email cron can honour it. Fire-and-forget on the network; never throws for
+ * network reasons. Requires a signed-in user (or an explicit email).
+ */
+export function setInsiderOptIn(optIn: boolean, email?: string): void {
+  const target = email ?? currentUser()?.email;
+  if (!target || !isValidEmail(target)) return;
+  const clean = normalizeEmail(target);
+
+  const map = readJSON<Record<string, boolean>>(INSIDER_KEY) ?? {};
+  map[clean] = optIn;
+  writeJSON(INSIDER_KEY, map);
+
+  track({
+    event: optIn ? 'member_insider_optin' : 'member_insider_optout',
+    eventType: 'custom',
+    metadata: { email: clean, insider: optIn },
+  });
+
+  if (typeof fetch === 'undefined') return;
+  const payload = {
+    type: 'member',
+    storeName: STORE_NAME,
+    sessionId: getSessionId(),
+    anonymousId: getAnonymousId(),
+    email: clean,
+    insider: optIn,
+    updatedAt: new Date().toISOString(),
+  };
+  try {
+    void fetch(ANALYTICS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      keepalive: true,
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    }).catch(() => {
+      /* fire-and-forget */
+    });
+  } catch {
+    /* never break the toggle */
+  }
+}
+
+// ── Member perks: member pricing ──────────────────────────────────────────────
+//
+// Every signed-in member gets a standing discount. Pricing is presentational
+// only — the authoritative price is still what the order carries — so this is a
+// pure, side-effect-free helper the storefront can call to show member savings.
+
+/** Standing member discount, as a percentage. Overridable via env. */
+export const MEMBER_DISCOUNT_PCT: number = (() => {
+  const raw = Number(import.meta.env.VITE_MEMBER_DISCOUNT_PCT);
+  return Number.isFinite(raw) && raw > 0 && raw < 90 ? raw : 10;
+})();
+
+export interface MemberPrice {
+  /** Parsed original price. */
+  original: number;
+  /** Discounted price. */
+  member: number;
+  /** Absolute amount saved. */
+  saved: number;
+  /** Currency symbol/prefix detected on the input (e.g. "$", "AED "). */
+  currency: string;
+  /** Pre-formatted member price string, e.g. "$116.10". */
+  formatted: string;
+}
+
+/**
+ * Compute the member price for a display price string (e.g. "$129.00", "AED 499",
+ * "129"). Returns `null` when no numeric price can be read (e.g. "Contact us"),
+ * so callers can simply skip the member badge in that case.
+ */
+export function memberPrice(
+  priceText: string | number | undefined,
+  pct: number = MEMBER_DISCOUNT_PCT,
+): MemberPrice | null {
+  if (priceText == null) return null;
+  const text = String(priceText);
+  const match = text.replace(/,/g, '').match(/(\d+(?:\.\d+)?)/);
+  if (!match) return null;
+  const original = Number.parseFloat(match[1]);
+  if (!Number.isFinite(original) || original <= 0) return null;
+
+  const currency = text.slice(0, text.indexOf(match[1])).trim();
+  const prefix = currency ? (currency.length > 1 ? `${currency} ` : currency) : '';
+  const member = Math.round(original * (1 - pct / 100) * 100) / 100;
+  const saved = Math.round((original - member) * 100) / 100;
+  const formatted = `${prefix}${member.toFixed(2)}`;
+  return { original, member, saved, currency: prefix, formatted };
+}

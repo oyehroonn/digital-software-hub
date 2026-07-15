@@ -1,9 +1,11 @@
 import { User, ShoppingBag, ChevronDown, ArrowRight, LayoutGrid, PenTool, Box, ShieldCheck, Monitor, Cpu } from "lucide-react";
 import SearchBar from "./SearchBar";
 import ProductModelViewer from "./ProductModelViewer";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useApp } from "@/contexts/AppContext";
+import { useAccount } from "@/hooks/useAccount";
+import { useAccountDialog } from "@/components/account/AccountProvider";
 
 const categories = [
   "Operating Systems",
@@ -70,6 +72,9 @@ const categoryFeaturedModel: Record<string, { glb: string; title: string; desc: 
 
 const Header = () => {
   const { cartItemCount } = useApp();
+  const { isMember } = useAccount();
+  const { open: openAccountDialog } = useAccountDialog();
+  const navigate = useNavigate();
   const [isOverLightSection, setIsOverLightSection] = useState(false);
   const [activeCategory, setActiveCategory] = useState("Productivity & Office");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -158,7 +163,17 @@ const Header = () => {
             <div className="hidden md:block w-64">
               <SearchBar darkText={isOverLightSection} />
             </div>
-            <a href="#" aria-label="Account" className={`transition-colors duration-300 ${iconColor}`}><User className="w-5 h-5" strokeWidth={1.5} /></a>
+            <button
+              type="button"
+              aria-label={isMember ? "Your account" : "Sign in or create a free account"}
+              onClick={() => (isMember ? navigate("/account") : openAccountDialog("/account"))}
+              className={`relative transition-colors duration-300 ${isMember ? "text-crimson hover:text-crimson-dark" : iconColor}`}
+            >
+              <User className="w-5 h-5" strokeWidth={1.5} />
+              {isMember && (
+                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-crimson ring-2 ring-[#060708]" />
+              )}
+            </button>
             <Link to="/cart" aria-label={cartItemCount > 0 ? `Cart, ${cartItemCount} item${cartItemCount === 1 ? "" : "s"}` : "Cart"} className={`relative transition-colors duration-300 ${iconColor}`}>
               <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
               {cartItemCount > 0 && (

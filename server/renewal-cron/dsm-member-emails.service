@@ -1,0 +1,17 @@
+[Unit]
+Description=DSM member auto-emails (renewal reminders + new-launch alerts)
+Documentation=file:///opt/dsm/renewal-cron/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Secrets live ONLY here on the host — never in the repo. 0600, root-owned.
+EnvironmentFile=/etc/dsm/member-emails.env
+WorkingDirectory=/opt/dsm/renewal-cron
+ExecStart=/usr/bin/python3 /opt/dsm/renewal-cron/dsm_member_emails.py
+# State ledger persists across runs so nothing double-sends.
+Environment=DSM_STATE_PATH=/var/lib/dsm/member-emails-state.json
+Environment=DSM_LAUNCHES_PATH=/opt/dsm/renewal-cron/launches.json
+StateDirectory=dsm
+Nice=10

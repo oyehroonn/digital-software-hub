@@ -1,0 +1,9 @@
+[
+  {
+    "id": "example-launch-2026",
+    "name": "Example Product",
+    "blurb": "One or two sentences describing the new launch, written for insiders. Edit this file (or replace it via DSM_LAUNCHES_PATH) and set active:true to send. Each insider receives each launch id exactly once.",
+    "url": "https://digitalsoftwaremarket.com/store",
+    "active": false
+  }
+]

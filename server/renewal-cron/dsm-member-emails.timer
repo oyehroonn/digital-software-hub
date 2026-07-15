@@ -1,0 +1,14 @@
+[Unit]
+Description=Run DSM member auto-emails daily
+Documentation=file:///opt/dsm/renewal-cron/README.md
+
+[Timer]
+# Once a day at 09:00 (server local time). Renewal windows (30/7/1 days) mean
+# every expiring licence is caught well before it lapses even on a daily cadence.
+OnCalendar=*-*-* 09:00:00
+# Catch up if the box was asleep/offline at 09:00.
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

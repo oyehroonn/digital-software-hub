@@ -2,6 +2,8 @@ import { CheckCircle, Star } from 'lucide-react';
 import { Product } from '@/lib/api';
 import ProductModelViewer from './ProductModelViewer';
 import { Badge } from './ui/badge';
+import { useAccount } from '@/hooks/useAccount';
+import { memberPrice } from '@/lib/account';
 
 interface ProductCardProps {
   product: Product;
@@ -10,6 +12,11 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, viewMode = 'grid', onClick }: ProductCardProps) {
+  // Member pricing is presentational only — the order still carries the real
+  // price. Shown solely to a signed-in member; null when no numeric price parses.
+  const { isMember } = useAccount();
+  const mp = isMember ? memberPrice(product.price) : null;
+
   if (viewMode === 'list') {
     return (
       <div
@@ -55,7 +62,14 @@ export default function ProductCard({ product, viewMode = 'grid', onClick }: Pro
             </div>
           </div>
           <div className="text-right">
-            <div className="font-serif text-lg text-[#FEFEFE] mb-1">{product.price}</div>
+            {mp ? (
+              <>
+                <div className="font-serif text-lg text-crimson mb-0.5">{mp.formatted}</div>
+                <div className="text-xs text-[#B1B2B3]/50 line-through">{product.price}</div>
+              </>
+            ) : (
+              <div className="font-serif text-lg text-[#FEFEFE] mb-1">{product.price}</div>
+            )}
             <div className="text-xs text-[#B1B2B3]/50">{product.licenseType}</div>
           </div>
         </div>
@@ -121,8 +135,18 @@ export default function ProductCard({ product, viewMode = 'grid', onClick }: Pro
           <Badge variant="outline" className="text-[10px] text-muted-foreground">
             {product.category}
           </Badge>
-          <span className="font-serif text-sm text-foreground">{product.price}</span>
+          {mp ? (
+            <span className="flex items-baseline gap-1.5">
+              <span className="text-[11px] text-muted-foreground/60 line-through">{product.price}</span>
+              <span className="font-serif text-sm text-crimson">{mp.formatted}</span>
+            </span>
+          ) : (
+            <span className="font-serif text-sm text-foreground">{product.price}</span>
+          )}
         </div>
+        {mp && (
+          <p className="text-[10px] uppercase tracking-wider text-crimson/80">Member price applied</p>
+        )}
       </div>
     </div>
   );
