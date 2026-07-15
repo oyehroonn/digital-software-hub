@@ -2,6 +2,8 @@
   "_comment": "Copy the fields you need into the OS config dir file and fill in secrets. macOS: ~/Library/Application Support/dsm-admin/config.json  |  Windows: %APPDATA%/dsm-admin/config.json. This example file is safe to commit; the real config.json is gitignored. You can also edit everything from the in-app Settings tab.",
   "ecommerce_url": "https://script.google.com/macros/s/AKfycbwn05r3WVqMpV4Tftn4n1qEs7I10cu3Z8S306jMXaXXCClxizt2EfOUSKa9cTha6pPD/exec",
   "ecommerce_secret": "<APPS_SCRIPT_SECRET>",
+  "telemetry_sheet_id": "1MZykNN5r-pcelIxVApNZzcPUORshgqGfPRyEsE90vWc",
+  "orders_sheet_id": "1BeHD5fa6veJDBU2PGSsZ2Sw3If0dxyMQlFPq8os84cQ",
   "vps_base": "http://localhost:5051",
   "codex_base": "https://open.techrealm.ai/v1",
   "codex_key": "<CODEX_PROXY_KEY>",

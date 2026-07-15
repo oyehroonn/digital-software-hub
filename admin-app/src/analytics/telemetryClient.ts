@@ -2,9 +2,11 @@
  * Telemetry data layer for the DSM admin Analytics dashboard.
  *
  * Responsibilities
- *  1. Fetch raw telemetry rows from the STABLE ecommerce Apps Script
- *     (`GET ?action=telemetry&secret=…&since=…&limit=…` → `{ ok, rows:[…] }`),
- *     routed through the Tauri http bridge (`httpGet`) to dodge CORS.
+ *  1. Fetch raw telemetry rows by reading the Telemetry Google Sheet DIRECTLY
+ *     as CSV (the "oleaf" pattern, via `lib/sheets.fetchSheetRows`) — the sheet
+ *     is shared "anyone with link: Viewer" and served from `/export?format=csv`.
+ *     Desktop reads it through the Tauri http bridge (no CORS); the browser
+ *     goes through the VPS `/api/sheet` read-proxy.
  *  2. Normalize every row into a single typed `TelemetryEvent` shape,
  *     accepting BOTH the sheet's snake_case keys (`event_name`, `received_at`,
  *     `session_id`, `product_id`, `metadata_json`, …) AND any camelCase drift,
@@ -13,15 +15,15 @@
  *     event / time bucket / x-y density bins / scroll-depth bands / funnel).
  *  4. Emit a DETERMINISTIC seed of 500–700 realistic events (each flagged
  *     `_seed: true`) so the dashboards render richly until the Apps Script read
- *     endpoint ships. `fetchEvents()` transparently falls back to the seed when
- *     production returns no rows.
+ *     sheet is published. `fetchEvents()` transparently falls back to the seed
+ *     when the sheet returns no rows.
  *
- * IMPORTANT (backend gap): as of this build the Apps Script only implements
- * `GET ?action=schema`. No read action exists, so live fetches return `[]` and
- * the seed is served. The moment `?action=telemetry` → `{rows:[…]}` ships, real
- * data flows through the exact same path. This file needs no change then.
+ * IMPORTANT: until the user shares the Telemetry sheet publicly the CSV export
+ * returns an HTML page, which `fetchSheetRows` treats as "no rows" → the seed
+ * is served. The moment the sheet is shared, real rows flow through the exact
+ * same path with no code change.
  */
-import { httpGet } from "@/lib/rpc";
+import { fetchSheetRows } from "@/lib/sheets";
 import type { AppConfig } from "@/lib/config";
 
 /* ────────────────────────────────────────────────────────────────────────── *
@@ -159,22 +161,6 @@ export function normalizeEvent(raw: unknown): TelemetryEvent {
   };
 }
 
-/** Defensive extraction of the rows array from whatever the endpoint returns. */
-function parseRows(text: string): unknown[] {
-  try {
-    const data = JSON.parse(text);
-    if (Array.isArray(data)) return data;
-    for (const key of ["rows", "events", "data", "telemetry", "items"]) {
-      if (Array.isArray((data as Record<string, unknown>)?.[key])) {
-        return (data as Record<string, unknown>)[key] as unknown[];
-      }
-    }
-    return [];
-  } catch {
-    return [];
-  }
-}
-
 /* ────────────────────────────────────────────────────────────────────────── *
  *  Fetch
  * ────────────────────────────────────────────────────────────────────────── */
@@ -198,16 +184,14 @@ export async function fetchEvents(cfg: AppConfig, opts: FetchOptions = {}): Prom
     return { events: generateSeedEvents(), seeded: true, liveCount: 0 };
   }
 
-  const params = new URLSearchParams({ action: "telemetry", limit: String(limit) });
-  if (cfg.ecommerce_secret) params.set("secret", cfg.ecommerce_secret);
   const sinceIso = toIso(since);
-  if (sinceIso) params.set("since", sinceIso);
 
   let live: TelemetryEvent[] = [];
   let error: string | undefined;
   try {
-    const text = await httpGet(`${cfg.ecommerce_url}?${params.toString()}`, { timeoutMs });
-    live = parseRows(text).map(normalizeEvent);
+    const rows = await fetchSheetRows(cfg, cfg.telemetry_sheet_id, { timeoutMs });
+    live = rows.map(normalizeEvent);
+    if (limit && live.length > limit) live = live.slice(-limit);
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
   }

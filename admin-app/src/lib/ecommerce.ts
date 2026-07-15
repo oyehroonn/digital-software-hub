@@ -1,13 +1,17 @@
 /**
- * Reads the STABLE Apps Script backend: Orders sheet + Telemetry sheet.
- * These are the source of truth for the Orders and Analytics tabs.
+ * Reads the Orders sheet + Telemetry sheet DIRECTLY as CSV (the "oleaf"
+ * pattern) — the sheets are shared "anyone with link: Viewer" and served from
+ * their `/export?format=csv` endpoint via `lib/sheets` (Tauri http bridge, or
+ * the VPS read-proxy in the browser). Both are the source of truth for the
+ * Orders and Analytics tabs.
  *
- * Assumes the Apps Script exposes secret-gated GET actions returning JSON:
- *   GET ?action=orders&secret=...      -> { rows: Order[] }  (or a bare array)
- *   GET ?action=telemetry&secret=...   -> { rows: TelemetryEvent[] }
- * Parsing is defensive so a shape change or outage never throws into the UI.
+ * The CSV headers are the sheet's snake_case columns (received_at, event_name,
+ * page_url, metadata_json, customer_name, product_id, …); `normalizeEvent` /
+ * `normalizeOrder` map them onto the camelCase shapes the app expects. Reads
+ * are defensive: a not-yet-published sheet or an outage yields `[]`, never a
+ * throw, so callers fall back to their deterministic seed.
  */
-import { httpGet } from "./rpc";
+import { fetchSheetRows } from "./sheets";
 import type { AppConfig } from "./config";
 
 export interface Order {
@@ -49,50 +53,16 @@ export interface TelemetryEvent {
   [k: string]: unknown;
 }
 
-function parseRows<T>(text: string): T[] {
-  try {
-    const data = JSON.parse(text);
-    if (Array.isArray(data)) return data as T[];
-    if (Array.isArray(data?.rows)) return data.rows as T[];
-    if (Array.isArray(data?.orders)) return data.orders as T[];
-    if (Array.isArray(data?.data)) return data.data as T[];
-    if (Array.isArray(data?.events)) return data.events as T[];
-    return [];
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Base for a read request. Prefers an explicit read-proxy (cfg.telemetry_read_url)
- * when configured — e.g. a small VPS endpoint that mirrors the sheet — otherwise
- * falls back to the stable Apps Script GET (`?action=…`). Either way the secret
- * gates the read and never enters the frontend bundle (admin app / native only).
- */
-function readUrl(cfg: AppConfig, action: "telemetry" | "orders", limit: number): string {
-  const proxy = (cfg.telemetry_read_url ?? "").trim();
-  const sep = (u: string) => (u.includes("?") ? "&" : "?");
-  if (proxy) {
-    return (
-      proxy +
-      `${sep(proxy)}action=${action}&limit=${limit}` +
-      `&secret=${encodeURIComponent(cfg.ecommerce_secret)}`
-    );
-  }
-  return (
-    cfg.ecommerce_url +
-    `?action=${action}&limit=${limit}&secret=${encodeURIComponent(cfg.ecommerce_secret)}`
-  );
-}
-
 export async function fetchOrders(cfg: AppConfig, limit = 2000): Promise<Order[]> {
-  const text = await httpGet(readUrl(cfg, "orders", limit), { timeoutMs: 10000 });
-  return parseRows<Order>(text).map(normalizeOrder);
+  const rows = await fetchSheetRows(cfg, cfg.orders_sheet_id, { timeoutMs: 10000 });
+  const mapped = rows.map((r) => normalizeOrder(r as unknown as Order));
+  return limit && mapped.length > limit ? mapped.slice(-limit) : mapped;
 }
 
 export async function fetchTelemetry(cfg: AppConfig, limit = 2000): Promise<TelemetryEvent[]> {
-  const text = await httpGet(readUrl(cfg, "telemetry", limit), { timeoutMs: 12000 });
-  return parseRows<TelemetryEvent>(text).map(normalizeEvent);
+  const rows = await fetchSheetRows(cfg, cfg.telemetry_sheet_id, { timeoutMs: 12000 });
+  const mapped = rows.map((r) => normalizeEvent(r as unknown as TelemetryEvent));
+  return limit && mapped.length > limit ? mapped.slice(-limit) : mapped;
 }
 
 /** Pick the first non-empty value across snake_case / camelCase aliases. */

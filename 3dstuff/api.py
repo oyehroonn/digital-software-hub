@@ -1648,6 +1648,39 @@ def api_email():
         return jsonify({"ok": False, "error": str(e)}), 502
 
 
+@app.route('/api/sheet', methods=['GET', 'OPTIONS'])
+def api_sheet():
+    """Read-proxy for Google Sheets published as CSV.
+
+    Google's /export?format=csv endpoint sends no CORS headers, so the browser
+    admin app cannot fetch it directly. This route fetches the CSV server-side
+    and returns it as text/csv (the global after_request adds Access-Control-*).
+    Query: ?id=<sheetId>[&gid=<tab gid>]. When the sheet is not shared publicly
+    Google returns an HTML page; we pass it through as text/html so the client
+    detects it and falls back to its seed.
+    """
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        import requests as _rq
+        from flask import Response
+        sid = (request.args.get('id') or '').strip()
+        if not sid or not re.match(r'^[A-Za-z0-9_-]+$', sid):
+            return jsonify({"ok": False, "error": "missing or invalid 'id'"}), 400
+        gid = (request.args.get('gid') or '').strip()
+        url = f"https://docs.google.com/spreadsheets/d/{sid}/export?format=csv"
+        if gid:
+            url += f"&gid={gid}"
+        r = _rq.get(url, timeout=20, allow_redirects=True)
+        body = r.text
+        head = body[:64].lstrip().lower()
+        is_html = ('text/html' in r.headers.get('Content-Type', '')) or head.startswith('<!doctype') or head.startswith('<html')
+        mimetype = 'text/html' if is_html else 'text/csv'
+        return Response(body, status=r.status_code, mimetype=mimetype)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 502
+
+
 # ── Main ─────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':

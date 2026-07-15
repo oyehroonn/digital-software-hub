@@ -12,6 +12,8 @@ export interface AppConfig {
   ecommerce_url: string; // Apps Script exec URL (orders + telemetry)
   ecommerce_secret: string; // server/admin-app only
   telemetry_read_url: string; // optional read-proxy for sheet rows; blank = use Apps Script GET
+  telemetry_sheet_id: string; // Google Sheet id read DIRECTLY as CSV (telemetry)
+  orders_sheet_id: string; // Google Sheet id read DIRECTLY as CSV (orders)
   vps_base: string; // VPS Flask product API
   codex_base: string; // codex-proxy (OpenAI compatible)
   codex_key: string;
@@ -26,6 +28,8 @@ export const DEFAULT_CONFIG: AppConfig = {
     "https://script.google.com/macros/s/AKfycbwn05r3WVqMpV4Tftn4n1qEs7I10cu3Z8S306jMXaXXCClxizt2EfOUSKa9cTha6pPD/exec",
   ecommerce_secret: "",
   telemetry_read_url: "",
+  telemetry_sheet_id: "1MZykNN5r-pcelIxVApNZzcPUORshgqGfPRyEsE90vWc",
+  orders_sheet_id: "1BeHD5fa6veJDBU2PGSsZ2Sw3If0dxyMQlFPq8os84cQ",
   vps_base: "https://dsm-api.techrealm.ai",
   codex_base: "https://open.techrealm.ai/v1",
   codex_key: "",
