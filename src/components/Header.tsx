@@ -158,8 +158,8 @@ const Header = () => {
             <div className="hidden md:block w-64">
               <SearchBar darkText={isOverLightSection} />
             </div>
-            <a href="#" className={`transition-colors duration-300 ${iconColor}`}><User className="w-5 h-5" strokeWidth={1.5} /></a>
-            <Link to="/cart" className={`relative transition-colors duration-300 ${iconColor}`}>
+            <a href="#" aria-label="Account" className={`transition-colors duration-300 ${iconColor}`}><User className="w-5 h-5" strokeWidth={1.5} /></a>
+            <Link to="/cart" aria-label={cartItemCount > 0 ? `Cart, ${cartItemCount} item${cartItemCount === 1 ? "" : "s"}` : "Cart"} className={`relative transition-colors duration-300 ${iconColor}`}>
               <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
               {cartItemCount > 0 && (
                 <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-crimson text-[#FEFEFE] text-[10px] font-semibold leading-[18px] text-center">

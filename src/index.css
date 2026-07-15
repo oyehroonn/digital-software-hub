@@ -783,3 +783,29 @@ model-viewer::part(default-ar-button) { display: none; }
     transform: none;
   }
 }
+
+/* ── Global reduced-motion guard ─────────────────────────
+   Honour users who ask their OS to minimise motion: neutralise the ambient
+   orbs, marquees, hero reveals, 3D card spins, cursor glow and scroll-reveal
+   transitions site-wide, and make scroll-linked jumps instant. Scroll-reveal
+   elements are pinned to their visible end-state so content is never hidden. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-on-scroll,
+  .animate-fade-right,
+  .animate-scale-in,
+  .hero-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
