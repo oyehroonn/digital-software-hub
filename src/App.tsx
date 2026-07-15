@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { AppProvider, useApp } from "@/contexts/AppContext";
+import { initTracker } from "@/lib/track";
 import { useEffect, lazy, Suspense } from "react";
 import ProductModalWrapper from "./components/ProductModalWrapper";
 import GlobalAIChat from "./components/GlobalAIChat";
@@ -32,6 +33,13 @@ const AppContent = () => {
   useEffect(() => {
     setNavigate(navigate);
   }, [navigate, setNavigate]);
+
+  // Site-wide passive analytics capture (page_view / click / scroll / attention)
+  // streaming to the STABLE Ecommerce Apps Script sink. initTracker is idempotent
+  // and self-detaches; it also hooks SPA route changes internally.
+  useEffect(() => {
+    return initTracker();
+  }, []);
 
   // When marketing mode is disabled, show only the chatbot
   if (!state.marketingMode) {
