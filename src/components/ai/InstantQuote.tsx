@@ -34,6 +34,7 @@ import {
   ArrowRight,
   RefreshCw,
   ExternalLink,
+  ShieldCheck,
 } from 'lucide-react';
 
 import AIFeature from '@/components/ai/AIFeature';
@@ -400,7 +401,7 @@ function InstantQuoteInner() {
             onClick={handleGetQuote}
             disabled={!canQuote}
             size="lg"
-            className="mt-4 w-full text-base font-semibold"
+            className="mt-4 w-full text-base font-semibold transition-all hover:shadow-crimson-glow"
           >
             {phase === 'thinking' ? (
               <>
@@ -428,6 +429,11 @@ function InstantQuoteInner() {
               Tip: mention team size and the tools you use for the sharpest quote.
             </p>
           )}
+
+          <p className="mt-auto inline-flex items-center gap-1.5 pt-6 text-xs text-muted-foreground">
+            <ShieldCheck className="size-3.5 text-crimson/70" aria-hidden />
+            Genuine licenses · instant delivery · trusted since 1994
+          </p>
         </>
       )}
 
@@ -555,7 +561,7 @@ function InstantQuoteInner() {
 
 function QuoteShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-gradient-to-b from-[#0b0b0f]/90 to-[#050506]/80 p-6 shadow-premium backdrop-blur-sm transition-colors duration-500 hover:border-crimson/25 sm:p-8">
+    <div className="group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-gradient-to-b from-[#0b0b0f]/90 to-[#050506]/80 p-6 shadow-premium backdrop-blur-sm transition-all duration-500 hover:border-crimson/25 hover:shadow-premium-lg sm:p-8">
       {/* Thin crimson accent rail along the top edge. */}
       <span
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-crimson/50 to-transparent"

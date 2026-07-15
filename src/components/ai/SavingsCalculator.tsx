@@ -374,7 +374,7 @@ function SavingsShell({
   return (
     <div
       className={cn(
-        'group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-gradient-to-b from-[#0b0b0f]/90 to-[#050506]/80 p-6 shadow-premium backdrop-blur-sm transition-colors duration-500 hover:border-crimson/25 sm:p-8',
+        'group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-gradient-to-b from-[#0b0b0f]/90 to-[#050506]/80 p-6 shadow-premium backdrop-blur-sm transition-all duration-500 hover:border-crimson/25 hover:shadow-premium-lg sm:p-8',
         className,
       )}
     >
@@ -676,7 +676,7 @@ function SavingsCalculatorInner({ className }: { className?: string }) {
         <Button
           type="submit"
           disabled={busy}
-          className="w-full text-base font-semibold"
+          className="w-full text-base font-semibold transition-all hover:shadow-crimson-glow"
           size="lg"
         >
           {busy ? (
@@ -819,7 +819,7 @@ function SavingsBetaSignup({ className }: { className?: string }) {
       )}
 
       <div className="mt-auto pt-6">
-        <Button type="submit" size="lg" className="w-full text-base font-semibold">
+        <Button type="submit" size="lg" className="w-full text-base font-semibold transition-all hover:shadow-crimson-glow">
           Send me my savings <ArrowRight className="ml-1.5 h-4 w-4" />
         </Button>
         <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
