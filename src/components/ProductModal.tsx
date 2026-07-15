@@ -1,7 +1,9 @@
 import { X, CheckCircle, Sparkles, Send } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import ProductModelViewer from './ProductModelViewer';
-import { Product, productChat } from '@/lib/api';
+import { Product } from '@/lib/api';
+import { chat, type ChatMessage as LLMChatMessage } from '@/lib/llm';
+import UpgradeFinder from '@/components/ai/UpgradeFinder';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -109,17 +111,46 @@ export default function ProductModal({ product }: ProductModalProps) {
     const msg = message || inputValue.trim();
     if (!msg || isLoading) return;
 
+    // Snapshot the history BEFORE the optimistic user append so we can build the
+    // model context without a stale-state race.
+    const priorHistory = chatMessages;
     setChatMessages(prev => [...prev, { role: 'user', content: msg }]);
     setInputValue('');
     setIsLoading(true);
 
+    // Route through the codex-proxy (llm.ts, same-origin key-injecting proxy),
+    // grounded in this product. Replaces the dead Kiro-backed productChat.
+    const included =
+      product.whatsIncluded && product.whatsIncluded.length > 0
+        ? `\nWhat's included: ${product.whatsIncluded.join(', ')}`
+        : '';
+    const systemPrompt =
+      'You are a friendly DSM sales assistant helping a shopper decide on a specific ' +
+      'product. Answer in warm, plain English for a non-technical buyer, keep it to ' +
+      '2-4 short sentences, and gently encourage adding it to the cart or asking for a ' +
+      'tailored quote. Never invent prices or specs you were not given.\n\n' +
+      `Product: ${product.name}\nBrand: ${product.brand}\nCategory: ${product.category}\n` +
+      `License: ${product.licenseType}\nPrice: ${product.price}\n` +
+      `Description: ${product.description}${included}`;
+
+    const llmMessages: LLMChatMessage[] = [
+      { role: 'system', content: systemPrompt },
+      ...priorHistory.map<LLMChatMessage>(m => ({ role: m.role, content: m.content })),
+      { role: 'user', content: msg },
+    ];
+
     try {
-      const response = await productChat(msg, product.id);
-      setChatMessages(prev => [...prev, { role: 'assistant', content: response.message }]);
+      const reply = await chat(llmMessages, { temperature: 0.4, maxTokens: 400 });
+      setChatMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (error) {
       setChatMessages(prev => [
         ...prev,
-        { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' },
+        {
+          role: 'assistant',
+          content:
+            "I couldn't reach our assistant just now — but our team can help. Add this to " +
+            'your cart or request a quote and a DSM specialist will follow up.',
+        },
       ]);
     } finally {
       setIsLoading(false);
@@ -265,6 +296,18 @@ export default function ProductModal({ product }: ProductModalProps) {
                     Request Quote
                   </Button>
                 </div>
+
+                {/*
+                  Upgrade Finder (feature 09), pre-seeded with this product.
+                  Wrapped in <AIFeature backend="codex"> — renders nothing when
+                  the LLM proxy is down, so the modal is never blocked.
+                */}
+                <UpgradeFinder
+                  className="max-w-none border-white/[0.06] bg-white/[0.02]"
+                  initialOwned={[product.name]}
+                  heading="Own this already? See your upgrades"
+                  subheading="We'll show the smartest next step in plain English."
+                />
               </div>
             </ScrollArea>
 

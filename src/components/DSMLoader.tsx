@@ -421,16 +421,32 @@ const DSMLoader = ({ onLoadComplete, isContentReady }: DSMLoaderProps) => {
     };
   }, []);
 
+  const finish = useCallback(() => {
+    if (hasTriggeredRef.current) return;
+    hasTriggeredRef.current = true;
+    setIsFadingOut(true);
+    setTimeout(() => {
+      onLoadComplete();
+    }, 800);
+  }, [onLoadComplete]);
+
   const triggerComplete = useCallback(() => {
     if (hasTriggeredRef.current) return;
     if (isContentReady && fillCompleteRef.current) {
-      hasTriggeredRef.current = true;
-      setIsFadingOut(true);
-      setTimeout(() => {
-        onLoadComplete();
-      }, 800);
+      finish();
     }
-  }, [isContentReady, onLoadComplete]);
+  }, [isContentReady, finish]);
+
+  // Resilience: hard max-timeout fallback. If the loader iframe's fill
+  // animation never completes (slow/blocked CDNs, dead network, mobile),
+  // force completion so the loader can never hang the page.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      fillCompleteRef.current = true;
+      finish();
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [finish]);
 
   // Listen for messages from iframe
   useEffect(() => {

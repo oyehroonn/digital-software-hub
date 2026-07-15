@@ -11,6 +11,9 @@ const IDLE_SPEED = 50;
 const FRONT_ORBIT = "30deg 75deg 105%";
 const EASE_DURATION = 500;
 const DECEL_DURATION = 700;
+// H7: if a GLB never resolves (missing box / live API down), fall back to the
+// static icon instead of spinning forever. Keeps 3D boxes resilient offline.
+const LOAD_TIMEOUT = 8000;
 
 function easeInCubic(t: number) {
   return t * t * t;
@@ -142,6 +145,15 @@ const ProductModelViewer = ({
   const handleError = useCallback(() => {
     setHasError(true);
   }, []);
+
+  // H7: guard against a GLB that never fires load/error (404s on model-viewer
+  // don't always emit an error event). Once in view, if it hasn't loaded by
+  // LOAD_TIMEOUT, degrade gracefully to the fallback icon.
+  useEffect(() => {
+    if (!isVisible || isLoaded || hasError) return;
+    const t = setTimeout(() => setHasError(true), LOAD_TIMEOUT);
+    return () => clearTimeout(t);
+  }, [isVisible, isLoaded, hasError]);
 
   useEffect(() => {
     return () => {

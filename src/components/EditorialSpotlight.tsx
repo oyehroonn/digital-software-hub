@@ -8,11 +8,11 @@ const EditorialSpotlight = () => {
   return (
     <section className="section-light py-32 overflow-hidden relative">
       <div className="max-w-[1600px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-        <div ref={fadeRight.ref} className={`order-2 lg:order-1 ${fadeRight.className}`}>
+        <div ref={fadeRight.ref} className={`order-2 lg:order-1 lg:pl-12 ${fadeRight.className}`}>
           <span className="text-crimson font-medium text-sm mb-6 block tracking-[0.14em] uppercase">Spotlight</span>
           <h2 className="font-serif text-5xl md:text-7xl leading-[0.9] mb-8 tracking-tighter text-[hsl(220_10%_4%)]">
             Windows 11 <br />
-            <span className="font-serif text-[hsl(220_3%_52%)] italic font-light">Professional</span>
+            <span className="font-windows text-[hsl(220_3%_52%)] font-light">Professional</span>
           </h2>
           <p className="text-[hsl(220_3%_52%)] text-lg font-light leading-relaxed max-w-md mb-10">
             Designed for hybrid work. Powerful for employees. Consistent for IT. Secure for all. Experience the most secure Windows ever built.

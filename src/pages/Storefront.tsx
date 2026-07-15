@@ -11,6 +11,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Filter, Grid, List, ChevronLeft, ChevronRight } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import LicenseAdvisor from '@/components/ai/LicenseAdvisor';
+import CompareForMe from '@/components/ai/CompareForMe';
+import BulkQuoteBuilder from '@/components/ai/BulkQuoteBuilder';
 
 const BRANDS = ['Microsoft', 'Adobe', 'Autodesk', 'Chaos', 'SketchUp', 'Kaspersky'];
 const CATEGORIES = ['Office', 'CAD & Engineering', 'Design & Creativity', 'Operating Systems', 'Security & Utility'];
@@ -152,6 +155,24 @@ export default function Storefront() {
                 </SheetContent>
               </Sheet>
             </div>
+          </div>
+        </div>
+
+        {/*
+          AI shopping tools (features 02, 04, 08). Each is wrapped in
+          <AIFeature backend="codex"> and self-hides when the LLM proxy is down,
+          so this band silently collapses and the catalog keeps working.
+        */}
+        <div className="mb-10 space-y-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs uppercase tracking-wider text-[#B1B2B3]">
+              Not sure what you need?
+            </span>
+            <LicenseAdvisor />
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <CompareForMe products={products} />
+            <BulkQuoteBuilder />
           </div>
         </div>
 

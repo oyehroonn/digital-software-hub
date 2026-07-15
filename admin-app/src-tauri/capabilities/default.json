@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Core capabilities for the DSM Admin main window. Custom app commands (http_get/http_post/mailcli/get_config/save_config) are allowed by default in Tauri v2 and need no permission entry.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

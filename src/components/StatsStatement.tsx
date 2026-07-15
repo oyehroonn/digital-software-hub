@@ -49,7 +49,7 @@ const StatCard = ({ stat, index, started }: { stat: StatItem; index: number; sta
       {/* Hover glow */}
       <div className="absolute inset-0 rounded-lg bg-crimson/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-      <span className="relative block font-serif text-5xl md:text-6xl lg:text-7xl text-[#FEFEFE] mb-3 tracking-tight">
+      <span className="relative block font-serif font-semibold text-5xl md:text-6xl lg:text-7xl text-[#FEFEFE] mb-3 tracking-tight">
         {stat.value === 1994 ? (
           <span className="tabular-nums">{count}</span>
         ) : (
@@ -62,7 +62,7 @@ const StatCard = ({ stat, index, started }: { stat: StatItem; index: number; sta
       <span className="relative block text-xs font-semibold text-[#FEFEFE]/90 uppercase tracking-[0.16em] mb-2">
         {stat.label}
       </span>
-      <span className="relative block text-xs text-[#B1B2B3]/50 font-light max-w-[200px] mx-auto leading-relaxed">
+      <span className="relative block text-xs text-[#B1B2B3]/50 font-light max-w-[220px] mx-auto leading-relaxed [text-wrap:balance]">
         {stat.sublabel}
       </span>
     </div>
@@ -104,15 +104,15 @@ const StatsStatement = () => {
       <div className="relative z-10 max-w-[1200px] mx-auto px-6">
         {/* Headline */}
         <div className="text-center mb-20">
-          <span className="inline-block text-2xl md:text-4xl lg:text-5xl font-semibold text-crimson uppercase tracking-[0.12em] mb-6">
+          <span className="inline-block text-[10px] md:text-xs font-semibold text-crimson uppercase tracking-[0.2em] mb-4">
             Our Impact
           </span>
           <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#FEFEFE] leading-[1] tracking-tight mb-6">
             We Don't Just Sell Software
             <br />
-            <span className="font-serif text-[#B1B2B3]/40 italic font-light">We Power Businesses.</span>
+            <span className="font-sans not-italic font-light text-[#B1B2B3]/40 tracking-tight">We Power Businesses.</span>
           </h2>
-          <p className="text-base text-[#B1B2B3]/60 font-light max-w-xl mx-auto leading-relaxed">
+          <p className="text-base text-[#B1B2B3]/60 font-light max-w-xl mx-auto leading-relaxed line-clamp-2">
             Since 1994, DSM has helped over 15,000 businesses secure genuine Microsoft, Autodesk, and Adobe licenses — faster, smarter, and with confidence.
           </p>
         </div>

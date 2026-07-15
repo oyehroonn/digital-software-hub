@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Software Market AI Chat Widget</title>
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --background: 0 0% 100%;
+            --foreground: 222.2 84% 4.9%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 84% 4.9%;
+            --popover: 0 0% 100%;
+            --popover-foreground: 222.2 84% 4.9%;
+            --primary: 222.2 47.4% 11.2%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96.1%;
+            --secondary-foreground: 222.2 47.4% 11.2%;
+            --muted: 210 40% 96.1%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --accent: 210 40% 96.1%;
+            --accent-foreground: 222.2 47.4% 11.2%;
+            --destructive: 0 84.2% 60.2%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+            --ring: 222.2 84% 4.9%;
+            --radius: 0.5rem;
+        }
+
+        * {
+            border-color: hsl(var(--border));
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            position: relative;
+            height: 100vh;
+            overflow: hidden;
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* Button styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .btn:disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .btn-primary {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            padding: 0.5rem 1rem;
+            height: 2.5rem;
+        }
+
+        .btn-primary:hover {
+            background: hsl(var(--primary) / 0.9);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: inherit;
+            padding: 0.25rem;
+            height: 2rem;
+            width: 2rem;
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-sm {
+            height: 1.5rem;
+            width: 1.5rem;
+            padding: 0.25rem;
+        }
+
+        /* Input styles */
+        .input {
+            display: flex;
+            height: 2.5rem;
+            width: 100%;
+            border-radius: 0.375rem;
+            border: 1px solid hsl(var(--input));
+            background: hsl(var(--background));
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input:focus {
+            outline: 2px solid hsl(var(--ring));
+            outline-offset: 2px;
+        }
+
+        .input::placeholder {
+            color: hsl(var(--muted-foreground));
+        }
+
+        .input:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        /* Textarea styles */
+        .textarea {
+            display: flex;
+            min-height: 5rem;
+            width: 100%;
+            border-radius: 0.375rem;
+            border: 1px solid hsl(var(--input));
+            background: hsl(var(--background));
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            outline: none;
+            transition: all 0.2s;
+            resize: none;
+            font-family: inherit;
+        }
+
+        .textarea:focus {
+            outline: 2px solid hsl(var(--ring));
+            outline-offset: 2px;
+        }
+
+        .textarea::placeholder {
+            color: hsl(var(--muted-foreground));
+        }
+
+        /* Animation keyframes */
+        @keyframes bounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-0.25rem); }
+        }
+
+        .animate-bounce {
+            animation: bounce 1s infinite;
+        }
+
+        /* Toast styles */
+        .toast {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: white;
+            border: 1px solid hsl(var(--border));
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 9999;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-color: #10b981;
+            background: #f0fdf4;
+            color: #065f46;
+        }
+
+        .toast.error {
+            border-color: #ef4444;
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        /* Markdown styles */
+        .prose {
+            max-width: none;
+        }
+
+        .prose p {
+            margin-bottom: 0.5rem;
+        }
+
+        .prose p:last-child {
+            margin-bottom: 0;
+        }
+
+        .prose ol {
+            list-style-type: decimal;
+            list-style-position: inside;
+            margin-bottom: 0.5rem;
+        }
+
+        .prose ul {
+            list-style-type: disc;
+            list-style-position: inside;
+            margin-bottom: 0.5rem;
+        }
+
+        .prose li {
+            margin-bottom: 0.25rem;
+        }
+
+        .prose a {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+
+        .prose a:hover {
+            color: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <!-- Chat Widget Container -->
+    <div id="chatWidget"></div>
+
+    <script>
+        // Lucide icons as SVG strings
+        const icons = {
+            MessageCircle: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>',
+            X: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>',
+            Send: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14 21 3"/><path d="M21 3 14.5 21a.5.5 0 0 1-.7.5L10 14Z"/></svg>',
+            RotateCcw: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
+            Minimize2: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6m0 0v6m0-6-6 6"/><path d="M20 10h-6m0 0V4m0 6 6-6"/></svg>'
+        };
+
+        // Toast utility
+        function showToast(message, type = 'success') {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Simple markdown parser using marked.js
+        function parseMarkdown(text) {
+            if (typeof marked !== 'undefined') {
+                return marked.parse(text);
+            }
+            // Fallback simple markdown parsing
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+                .replace(/\n/g, '<br>');
+        }
+
+        // Chat Widget Class
+        class ChatWidget {
+            constructor() {
+                this.isOpen = false;
+                this.currentStep = 'form';
+                this.email = '';
+                this.softwareName = '';
+                this.messages = [];
+                this.inputMessage = '';
+                this.isLoading = false;
+                this.chatInstance = null;
+                this.isInIframe = false;
+                this.SESSION_KEY = 'chat-widget-session';
+
+                this.init();
+            }
+
+            init() {
+                this.checkIfInIframe();
+                this.loadSession();
+                this.render();
+            }
+
+            checkIfInIframe() {
+                try {
+                    this.isInIframe = window !== window.parent;
+                } catch (e) {
+                    this.isInIframe = true;
+                }
+
+                if (this.isInIframe) {
+                    document.body.style.position = 'relative';
+                    document.body.style.height = '100vh';
+                    document.body.style.margin = '0';
+                    document.body.style.padding = '0';
+                    document.body.style.overflow = 'hidden';
+                    document.documentElement.style.height = '100vh';
+                    document.documentElement.style.overflow = 'hidden';
+                    document.documentElement.style.margin = '0';
+                    document.documentElement.style.padding = '0';
+                }
+            }
+
+            loadSession() {
+                const savedSession = localStorage.getItem(this.SESSION_KEY);
+                if (savedSession) {
+                    try {
+                        const sessionData = JSON.parse(savedSession);
+                        this.email = sessionData.email;
+                        if (sessionData.chatInstance && sessionData.messages.length > 0) {
+                            this.chatInstance = sessionData.chatInstance;
+                            this.messages = sessionData.messages.map(msg => ({
+                                ...msg,
+                                timestamp: new Date(msg.timestamp)
+                            }));
+                            this.currentStep = 'chat';
+                        }
+                    } catch (error) {
+                        console.error('Error loading session:', error);
+                    }
+                }
+            }
+
+            saveSession() {
+                if (this.email) {
+                    const sessionData = {
+                        email: this.email,
+                        chatInstance: this.chatInstance,
+                        messages: this.messages
+                    };
+                    localStorage.setItem(this.SESSION_KEY, JSON.stringify(sessionData));
+                }
+            }
+
+            getPositioningClasses() {
+                if (this.isInIframe) {
+                    return {
+                        button: "absolute left-0 bottom-0 z-50",
+                        widget: "absolute inset-0 z-50"
+                    };
+                } else {
+                    return {
+                        button: "fixed left-4 bottom-4 z-50",
+                        widget: "fixed left-2 bottom-2 right-2 top-2 sm:left-4 sm:bottom-4 sm:right-auto sm:top-auto sm:w-96 sm:h-[500px] z-50"
+                    };
+                }
+            }
+
+            async createChatInstance() {
+                if (!this.email || !this.softwareName) {
+                    showToast('Please fill in all fields', 'error');
+                    return;
+                }
+
+                this.isLoading = true;
+                this.render();
+
+                try {
+                    const response = await fetch('https://chat.techrealm.pk/instance', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            email: this.email,
+                            software_name: this.softwareName
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to create chat instance');
+                    }
+
+                    const instance = await response.json();
+                    this.chatInstance = instance;
+                    this.currentStep = 'chat';
+                    
+                    const welcomeMessage = {
+                        id: Date.now().toString(),
+                        content: `Hello! I'm here to help you with ${this.softwareName}. How can I assist you today?`,
+                        sender: 'bot',
+                        timestamp: new Date()
+                    };
+                    this.messages = [welcomeMessage];
+                    
+                    showToast('Chat started successfully!');
+                    this.saveSession();
+                } catch (error) {
+                    console.error('Error creating chat instance:', error);
+                    showToast('Failed to start chat. Please try again.', 'error');
+                } finally {
+                    this.isLoading = false;
+                    this.render();
+                }
+            }
+
+            async sendMessage() {
+                if (!this.inputMessage.trim() || !this.chatInstance) return;
+
+                const userMessage = {
+                    id: Date.now().toString(),
+                    content: this.inputMessage,
+                    sender: 'user',
+                    timestamp: new Date()
+                };
+
+                this.messages.push(userMessage);
+                const messageToSend = this.inputMessage;
+                this.inputMessage = '';
+                this.isLoading = true;
+                this.render();
+
+                try {
+                    const response = await fetch(`https://chat.techrealm.pk/instance/${this.chatInstance.instance_id}/chat`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: messageToSend
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to send message');
+                    }
+
+                    const data = await response.json();
+                    
+                    const botMessage = {
+                        id: data.response_id || Date.now().toString(),
+                        content: data.answer,
+                        sender: 'bot',
+                        timestamp: new Date()
+                    };
+
+                    this.messages.push(botMessage);
+                    this.saveSession();
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                    showToast('Failed to send message. Please try again.', 'error');
+                } finally {
+                    this.isLoading = false;
+                    this.render();
+                    this.scrollToBottom();
+                }
+            }
+
+            resetChat() {
+                this.currentStep = 'form';
+                this.softwareName = '';
+                this.messages = [];
+                this.inputMessage = '';
+                this.chatInstance = null;
+                localStorage.removeItem(this.SESSION_KEY);
+                showToast('Chat reset successfully');
+                this.render();
+            }
+
+            scrollToBottom() {
+                setTimeout(() => {
+                    const messagesContainer = document.querySelector('.messages-container');
+                    if (messagesContainer) {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }
+                }, 100);
+            }
+
+            handleKeyPress(e, action) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (action === 'form') {
+                        this.createChatInstance();
+                    } else if (action === 'chat') {
+                        this.sendMessage();
+                    }
+                }
+            }
+
+            render() {
+                const container = document.getElementById('chatWidget');
+                const positionClasses = this.getPositioningClasses();
+
+                container.innerHTML = `
+                    <!-- Chat Widget Button -->
+                    <div class="${positionClasses.button}" style="z-index: 9999;">
+                        ${!this.isOpen ? `
+                            <button
+                                onclick="chatWidget.toggleChat()"
+                                class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-full w-14 h-14 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border-0 cursor-pointer flex items-center justify-center"
+                            >
+                                ${icons.MessageCircle}
+                            </button>
+                        ` : ''}
+                    </div>
+
+                    <!-- Chat Widget -->
+                    ${this.isOpen ? `
+                        <div class="${positionClasses.widget} transition-all duration-300" style="z-index: 9999;">
+                            <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 h-full flex flex-col overflow-hidden">
+                                
+                                <!-- Header -->
+                                <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-3 flex items-center justify-between rounded-t-2xl">
+                                    <div class="flex items-center gap-2">
+                                        <img 
+                                            src="https://wordpress.techrealm.online/images/97a08179-1527-41b3-b8ff-0f681c89e043.png" 
+                                            alt="DSM Logo" 
+                                            class="w-6 h-6 object-contain bg-white rounded p-1"
+                                        />
+                                        <div>
+                                            <h3 class="font-semibold text-sm">Digital Software Market AI</h3>
+                                            <p class="text-xs text-blue-100">We're here to help!</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <button
+                                            onclick="chatWidget.toggleChat()"
+                                            class="btn btn-ghost text-white hover:bg-blue-600"
+                                        >
+                                            ${icons.Minimize2}
+                                        </button>
+                                        <button
+                                            onclick="chatWidget.toggleChat()"
+                                            class="btn btn-ghost text-white hover:bg-blue-600"
+                                        >
+                                            ${icons.X}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                ${this.currentStep === 'form' ? this.renderForm() : this.renderChat()}
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+
+                // Add event listeners for form inputs
+                if (this.currentStep === 'form' && this.isOpen) {
+                    const emailInput = document.getElementById('emailInput');
+                    const softwareInput = document.getElementById('softwareInput');
+                    
+                    if (emailInput) {
+                        emailInput.value = this.email;
+                        emailInput.addEventListener('input', (e) => this.email = e.target.value);
+                        emailInput.addEventListener('keypress', (e) => this.handleKeyPress(e, 'form'));
+                    }
+                    
+                    if (softwareInput) {
+                        softwareInput.value = this.softwareName;
+                        softwareInput.addEventListener('input', (e) => this.softwareName = e.target.value);
+                        softwareInput.addEventListener('keypress', (e) => this.handleKeyPress(e, 'form'));
+                    }
+                }
+
+                // Add event listeners for chat input
+                if (this.currentStep === 'chat' && this.isOpen) {
+                    const chatInput = document.getElementById('chatInput');
+                    if (chatInput) {
+                        chatInput.value = this.inputMessage;
+                        chatInput.addEventListener('input', (e) => this.inputMessage = e.target.value);
+                        chatInput.addEventListener('keypress', (e) => this.handleKeyPress(e, 'chat'));
+                        
+                        // Auto-resize textarea
+                        chatInput.style.height = 'auto';
+                        chatInput.style.height = Math.min(chatInput.scrollHeight, 80) + 'px';
+                    }
+                    
+                    this.scrollToBottom();
+                }
+            }
+
+            renderForm() {
+                return `
+                    <!-- Form Interface -->
+                    <div class="flex-1 p-4 space-y-4 overflow-y-auto">
+                        <div class="text-center">
+                            <h4 class="font-semibold text-gray-800 mb-2">Welcome to Digital Software Market AI</h4>
+                            <p class="text-sm text-gray-600">Please provide your details to start chatting</p>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700 mb-1 block">Email Address</label>
+                                <input
+                                    id="emailInput"
+                                    type="email"
+                                    placeholder="your@email.com"
+                                    class="input"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label class="text-sm font-medium text-gray-700 mb-1 block">Software Query</label>
+                                <input
+                                    id="softwareInput"
+                                    placeholder="e.g., Microsoft Office, AutoCAD, etc."
+                                    class="input"
+                                />
+                            </div>
+                        </div>
+                        
+                        <button
+                            onclick="chatWidget.createChatInstance()"
+                            ${this.isLoading || !this.email || !this.softwareName ? 'disabled' : ''}
+                            class="btn btn-primary w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                        >
+                            ${this.isLoading ? 'Starting Chat...' : 'Start Chat'}
+                        </button>
+                    </div>
+                `;
+            }
+
+            renderChat() {
+                return `
+                    <!-- Chat Interface -->
+                    <!-- Chat Header Info -->
+                    <div class="px-4 py-2 bg-gray-50 border-b flex justify-between items-center">
+                        <div class="text-xs text-gray-600 truncate flex-1 mr-2">
+                            <span class="font-medium">${this.softwareName}</span> • ${this.email}
+                        </div>
+                        <button
+                            onclick="chatWidget.resetChat()"
+                            class="btn btn-sm text-gray-500 hover:text-gray-700"
+                        >
+                            ${icons.RotateCcw}
+                        </button>
+                    </div>
+
+                    <!-- Messages -->
+                    <div class="flex-1 p-4 messages-container custom-scrollbar" style="overflow-y: auto;">
+                        <div class="space-y-3">
+                            ${this.messages.map(message => `
+                                <div class="flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}">
+                                    <div class="max-w-[85%] p-3 rounded-2xl text-sm ${
+                                        message.sender === 'user'
+                                            ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-br-md'
+                                            : 'bg-gray-100 text-gray-800 rounded-bl-md'
+                                    }">
+                                        ${message.sender === 'bot' ? 
+                                            `<div class="prose prose-sm max-w-none">${parseMarkdown(message.content)}</div>` : 
+                                            message.content
+                                        }
+                                    </div>
+                                </div>
+                            `).join('')}
+                            ${this.isLoading ? `
+                                <div class="flex justify-start">
+                                    <div class="bg-gray-100 p-3 rounded-2xl rounded-bl-md">
+                                        <div class="flex space-x-1">
+                                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+                                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Input -->
+                    <div class="p-4 border-t bg-white rounded-b-2xl">
+                        <div class="flex gap-2">
+                            <textarea
+                                id="chatInput"
+                                placeholder="Type your message..."
+                                class="textarea flex-1 min-h-[40px] max-h-[80px] resize-none rounded-2xl border-gray-200"
+                                rows="1"
+                            ></textarea>
+                            <button
+                                onclick="chatWidget.sendMessage()"
+                                ${!this.inputMessage.trim() || this.isLoading ? 'disabled' : ''}
+                                class="btn bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-3 rounded-2xl"
+                            >
+                                ${icons.Send}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            toggleChat() {
+                this.isOpen = !this.isOpen;
+                this.render();
+            }
+        }
+
+        // Initialize chat widget
+        const chatWidget = new ChatWidget();
+    </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "_comment": "Copy the fields you need into the OS config dir file and fill in secrets. macOS: ~/Library/Application Support/dsm-admin/config.json  |  Windows: %APPDATA%/dsm-admin/config.json. This example file is safe to commit; the real config.json is gitignored. You can also edit everything from the in-app Settings tab.",
+  "ecommerce_url": "https://script.google.com/macros/s/AKfycbwn05r3WVqMpV4Tftn4n1qEs7I10cu3Z8S306jMXaXXCClxizt2EfOUSKa9cTha6pPD/exec",
+  "ecommerce_secret": "<APPS_SCRIPT_SECRET>",
+  "vps_base": "http://localhost:5051",
+  "codex_base": "https://open.techrealm.ai/v1",
+  "codex_key": "<CODEX_PROXY_KEY>",
+  "codex_model": "gpt-5.4",
+  "simli_base": "https://api.simli.ai",
+  "simli_key": "<SIMLI_KEY>",
+  "email_cli": "/Users/hico/claude-employee/mailcli.py"
+}

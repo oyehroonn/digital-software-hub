@@ -16,6 +16,10 @@ export default {
       fontFamily: {
         sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
         serif: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"], // Use Inter for serif too, or keep Playfair if you want
+        // Windows-11 brand face (system-font stack, no webfont binary committed)
+        windows: ["Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", "-apple-system", "BlinkMacSystemFont", "Roboto", "sans-serif"],
+        // Autodesk brand face (system-font stack, no webfont binary committed)
+        autodesk: ["Artifakt Element", "Artifakt", "Segoe UI", "-apple-system", "BlinkMacSystemFont", "Roboto", "sans-serif"],
       },
       letterSpacing: {
         editorial: "-0.025em",

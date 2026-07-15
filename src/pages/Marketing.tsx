@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import DSMLoader from '../components/DSMLoader';
 
 const Marketing = () => {
@@ -11,6 +11,13 @@ const Marketing = () => {
     setTimeout(() => {
       setIsContentReady(true);
     }, 1000);
+  }, []);
+
+  // Resilience: never let a missing/slow iframe onLoad block content-ready.
+  // Force it ready after a hard cap so the loader can always resolve.
+  useEffect(() => {
+    const t = setTimeout(() => setIsContentReady(true), 2500);
+    return () => clearTimeout(t);
   }, []);
 
   const handleLoadComplete = useCallback(() => {

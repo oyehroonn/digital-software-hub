@@ -70,11 +70,11 @@ const WhyDSM = () => {
       <div className="max-w-[1200px] mx-auto px-6 relative z-10">
         {/* Section header */}
         <div ref={headingAnim.ref} className={`text-center mb-20 ${headingAnim.className}`}>
-          <span className="inline-block text-2xl md:text-4xl lg:text-5xl font-semibold text-crimson uppercase tracking-[0.12em] mb-6">
+          <span className="inline-block text-2xl md:text-4xl lg:text-5xl font-semibold text-crimson uppercase tracking-[0.12em] mb-3">
             The DSM Difference
           </span>
           <h2 className="font-serif text-4xl md:text-5xl text-[#FEFEFE] leading-[1.05] tracking-tight mb-6">
-            Why DSM<span className="text-crimson">?</span>
+            Why DSM<span className="text-[#FEFEFE]">?</span>
           </h2>
           <p className="text-base text-[#B1B2B3]/60 font-light max-w-lg mx-auto leading-relaxed">
             Three promises that define how we do business — and why thousands of companies trust us with their licensing.

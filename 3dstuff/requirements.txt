@@ -1,0 +1,7 @@
+openpyxl>=3.0.0
+trimesh>=3.9.0
+pillow>=9.0.0
+numpy>=1.20.0
+scipy>=1.7.0
+flask>=3.0.0
+pillow-avif-plugin>=1.4.0

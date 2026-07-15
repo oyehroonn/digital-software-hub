@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import ProductModalWrapper from "./components/ProductModalWrapper";
 import GlobalAIChat from "./components/GlobalAIChat";
 import SettingsPanel from "./components/SettingsPanel";
+import SalesConcierge from "./components/ai/SalesConcierge";
 
 const queryClient = new QueryClient();
 
@@ -50,7 +51,10 @@ const AppContent = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <ProductModalWrapper />
-      <GlobalAIChat />
+      {/* Site-wide 24/7 Sales Concierge (feature 06). Routes through the
+          codex-proxy via llm.ts and renders nothing when the LLM is down.
+          Replaces the dead Kiro-backed floating chat. */}
+      <SalesConcierge />
       <SettingsPanel />
     </>
   );

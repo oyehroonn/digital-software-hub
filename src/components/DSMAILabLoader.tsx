@@ -498,7 +498,7 @@ const LOADER_HTML = `<!DOCTYPE html>
             }, 50);
         }
 
-        setInterval(spawnParticle, 700);
+        setInterval(spawnParticle, 250);
 
         // Progress bar visualization
         const progressEl = document.getElementById('progress-fill');
@@ -649,6 +649,20 @@ const DSMAILabLoader = ({ onLoadComplete, isContentReady }: DSMAILabLoaderProps)
       triggerComplete();
     }
   }, [isContentReady, triggerComplete]);
+
+  // AL2: hard cap the boot animation. Regardless of the 3D fill / CDN state,
+  // force completion so the total boot stays within the ≤2s budget
+  // (1200ms cap + 800ms fade = 2000ms). This also covers slow/blocked CDNs.
+  useEffect(() => {
+    const cap = setTimeout(() => {
+      if (hasTriggeredRef.current) return;
+      hasTriggeredRef.current = true;
+      fillCompleteRef.current = true;
+      setIsFadingOut(true);
+      setTimeout(() => onLoadComplete(), 800);
+    }, 1200);
+    return () => clearTimeout(cap);
+  }, [onLoadComplete]);
 
   if (!blobUrl) return null;
 
