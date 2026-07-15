@@ -21,6 +21,12 @@ export { ViewToBuyView } from "./ViewToBuyView";
 export { DropOffIndexView } from "./DropOffIndexView";
 export { SearchQueriesView } from "./SearchQueriesView";
 export { AttributionView } from "./AttributionView";
+export { BehaviorFlow } from "./BehaviorFlow";
+export { Acquisition } from "./Acquisition";
+export { UtmCampaigns } from "./UtmCampaigns";
+
+// Visual heatmap overlay — full-page screenshot with click/move/scroll painted on top.
+export { HeatmapOverlay } from "./HeatmapOverlay";
 
 // Low-level heatmap components (reused by the views above).
 export { ClickHeatmap } from "./ClickHeatmap";

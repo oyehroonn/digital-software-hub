@@ -13,11 +13,17 @@ import {
   BarChart3,
   Eye,
   Flame,
+  Gauge,
+  Globe,
   Layers,
   LogOut,
+  Megaphone,
+  Monitor,
   MoveVertical,
   Radio,
+  Route,
   Search,
+  Target,
   Trophy,
   Zap,
 } from "lucide-react";
@@ -33,29 +39,53 @@ import { ViewToBuyView } from "./ViewToBuyView";
 import { AttributionView } from "./AttributionView";
 import { RealtimeFeedView } from "./RealtimeFeedView";
 import { DropOffIndexView } from "./DropOffIndexView";
+// Rich analytics suite — new full-width, graph-heavy pages.
+import { AnalyticsOverview } from "./AnalyticsOverview";
+import { HeatmapOverlay } from "./HeatmapOverlay";
+import { GeoAnalytics } from "./GeoAnalytics";
+import { UtmCampaigns } from "./UtmCampaigns";
+import { Acquisition } from "./Acquisition";
+import { BehaviorFlow } from "./BehaviorFlow";
+import { DevicesTech } from "./DevicesTech";
+
+type Group = "Overview" | "Live" | "Heatmaps" | "Conversion" | "Acquisition" | "Audience";
 
 interface Tab {
   key: string;
   label: string;
   icon: typeof Flame;
-  group: "Heatmaps" | "Conversion" | "Acquisition" | "Live";
+  group: Group;
   Component: ComponentType<{ config: AppConfig }>;
 }
 
 export const ANALYTICS_TABS: Tab[] = [
+  { key: "overview", label: "Overview", icon: Gauge, group: "Overview", Component: AnalyticsOverview },
   { key: "realtime", label: "Real-time", icon: Activity, group: "Live", Component: RealtimeFeedView },
+  { key: "overlay", label: "Heatmap overlay", icon: Flame, group: "Heatmaps", Component: HeatmapOverlay },
   { key: "click", label: "Click heatmap", icon: Flame, group: "Heatmaps", Component: ClickHeatmapView },
   { key: "scroll", label: "Scroll depth", icon: MoveVertical, group: "Heatmaps", Component: ScrollDepthView },
   { key: "attention", label: "Attention", icon: Eye, group: "Heatmaps", Component: AttentionMapView },
   { key: "rage", label: "Rage clicks", icon: Zap, group: "Heatmaps", Component: RageClicksView },
   { key: "funnel", label: "Funnel", icon: Layers, group: "Conversion", Component: ConversionFunnelView },
+  { key: "flow", label: "Behavior flow", icon: Route, group: "Conversion", Component: BehaviorFlow },
   { key: "leaderboard", label: "View→Buy", icon: Trophy, group: "Conversion", Component: ViewToBuyView },
   { key: "dropoff", label: "Drop-off", icon: LogOut, group: "Conversion", Component: DropOffIndexView },
+  { key: "acquisition", label: "Acquisition", icon: Target, group: "Acquisition", Component: Acquisition },
+  { key: "utm", label: "UTM & campaigns", icon: Megaphone, group: "Acquisition", Component: UtmCampaigns },
   { key: "search", label: "Search", icon: Search, group: "Acquisition", Component: SearchQueriesView },
   { key: "attribution", label: "Attribution", icon: Radio, group: "Acquisition", Component: AttributionView },
+  { key: "geo", label: "Geo", icon: Globe, group: "Audience", Component: GeoAnalytics },
+  { key: "devices", label: "Devices", icon: Monitor, group: "Audience", Component: DevicesTech },
 ];
 
-const GROUP_ORDER: Tab["group"][] = ["Live", "Heatmaps", "Conversion", "Acquisition"];
+const GROUP_ORDER: Group[] = [
+  "Overview",
+  "Live",
+  "Heatmaps",
+  "Conversion",
+  "Acquisition",
+  "Audience",
+];
 
 export function AnalyticsHub({ config, initialTab }: { config: AppConfig; initialTab?: string }) {
   const [active, setActive] = useState(initialTab ?? ANALYTICS_TABS[0].key);
@@ -69,9 +99,10 @@ export function AnalyticsHub({ config, initialTab }: { config: AppConfig; initia
           <BarChart3 className="h-5 w-5 text-primary" /> Analytics &amp; Heatmaps
         </h1>
         <p className="text-xs text-muted-foreground">
-          Behavioural analytics from the stable Telemetry &amp; Orders sheets — heatmaps, funnels,
-          search demand, attribution and a live visitor feed. Falls back to seed data until the read
-          endpoint is deployed.
+          Behavioural analytics from the stable Telemetry &amp; Orders sheets — an executive
+          overview, a visual heatmap overlay, geo &amp; device breakdowns, UTM &amp; campaign
+          attribution, acquisition, behavior flow, funnels and a live visitor feed. Falls back to
+          seed data until the read endpoint is deployed.
         </p>
       </div>
 
