@@ -75,29 +75,19 @@ MANIFEST_FILE = os.path.join(MODELS_DIR, "manifest.json")
 
 # Kiro API Configuration
 # Try multiple environment variable names for flexibility
-KIRO_API_KEY = os.getenv('KIRO_API_KEY') or os.getenv('kiro_key') or os.getenv('KIRO_KEY')
-KIRO_BASE_URL = 'https://api.kiro.cheap'
-KIRO_MODEL = 'claude-sonnet-4-20250514'  # Default model
+# AI backend: codex-proxy (OpenAI-compatible). Key from env, falls back to the known pooled key.
+KIRO_API_KEY = os.getenv('CODEX_API_KEY') or os.getenv('KIRO_API_KEY') or '62ecbff61c29c812b1509c8c247c63d827ca687793447271'
+KIRO_BASE_URL = os.getenv('CODEX_BASE_URL') or 'https://open.techrealm.ai/v1'
+KIRO_MODEL = os.getenv('CODEX_MODEL') or 'gpt-5.4'
 
 app = Flask(__name__)
 
-# Initialize Kiro client if API key is available
-kiro_client = None
-if Anthropic and KIRO_API_KEY:
-    try:
-        kiro_client = Anthropic(
-            api_key=KIRO_API_KEY,
-            base_url=KIRO_BASE_URL,
-        )
-        print(f"✅ Kiro AI client initialized (model: {KIRO_MODEL})")
-    except Exception as e:
-        print(f"⚠️  Failed to initialize Kiro client: {e}")
-        kiro_client = None
+# codex-proxy needs no SDK — call_kiro uses requests. kiro_client is a simple enabled-flag.
+kiro_client = bool(KIRO_API_KEY)
+if kiro_client:
+    print(f"✅ AI client ready via codex-proxy (model: {KIRO_MODEL}, base: {KIRO_BASE_URL})")
 else:
-    if not KIRO_API_KEY:
-        print("⚠️  KIRO_API_KEY not set. AI endpoints will use fallback pattern matching.")
-    if not Anthropic:
-        print("⚠️  Anthropic SDK not installed. AI endpoints will use fallback pattern matching.")
+    print("⚠️  No AI key set. AI endpoints will use fallback pattern matching.")
 
 
 # ── Excel data loader ─────────────────────────────────────────────────────
@@ -242,39 +232,31 @@ def call_kiro(prompt, system_prompt=None, max_tokens=4096, retries=2):
         print("[Kiro] Client not initialized — skipping LLM call")
         return None
     
-    import time
+    import time, requests
+    # OpenAI-compatible messages (codex-proxy)
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
     last_error = None
     for attempt in range(1 + retries):
         try:
-            messages = [{"role": "user", "content": prompt}]
-            
-            kwargs = {
-                "model": KIRO_MODEL,
-                "max_tokens": max_tokens,
-                "messages": messages,
-            }
-            # Anthropic SDK uses 'system' parameter, not a system message
-            if system_prompt:
-                kwargs["system"] = system_prompt
-            
-            response = kiro_client.messages.create(**kwargs)
-            
-            # Extract text from response (handle thinking blocks)
-            text_content = ""
-            block_types = []
-            for content_block in response.content:
-                block_types.append(content_block.type)
-                if content_block.type == "text":
-                    text_content += content_block.text
-                # Skip thinking blocks - they're internal reasoning
-            
+            resp = requests.post(
+                f"{KIRO_BASE_URL}/chat/completions",
+                headers={"Authorization": f"Bearer {KIRO_API_KEY}", "Content-Type": "application/json"},
+                json={"model": KIRO_MODEL, "max_tokens": max_tokens, "messages": messages, "stream": False},
+                timeout=45,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            text_content = (data.get("choices") or [{}])[0].get("message", {}).get("content", "") or ""
+
             if not text_content.strip():
-                print(f"[Kiro] Warning: empty text response. Block types: {block_types}, stop_reason: {getattr(response, 'stop_reason', '?')}")
-                # Retry if we got an empty response
+                print(f"[AI] Warning: empty response. finish_reason: {(data.get('choices') or [{}])[0].get('finish_reason','?')}")
                 if attempt < retries:
                     time.sleep(0.5)
                     continue
-            
+
             return text_content.strip() if text_content.strip() else None
         except Exception as e:
             last_error = e
