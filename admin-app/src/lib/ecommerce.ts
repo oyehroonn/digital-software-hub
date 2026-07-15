@@ -63,27 +63,108 @@ function parseRows<T>(text: string): T[] {
   }
 }
 
-export async function fetchOrders(cfg: AppConfig): Promise<Order[]> {
-  const url = `${cfg.ecommerce_url}?action=orders&secret=${encodeURIComponent(cfg.ecommerce_secret)}`;
-  const text = await httpGet(url, { timeoutMs: 10000 });
-  return parseRows<Order>(text);
+/**
+ * Base for a read request. Prefers an explicit read-proxy (cfg.telemetry_read_url)
+ * when configured — e.g. a small VPS endpoint that mirrors the sheet — otherwise
+ * falls back to the stable Apps Script GET (`?action=…`). Either way the secret
+ * gates the read and never enters the frontend bundle (admin app / native only).
+ */
+function readUrl(cfg: AppConfig, action: "telemetry" | "orders", limit: number): string {
+  const proxy = (cfg.telemetry_read_url ?? "").trim();
+  const sep = (u: string) => (u.includes("?") ? "&" : "?");
+  if (proxy) {
+    return (
+      proxy +
+      `${sep(proxy)}action=${action}&limit=${limit}` +
+      `&secret=${encodeURIComponent(cfg.ecommerce_secret)}`
+    );
+  }
+  return (
+    cfg.ecommerce_url +
+    `?action=${action}&limit=${limit}&secret=${encodeURIComponent(cfg.ecommerce_secret)}`
+  );
+}
+
+export async function fetchOrders(cfg: AppConfig, limit = 2000): Promise<Order[]> {
+  const text = await httpGet(readUrl(cfg, "orders", limit), { timeoutMs: 10000 });
+  return parseRows<Order>(text).map(normalizeOrder);
 }
 
 export async function fetchTelemetry(cfg: AppConfig, limit = 2000): Promise<TelemetryEvent[]> {
-  const url =
-    `${cfg.ecommerce_url}?action=telemetry&limit=${limit}` +
-    `&secret=${encodeURIComponent(cfg.ecommerce_secret)}`;
-  const text = await httpGet(url, { timeoutMs: 12000 });
+  const text = await httpGet(readUrl(cfg, "telemetry", limit), { timeoutMs: 12000 });
   return parseRows<TelemetryEvent>(text).map(normalizeEvent);
 }
 
-function normalizeEvent(e: TelemetryEvent): TelemetryEvent {
-  if (typeof e.metadata === "string") {
+/** Pick the first non-empty value across snake_case / camelCase aliases. */
+function pick(bag: Record<string, unknown>, ...keys: string[]): unknown {
+  for (const k of keys) {
+    const v = bag[k];
+    if (v != null && v !== "") return v;
+  }
+  return undefined;
+}
+
+function toNum(v: unknown): number | undefined {
+  if (v == null || v === "") return undefined;
+  const n = typeof v === "number" ? v : parseFloat(String(v));
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * Map the Telemetry sheet's snake_case columns (received_at, event_name,
+ * page_url, element_id, metadata_json, …) onto the camelCase TelemetryEvent the
+ * whole analytics layer (funnel, scroll map, heatmaps) expects — while leaving
+ * data that already arrives camelCase untouched. metadata_json is parsed to an
+ * object. Original keys are preserved so nothing that reads them regresses.
+ */
+function normalizeEvent(raw: TelemetryEvent): TelemetryEvent {
+  const bag = raw as Record<string, unknown>;
+  const e: TelemetryEvent = { ...raw };
+
+  e.timestamp = (pick(bag, "timestamp", "received_at", "receivedAt", "time") as string) ?? e.timestamp;
+  e.storeName = (pick(bag, "storeName", "store_name") as string) ?? e.storeName;
+  e.sessionId = (pick(bag, "sessionId", "session_id") as string) ?? e.sessionId;
+  e.anonymousId = (pick(bag, "anonymousId", "anonymous_id") as string) ?? e.anonymousId;
+  e.userId = (pick(bag, "userId", "user_id") as string) ?? (e as Record<string, unknown>).userId;
+  e.event = (pick(bag, "event", "event_name", "eventName", "name") as string) ?? e.event;
+  e.eventType = (pick(bag, "eventType", "event_type", "interaction_type") as string) ?? e.eventType;
+  e.pageUrl = (pick(bag, "pageUrl", "page_url", "url", "href") as string) ?? e.pageUrl;
+  e.elementId = (pick(bag, "elementId", "element_id") as string) ?? e.elementId;
+  e.elementText = (pick(bag, "elementText", "element_text", "label") as string) ?? e.elementText;
+  e.productId = (pick(bag, "productId", "product_id") as string) ?? e.productId;
+  e.userAgent = (pick(bag, "userAgent", "user_agent") as string) ?? e.userAgent;
+
+  const dir = pick(bag, "direction", "swipeDirection");
+  if (dir != null) (e as Record<string, unknown>).direction = dir;
+  const x = toNum(pick(bag, "x", "clientX"));
+  const y = toNum(pick(bag, "y", "clientY"));
+  if (x != null) e.x = x;
+  if (y != null) e.y = y;
+
+  const m = pick(bag, "metadata", "metadata_json", "meta", "properties");
+  if (typeof m === "string") {
     try {
-      e.metadata = JSON.parse(e.metadata);
+      e.metadata = JSON.parse(m);
     } catch {
-      /* leave as string */
+      e.metadata = m;
     }
+  } else if (m && typeof m === "object") {
+    e.metadata = m as Record<string, unknown>;
   }
   return e;
+}
+
+/** Map snake_case Orders columns onto the camelCase Order shape (leaves camelCase intact). */
+function normalizeOrder(raw: Order): Order {
+  const bag = raw as Record<string, unknown>;
+  const o: Order = { ...raw };
+  o.timestamp = (pick(bag, "timestamp", "received_at", "receivedAt") as string) ?? o.timestamp;
+  o.storeName = (pick(bag, "storeName", "store_name") as string) ?? o.storeName;
+  o.customerName = (pick(bag, "customerName", "customer_name") as string) ?? o.customerName;
+  o.addressLine1 = (pick(bag, "addressLine1", "address_line1") as string) ?? o.addressLine1;
+  o.addressLine2 = (pick(bag, "addressLine2", "address_line2") as string) ?? o.addressLine2;
+  o.postalCode = (pick(bag, "postalCode", "postal_code") as string) ?? o.postalCode;
+  o.productId = (pick(bag, "productId", "product_id") as string) ?? o.productId;
+  o.productName = (pick(bag, "productName", "product_name") as string) ?? o.productName;
+  return o;
 }

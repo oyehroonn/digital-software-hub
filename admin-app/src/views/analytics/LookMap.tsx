@@ -1,23 +1,20 @@
 /**
- * ClickHeatmap — per-page click density heatmap on a <canvas>.
+ * LookMap — per-page ATTENTION / dwell heatmap on a <canvas>.
  *
- * Bins click telemetry (eventType==="click" / event ~ /click/) by normalized
- * x,y into a Gaussian intensity field, then color-ramps cold→hot over a page
- * wireframe placeholder. Hover reads the underlying points and reports the
- * click count (and dominant element) under the cursor.
+ * Where the Click heatmap answers "where do people click?", the Look map answers
+ * "where does the eye/cursor linger?". It bins non-click positional telemetry
+ * (mousemove / hover / pointer / dwell / attention / focus / visibility events)
+ * by normalized x,y and weights each sample by its DWELL time (seconds) pulled
+ * from metadata — so a spot someone stared at for 8s glows far hotter than a
+ * spot the cursor merely swept past. Rendered through the kit's "look" ramp
+ * (indigo→magenta→amber) so it reads as a distinct lens from the click map.
  *
- * Field reads go through the shared heatmap kit, which tolerates snake_case
- * `event_name/page_url/element_id/…` OR camelCase — so it lights up whether the
- * ecommerce.ts normalizer ran or raw sheet rows arrive. It derives its own point
- * set + page list so it can sit under a shared filter bar (pass a controlled
- * `pageUrl`) or run standalone (internal selector).
- *
- * Real telemetry flows once the Apps Script GET read action (`?action=telemetry`
- * → {rows:[…]}) is deployed. Pass `demo` to fall back to synthetic clustered
- * clicks only when no real click data is present.
+ * Real telemetry flows once the site emits movement/dwell events and the Apps
+ * Script GET read action is live. `demo` seeds synthetic attention only when no
+ * real dwell data is present.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Flame, MousePointerClick } from "lucide-react";
+import { Eye, ScanEye } from "lucide-react";
 import type { TelemetryEvent } from "@/lib/ecommerce";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
@@ -40,30 +37,53 @@ import {
 } from "./heatmapKit";
 
 /* ------------------------------------------------------------------ */
-/* Pure, unit-testable derivations                                    */
+/* Attention derivations                                               */
 /* ------------------------------------------------------------------ */
 
-export function isClickEvent(e: TelemetryEvent): boolean {
+const ATTENTION_RE = /move|hover|mouseover|pointer|dwell|attention|look|gaze|focus|visible|engage|linger|impression|view/;
+const CLICK_RE = /click|tap|press|submit/;
+
+/** An event that expresses where attention rested (not a discrete click). */
+export function isAttentionEvent(e: TelemetryEvent): boolean {
   const type = String(field(e, "eventType", "event_type") ?? "").toLowerCase();
-  if (type === "click" || type === "tap") return true;
   const name = String(field(e, "event", "event_name") ?? "").toLowerCase();
-  return /click|tap/.test(name);
+  const s = `${type} ${name}`;
+  if (!ATTENTION_RE.test(s)) return false;
+  // A plain "click" that also matches nothing above is excluded; but a
+  // "hover_click" style name shouldn't sneak in as pure attention either.
+  if (type === "click" || type === "tap") return false;
+  if (CLICK_RE.test(type)) return false;
+  return true;
 }
 
-export function pageUrlsFromClicks(events: TelemetryEvent[]): string[] {
-  return pageUrlsFromEvents(events, isClickEvent);
+/** Default dwell (seconds) for a positional sample that carries no explicit time. */
+const DEFAULT_DWELL = 0.6;
+const MAX_DWELL = 30;
+
+/** Best-effort dwell time (seconds) for one event from its metadata. */
+export function dwellSeconds(m: Record<string, unknown>): number {
+  const ms = num(
+    m.dwellMs ?? m.dwell_ms ?? m.durationMs ?? m.duration_ms ?? m.visibleMs ?? m.visible_ms ??
+      m.attentionMs ?? m.engagementMs ?? m.timeMs ?? m.time_ms ?? m.hoverMs ?? m.ms,
+  );
+  if (ms != null) return clampDwell(ms / 1000);
+
+  const s = num(m.dwell ?? m.dwellTime ?? m.dwell_time ?? m.duration ?? m.seconds ?? m.sec ?? m.time ?? m.hover);
+  if (s != null) return clampDwell(s > 200 ? s / 1000 : s); // >200 "seconds" is really ms
+  return DEFAULT_DWELL;
 }
 
-/**
- * Turn click events for one page into normalized [0,1] points.
- * Coordinate space, in priority order:
- *   1. per-event viewport from metadata (vw/vh, innerWidth/innerHeight, docHeight…)
- *   2. observed max extent across the page's clicks (padded), for raw-px data
- */
-export function extractClickPoints(events: TelemetryEvent[], page: string): HeatPoint[] {
+function clampDwell(n: number): number {
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_DWELL;
+  return n > MAX_DWELL ? MAX_DWELL : n;
+}
+
+/** Turn attention events for one page into normalized [0,1] points weighted by dwell. */
+export function extractAttentionPoints(events: TelemetryEvent[], page: string): HeatPoint[] {
   const raw: {
     x: number;
     y: number;
+    w: number;
     vw?: number;
     vh?: number;
     elementId: string;
@@ -71,7 +91,7 @@ export function extractClickPoints(events: TelemetryEvent[], page: string): Heat
   }[] = [];
 
   for (const e of events) {
-    if (!isClickEvent(e)) continue;
+    if (!isAttentionEvent(e)) continue;
     const url = normalizePath(String(field(e, "pageUrl", "page_url") ?? ""));
     if (page !== ALL_PAGES && url !== page) continue;
     const x = num(field(e, "x"));
@@ -85,6 +105,7 @@ export function extractClickPoints(events: TelemetryEvent[], page: string): Heat
     raw.push({
       x,
       y,
+      w: dwellSeconds(m),
       vw: vw && vw > 0 ? vw : undefined,
       vh: vh && vh > 0 ? vh : undefined,
       elementId: String(field(e, "elementId", "element_id") ?? ""),
@@ -93,7 +114,6 @@ export function extractClickPoints(events: TelemetryEvent[], page: string): Heat
   }
   if (!raw.length) return [];
 
-  // Fallback extent for events that carry no viewport hint.
   let maxX = 1;
   let maxY = 1;
   for (const r of raw) {
@@ -103,38 +123,48 @@ export function extractClickPoints(events: TelemetryEvent[], page: string): Heat
   maxX *= 1.02;
   maxY *= 1.02;
 
-  return raw.map((r) => {
-    const nx = clamp01(r.x / (r.vw ?? maxX));
-    const ny = clamp01(r.y / (r.vh ?? maxY));
-    return { nx, ny, weight: 1, elementId: r.elementId, elementText: r.elementText };
-  });
+  // Normalize dwell weights to a sane blob range so one long stare doesn't wash
+  // the whole field out, while still ranking hotter than a quick sweep.
+  const maxW = Math.max(...raw.map((r) => r.w), 1);
+  return raw.map((r) => ({
+    nx: clamp01(r.x / (r.vw ?? maxX)),
+    ny: clamp01(r.y / (r.vh ?? maxY)),
+    weight: 0.35 + (r.w / maxW) * 1.65, // 0.35..2.0
+    elementId: r.elementId,
+    elementText: r.elementText,
+  }));
 }
 
-/** Synthetic clustered clicks for dev/preview (only used when `demo`). */
-export function sampleClickEvents(): TelemetryEvent[] {
+export function pageUrlsFromAttention(events: TelemetryEvent[]): string[] {
+  return pageUrlsFromEvents(events, isAttentionEvent);
+}
+
+/** Synthetic dwell field for dev/preview (only used when `demo` and no real data). */
+export function sampleAttentionEvents(): TelemetryEvent[] {
   const out: TelemetryEvent[] = [];
-  const clusters = [
-    { x: 0.5, y: 0.08, n: 90, id: "nav-cta", text: "Get My Quote" }, // header CTA
-    { x: 0.5, y: 0.34, n: 140, id: "hero-cta", text: "Start Free" }, // hero
-    { x: 0.28, y: 0.62, n: 60, id: "card-1", text: "DSM" },
-    { x: 0.72, y: 0.62, n: 40, id: "card-2", text: "Virtual Try-On" },
-    { x: 0.5, y: 0.9, n: 25, id: "footer-link", text: "Contact" },
+  const zones = [
+    { x: 0.5, y: 0.24, n: 160, dwell: 6.5, id: "hero-copy", text: "Hero headline" },
+    { x: 0.5, y: 0.35, n: 90, dwell: 3.2, id: "hero-cta", text: "Start Free" },
+    { x: 0.28, y: 0.62, n: 120, dwell: 4.8, id: "card-1", text: "DSM" },
+    { x: 0.72, y: 0.62, n: 70, dwell: 2.1, id: "card-2", text: "Virtual Try-On" },
+    { x: 0.5, y: 0.48, n: 60, dwell: 1.4, id: "spec", text: "Specs" },
+    { x: 0.5, y: 0.86, n: 40, dwell: 2.6, id: "footer", text: "Contact" },
   ];
   const vw = 1440;
   const vh = 3200;
-  for (const c of clusters) {
-    for (let i = 0; i < c.n; i++) {
-      const gx = c.x + (Math.random() - 0.5) * 0.09 + (Math.random() - 0.5) * 0.05;
-      const gy = c.y + (Math.random() - 0.5) * 0.07 + (Math.random() - 0.5) * 0.04;
+  for (const z of zones) {
+    for (let i = 0; i < z.n; i++) {
+      const gx = z.x + (Math.random() - 0.5) * 0.1 + (Math.random() - 0.5) * 0.05;
+      const gy = z.y + (Math.random() - 0.5) * 0.06 + (Math.random() - 0.5) * 0.03;
       out.push({
-        eventType: "click",
-        event: "click",
+        eventType: "hover",
+        event: "attention",
         pageUrl: "https://dsm.example/",
         x: Math.round(clamp01(gx) * vw),
         y: Math.round(clamp01(gy) * vh),
-        elementId: c.id,
-        elementText: c.text,
-        metadata: { vw, dh: vh },
+        elementId: z.id,
+        elementText: z.text,
+        metadata: { vw, dh: vh, dwellMs: Math.round((z.dwell + (Math.random() - 0.5)) * 1000) },
       });
     }
   }
@@ -145,38 +175,29 @@ export function sampleClickEvents(): TelemetryEvent[] {
 /* Component                                                           */
 /* ------------------------------------------------------------------ */
 
-const FRAME_ASPECT = 1.42; // height / width — portrait page frame
+const FRAME_ASPECT = 1.42;
 
-export interface ClickHeatmapProps {
+export interface LookMapProps {
   events: TelemetryEvent[];
-  /** Controlled page path (from a shared filter bar). Omit for internal selector. */
   pageUrl?: string;
   onPageUrlChange?: (path: string) => void;
-  /** Inject synthetic clicks when the data layer has no real clicks (preview only). */
   demo?: boolean;
   className?: string;
 }
 
-export function ClickHeatmap({
-  events,
-  pageUrl,
-  onPageUrlChange,
-  demo = false,
-  className,
-}: ClickHeatmapProps) {
-  const hasReal = useMemo(() => events.some(isClickEvent), [events]);
+export function LookMap({ events, pageUrl, onPageUrlChange, demo = false, className }: LookMapProps) {
+  const hasReal = useMemo(() => events.some(isAttentionEvent), [events]);
   const data = useMemo<TelemetryEvent[]>(
-    () => (demo && !hasReal ? sampleClickEvents() : events),
+    () => (demo && !hasReal ? sampleAttentionEvents() : events),
     [events, demo, hasReal],
   );
   const usingSample = demo && !hasReal;
 
-  const pages = useMemo(() => pageUrlsFromClicks(data), [data]);
+  const pages = useMemo(() => pageUrlsFromAttention(data), [data]);
 
   const [internalPage, setInternalPage] = useState<string>("");
   const page = pageUrl ?? internalPage;
 
-  // Default the internal selector to the busiest page once data arrives.
   useEffect(() => {
     if (pageUrl != null) return;
     if (!internalPage && pages.length) setInternalPage(pages[0]);
@@ -190,23 +211,17 @@ export function ClickHeatmap({
     if (pageUrl == null) setInternalPage(p);
   };
 
-  const points = useMemo(() => extractClickPoints(data, page || ALL_PAGES), [data, page]);
+  const points = useMemo(() => extractAttentionPoints(data, page || ALL_PAGES), [data, page]);
   const ranked = useMemo(() => topElements(points), [points]);
 
-  const [radius, setRadius] = useState(26);
-  const [intensity, setIntensity] = useState(0.85);
+  const [radius, setRadius] = useState(34);
+  const [intensity, setIntensity] = useState(0.8);
 
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const [hover, setHover] = useState<{
-    x: number;
-    y: number;
-    count: number;
-    label: string;
-  } | null>(null);
+  const [hover, setHover] = useState<{ x: number; y: number; count: number; label: string } | null>(null);
 
-  // Track container width → derive canvas box (portrait, capped).
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
@@ -218,7 +233,6 @@ export function ClickHeatmap({
     return () => ro.disconnect();
   }, []);
 
-  // Render the heatmap whenever inputs change.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || size.w === 0) return;
@@ -227,7 +241,7 @@ export function ClickHeatmap({
     canvas.height = Math.round(size.h * dpr);
     canvas.style.width = `${size.w}px`;
     canvas.style.height = `${size.h}px`;
-    drawHeatmap(canvas, points, { radius, intensity, ramp: "click" });
+    drawHeatmap(canvas, points, { radius, intensity, ramp: "look" });
   }, [points, size, radius, intensity]);
 
   const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -254,50 +268,47 @@ export function ClickHeatmap({
     setHover({ x: cx, y: cy, count, label: top ? top[0] : "" });
   };
 
-  const totalClicks = points.length;
+  const samples = points.length;
 
   return (
     <Card className={className}>
       <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
         <div className="flex items-center gap-2">
-          <Flame className="h-4 w-4 text-warn" />
-          <CardTitle>Click heatmap</CardTitle>
+          <Eye className="h-4 w-4 text-primary" />
+          <CardTitle>Look map · attention</CardTitle>
           <Badge variant="muted" className="tabular-nums">
-            {totalClicks} clicks
+            {samples} samples
           </Badge>
           {usingSample && (
-            <Badge variant="warn" title="No real click telemetry yet — showing seed data.">
+            <Badge variant="warn" title="No real attention telemetry yet — showing seed data.">
               sample
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={page || ""}
-            onChange={(e) => setPage(e.target.value)}
-            className="h-8 max-w-[220px] truncate rounded-md border border-border bg-secondary px-2 text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            {pages.length > 1 && <option value={ALL_PAGES}>All pages ({pages.length})</option>}
-            {pages.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-            {pages.length === 0 && <option value="">No pages</option>}
-          </select>
-        </div>
+        <select
+          value={page || ""}
+          onChange={(e) => setPage(e.target.value)}
+          className="h-8 max-w-[220px] truncate rounded-md border border-border bg-secondary px-2 text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          {pages.length > 1 && <option value={ALL_PAGES}>All pages ({pages.length})</option>}
+          {pages.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+          {pages.length === 0 && <option value="">No pages</option>}
+        </select>
       </CardHeader>
 
       <CardContent>
-        {totalClicks === 0 ? (
+        {samples === 0 ? (
           <Empty
-            icon={<MousePointerClick className="h-8 w-8" />}
-            title="No click telemetry for this page"
-            hint="Waiting on the ecommerce Apps Script read endpoint (GET ?action=telemetry → {rows:[…]}). Pass demo to preview."
+            icon={<ScanEye className="h-8 w-8" />}
+            title="No attention telemetry for this page"
+            hint="The Look map needs movement / hover / dwell events carrying x,y (and ideally a dwell time in metadata). Deploy the Apps Script GET read action, or preview with demo."
           />
         ) : (
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,560px)_minmax(0,1fr)]">
-            {/* Heatmap canvas over a wireframe page frame */}
             <div className="flex flex-col gap-3">
               <div ref={wrapRef} className="w-full">
                 <div
@@ -314,22 +325,19 @@ export function ClickHeatmap({
                       style={{ left: hover.x, top: Math.max(hover.y - 8, 0) }}
                     >
                       <div className="font-semibold tabular-nums text-foreground">
-                        {hover.count} click{hover.count === 1 ? "" : "s"}
+                        {hover.count} look{hover.count === 1 ? "" : "s"}
                       </div>
                       {hover.label && (
-                        <div className="max-w-[180px] truncate text-muted-foreground">
-                          {hover.label}
-                        </div>
+                        <div className="max-w-[180px] truncate text-muted-foreground">{hover.label}</div>
                       )}
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Legend + controls */}
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-muted-foreground">
-                <HeatLegend ramp="click" />
-                <Slider label="Radius" min={8} max={70} value={radius} onChange={setRadius} suffix="px" />
+                <HeatLegend ramp="look" />
+                <Slider label="Radius" min={10} max={80} value={radius} onChange={setRadius} suffix="px" />
                 <Slider
                   label="Intensity"
                   min={20}
@@ -341,17 +349,17 @@ export function ClickHeatmap({
               </div>
             </div>
 
-            {/* Top clicked elements */}
+            {/* Most-looked-at elements (ranked by dwell weight) */}
             <div className="min-w-0">
               <div className="mb-2 text-xs font-medium text-muted-foreground">
-                Most-clicked elements
+                Most-looked-at elements
               </div>
               <div className="rounded-lg border border-border">
                 <Table>
                   <THead>
                     <TR>
                       <TH>Element</TH>
-                      <TH className="text-right">Clicks</TH>
+                      <TH className="text-right">Attention</TH>
                       <TH className="w-24 text-right">Share</TH>
                     </TR>
                   </THead>
@@ -361,11 +369,11 @@ export function ClickHeatmap({
                         <TD className="max-w-[240px]">
                           <div className="truncate">{r.label}</div>
                         </TD>
-                        <TD className="text-right tabular-nums">{r.count}</TD>
+                        <TD className="text-right tabular-nums">{r.count.toFixed(1)}</TD>
                         <TD className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             <span className="tabular-nums text-muted-foreground">
-                              {((r.count / totalClicks) * 100).toFixed(0)}%
+                              {((r.count / ranked.reduce((a, b) => a + b.count, 0)) * 100).toFixed(0)}%
                             </span>
                             <span className="hidden h-1.5 w-16 overflow-hidden rounded bg-muted sm:block">
                               <span
@@ -380,6 +388,10 @@ export function ClickHeatmap({
                   </TBody>
                 </Table>
               </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                "Attention" is summed dwell weight — how long the cursor / gaze lingered on each
+                element, not how often it was clicked.
+              </p>
             </div>
           </div>
         )}

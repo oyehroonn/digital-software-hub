@@ -4,6 +4,7 @@ import {
   ClipboardList,
   BarChart3,
   MoveVertical,
+  Eye,
   HeartPulse,
   Settings2,
   RefreshCw,
@@ -17,16 +18,18 @@ import { ProductsView } from "@/views/ProductsView";
 import { OrdersView } from "@/views/OrdersView";
 import { AnalyticsView } from "@/views/AnalyticsView";
 import { ScrollMap } from "@/views/ScrollMap";
+import { LookMapView } from "@/views/LookMapView";
 import { HealthBoard } from "@/views/HealthBoard";
 import { SettingsView } from "@/views/SettingsView";
 
-type TabKey = "products" | "orders" | "analytics" | "scroll" | "health" | "settings";
+type TabKey = "products" | "orders" | "analytics" | "scroll" | "look" | "health" | "settings";
 
 const TABS: { key: TabKey; label: string; icon: typeof Boxes }[] = [
   { key: "products", label: "Products", icon: Boxes },
   { key: "orders", label: "Orders", icon: ClipboardList },
   { key: "analytics", label: "Analytics", icon: BarChart3 },
   { key: "scroll", label: "Scroll map", icon: MoveVertical },
+  { key: "look", label: "Look map", icon: Eye },
   { key: "health", label: "Health", icon: HeartPulse },
   { key: "settings", label: "Settings", icon: Settings2 },
 ];
@@ -136,6 +139,8 @@ export default function App() {
             <AnalyticsView config={config} />
           ) : tab === "scroll" ? (
             <ScrollMap config={config} />
+          ) : tab === "look" ? (
+            <LookMapView config={config} />
           ) : tab === "health" ? (
             <HealthBoard config={config} />
           ) : (

@@ -12,8 +12,9 @@ import {
 import { MoveVertical, RefreshCw } from "lucide-react";
 import type { AppConfig } from "@/lib/config";
 import { fetchTelemetry, type TelemetryEvent } from "@/lib/ecommerce";
-import { buildScrollMap, type DepthBand, type PageScroll } from "@/lib/scrollmap";
+import { buildScrollMap, sampleScrollEvents, type DepthBand, type PageScroll } from "@/lib/scrollmap";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Empty } from "@/components/Empty";
@@ -68,7 +69,13 @@ export function ScrollMap({
     if (provided) setEvents(provided);
   }, [provided]);
 
-  const pages = useMemo(() => buildScrollMap(events), [events]);
+  // Prefer real telemetry; only seed with sample scroll data when none exists.
+  const realPages = useMemo(() => buildScrollMap(events), [events]);
+  const usingSample = realPages.length === 0;
+  const pages = useMemo(
+    () => (usingSample ? buildScrollMap(sampleScrollEvents()) : realPages),
+    [usingSample, realPages],
+  );
 
   // Keep a valid selection as data changes.
   const page: PageScroll | undefined = useMemo(() => {
@@ -82,7 +89,14 @@ export function ScrollMap({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold">Scroll-depth map</h1>
+          <h1 className="flex items-center gap-2 text-lg font-semibold">
+            Scroll-depth map
+            {usingSample && (
+              <Badge variant="warn" title="No real scroll telemetry yet — showing seed data.">
+                sample
+              </Badge>
+            )}
+          </h1>
           <p className="text-xs text-muted-foreground">
             % of each page's sessions that scrolled past every depth band — top (0%) to
             bottom (100%). Derived from the stable Telemetry sheet.

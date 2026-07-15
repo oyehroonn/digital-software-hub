@@ -236,3 +236,46 @@ export function buildScrollMap(
 
   return out.sort((a, b) => b.sessions - a.sessions);
 }
+
+/**
+ * Synthetic scroll telemetry for dev/preview — used ONLY when no real scroll
+ * data exists. Emits page-view + scroll-depth events across a few pages with
+ * plausible fold-off drop curves so the map has something to render.
+ */
+export function sampleScrollEvents(): TelemetryEvent[] {
+  const out: TelemetryEvent[] = [];
+  const pages: { url: string; sessions: number; decay: number }[] = [
+    { url: "https://dsm.example/", sessions: 120, decay: 0.55 },
+    { url: "https://dsm.example/pricing", sessions: 70, decay: 0.7 },
+    { url: "https://dsm.example/products", sessions: 55, decay: 0.62 },
+    { url: "https://dsm.example/ai-lab", sessions: 30, decay: 0.42 },
+  ];
+  const vh = 900;
+  const dh = 3400;
+  for (const p of pages) {
+    for (let s = 0; s < p.sessions; s++) {
+      const sid = `seed-${p.url}-${s}`;
+      // Each session reaches a max depth drawn from a decaying distribution.
+      const maxDepth = Math.min(100, Math.round((1 - Math.pow(Math.random(), p.decay)) * 100));
+      out.push({
+        sessionId: sid,
+        event: "page_view",
+        eventType: "view",
+        pageUrl: p.url,
+        metadata: { vh, dh },
+      });
+      // A few scroll ticks up to that session's max depth.
+      for (let d = 10; d <= maxDepth; d += 20) {
+        out.push({
+          sessionId: sid,
+          event: "scroll",
+          eventType: "scroll",
+          pageUrl: p.url,
+          y: d,
+          metadata: { depth: d, vh, dh },
+        });
+      }
+    }
+  }
+  return out;
+}

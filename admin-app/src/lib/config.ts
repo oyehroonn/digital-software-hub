@@ -11,6 +11,7 @@ import { invoke, runtime } from "./rpc";
 export interface AppConfig {
   ecommerce_url: string; // Apps Script exec URL (orders + telemetry)
   ecommerce_secret: string; // server/admin-app only
+  telemetry_read_url: string; // optional read-proxy for sheet rows; blank = use Apps Script GET
   vps_base: string; // VPS Flask product API
   codex_base: string; // codex-proxy (OpenAI compatible)
   codex_key: string;
@@ -24,7 +25,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   ecommerce_url:
     "https://script.google.com/macros/s/AKfycbwn05r3WVqMpV4Tftn4n1qEs7I10cu3Z8S306jMXaXXCClxizt2EfOUSKa9cTha6pPD/exec",
   ecommerce_secret: "",
-  vps_base: "http://localhost:5051",
+  telemetry_read_url: "",
+  vps_base: "https://dsm-api.techrealm.ai",
   codex_base: "https://open.techrealm.ai/v1",
   codex_key: "",
   codex_model: "gpt-5.4",

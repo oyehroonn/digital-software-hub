@@ -9,6 +9,7 @@ import { runtime } from "@/lib/rpc";
 const FIELDS: { key: keyof AppConfig; label: string; secret?: boolean; hint?: string }[] = [
   { key: "ecommerce_url", label: "Ecommerce Apps Script URL" },
   { key: "ecommerce_secret", label: "Ecommerce secret", secret: true, hint: "Gates order/telemetry reads." },
+  { key: "telemetry_read_url", label: "Telemetry read-proxy URL", hint: "Optional. Blank = read rows straight from the Apps Script GET." },
   { key: "vps_base", label: "VPS Flask API base", hint: "Unstable — product catalog & box regen." },
   { key: "codex_base", label: "codex-proxy base" },
   { key: "codex_key", label: "codex-proxy key", secret: true },
