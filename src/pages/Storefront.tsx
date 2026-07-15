@@ -271,7 +271,6 @@ export default function Storefront() {
                           key={product.id}
                           product={product}
                           viewMode={viewMode}
-                          onClick={() => openProduct(product)}
                         />
                       ))}
                     </div>

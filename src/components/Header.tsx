@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { useAccount } from "@/hooks/useAccount";
 import { useAccountDialog } from "@/components/account/AccountProvider";
+import { useResellerDialog } from "@/components/reseller/ResellerProvider";
 
 const categories = [
   "Operating Systems",
@@ -74,6 +75,7 @@ const Header = () => {
   const { cartItemCount } = useApp();
   const { isMember } = useAccount();
   const { open: openAccountDialog } = useAccountDialog();
+  const { open: openResellerDialog } = useResellerDialog();
   const navigate = useNavigate();
   const [isOverLightSection, setIsOverLightSection] = useState(false);
   const [activeCategory, setActiveCategory] = useState("Productivity & Office");
@@ -153,6 +155,13 @@ const Header = () => {
             <Link to="/store" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Store</Link>
             <Link to="/marketing" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>DSM Marketing</Link>
             <Link to="/services" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>DSM Services</Link>
+            <button
+              type="button"
+              onClick={() => openResellerDialog()}
+              className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}
+            >
+              Resellers
+            </button>
             <a href="#" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Enterprise</a>
             <a href="#" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Support</a>
             <a href="#" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>About</a>

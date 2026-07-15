@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTopProducts, Product } from '@/lib/api';
-import { useApp } from '@/contexts/AppContext';
 import ProductCard from './ProductCard';
 import { Button } from './ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -13,7 +12,6 @@ const AnimatedCard = ({ children, className }: { children: React.ReactNode; clas
 };
 
 export default function TopProducts() {
-  const { openProduct } = useApp();
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,7 +68,6 @@ export default function TopProducts() {
                 <AnimatedCard key={product.id}>
                   <ProductCard
                     product={product}
-                    onClick={() => openProduct(product)}
                   />
                 </AnimatedCard>
               ))}
