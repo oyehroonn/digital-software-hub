@@ -22,6 +22,7 @@ import sys
 import json
 import argparse
 import re
+import html
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -149,15 +150,21 @@ def load_excel_data():
             def clean_html(text):
                 if not text:
                     return text
-                return (text.replace('&amp;', '&')
-                            .replace('&lt;', '<')
-                            .replace('&gt;', '>')
-                            .replace('&quot;', '"')
-                            .replace('&#39;', "'"))
+                # decode to a fixpoint — source data is often double-encoded (&amp;amp;)
+                for _ in range(4):
+                    new = (text.replace('&amp;', '&')
+                               .replace('&lt;', '<')
+                               .replace('&gt;', '>')
+                               .replace('&quot;', '"')
+                               .replace('&#39;', "'"))
+                    if new == text:
+                        break
+                    text = new
+                return text
 
             EXCEL_DATA[str(pid)] = {
                 'sku': cells.get('C', ''),
-                'name': cells.get('D', ''),
+                'name': clean_html(cells.get('D', '')),
                 'type': cells.get('E', ''),
                 'status': cells.get('F', ''),
                 'regular_price': cells.get('G', ''),
@@ -327,14 +334,49 @@ def parse_ai_response(text, default_actions=None, default_suggestions=None):
     }
 
 
+_VMIN_CACHE = {}
+def _min_variation_price(parent_name):
+    """For a WooCommerce 'variable' parent (no own price), find the cheapest
+    variation price by matching child rows whose name extends the parent name."""
+    if not parent_name:
+        return None
+    if parent_name in _VMIN_CACHE:
+        return _VMIN_CACHE[parent_name]
+    pn = parent_name.strip()
+    best = None
+    for d in EXCEL_DATA.values():
+        nm = (d.get('name') or '').strip()
+        if nm == pn or not nm.startswith(pn):
+            continue
+        rest = nm[len(pn):].lstrip()
+        if not rest or rest[0] not in '-–—·(:':
+            continue
+        for pv in (d.get('sale_price'), d.get('regular_price')):
+            if pv and str(pv).strip():
+                try:
+                    v = float(pv)
+                    if v > 0 and (best is None or v < best):
+                        best = v
+                except (ValueError, TypeError):
+                    pass
+    _VMIN_CACHE[parent_name] = best
+    return best
+
+
 def enrich_product(m, base_url):
     """Enrich product data using real Excel data when available, with inferred fallbacks."""
-    name = m.get('name', '')
     folder = m.get('folder', '')
     pid = str(m.get('id', ''))
 
     # Try to get real data from Excel
     excel = EXCEL_DATA.get(pid, {})
+    # Prefer the (decoded) Excel name; decode HTML entities to a fixpoint either way
+    name = excel.get('name') or m.get('name', '')
+    for _ in range(4):
+        _d = html.unescape(name)
+        if _d == name:
+            break
+        name = _d
 
     # ── Categories: use Excel 'categories' (may be comma-separated) ──
     raw_categories = excel.get('categories', '').strip()
@@ -426,6 +468,11 @@ def enrich_product(m, base_url):
             price = f"AED {float(regular_price):,.2f}"
         except (ValueError, TypeError):
             pass
+    if not price:
+        # variable parent with no own price → derive a "from" price from variations
+        vmin = _min_variation_price(name)
+        if vmin is not None:
+            price = f"from AED {vmin:,.2f}"
     if not price:
         price = "Contact for pricing"
 
@@ -1523,6 +1570,82 @@ def add_cors(resp):
 def handle_options():
     """Handle CORS preflight."""
     return '', 200
+
+
+# ── Same-origin LLM proxy (key injected server-side) ─────────────────────
+# Frontend AI features call {origin}/api/llm/* so the codex-proxy key never
+# ships in the browser bundle. /models is used for health checks.
+
+@app.route('/api/llm/models', methods=['GET', 'OPTIONS'])
+def llm_proxy_models():
+    """Health probe for AI features. Does a REAL chat completion — /models alone
+    stays 200 even when the pooled account is de-authed, which would leave AI
+    tools (incl. the concierge) visible-but-broken. 503 here => features hide."""
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        import requests as _rq
+        r = _rq.post(f"{KIRO_BASE_URL}/chat/completions",
+                     headers={"Authorization": f"Bearer {KIRO_API_KEY}",
+                              "Content-Type": "application/json"},
+                     json={"model": KIRO_MODEL, "max_tokens": 5,
+                           "messages": [{"role": "user", "content": "ok"}]},
+                     timeout=8)
+        try:
+            data = r.json()
+        except Exception:
+            data = {}
+        content = (data.get('choices') or [{}])[0].get('message', {}).get('content', '')
+        if r.status_code == 200 and content and not data.get('error'):
+            return jsonify({"object": "list", "data": [{"id": KIRO_MODEL}], "healthy": True}), 200
+        msg = (data.get('error') or {}).get('message') if isinstance(data.get('error'), dict) else data.get('error')
+        return jsonify({"healthy": False, "error": msg or "llm unavailable"}), 503
+    except Exception as e:
+        return jsonify({"healthy": False, "error": str(e)}), 503
+
+
+@app.route('/api/llm/chat/completions', methods=['POST', 'OPTIONS'])
+def llm_proxy_chat():
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        import requests as _rq
+        body = request.get_json(force=True, silent=True) or {}
+        body.setdefault('model', KIRO_MODEL)
+        body['stream'] = False
+        r = _rq.post(f"{KIRO_BASE_URL}/chat/completions",
+                     headers={"Authorization": f"Bearer {KIRO_API_KEY}",
+                              "Content-Type": "application/json"},
+                     json=body, timeout=60)
+        return (r.text, r.status_code, {'Content-Type': 'application/json'})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+
+# ── Stable email proxy (forwards to the email Apps Script; key server-side) ──
+EMAIL_URL = 'https://script.google.com/macros/s/AKfycbxqJNK6yPbthLktB5CbBThEqw2KIrtI2UzrB7Gtny5446QO-s5Rh_AM8HprdUwFvQhm/exec'
+EMAIL_KEY = 'CHANGE_ME_TO_A_LONG_RANDOM_STRING'
+
+@app.route('/api/email', methods=['POST', 'OPTIONS'])
+def api_email():
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        import requests as _rq
+        b = request.get_json(force=True, silent=True) or {}
+        to = (b.get('to') or '').strip()
+        if not to:
+            return jsonify({"ok": False, "error": "missing 'to'"}), 400
+        payload = json.dumps({
+            "apiKey": EMAIL_KEY, "action": "sendEmail",
+            "to": to, "subject": b.get('subject', 'DSM'), "body": b.get('body', ''),
+        })
+        r = _rq.post(EMAIL_URL, data=payload,
+                     headers={"Content-Type": "text/plain;charset=utf-8"}, timeout=30)
+        ok = r.status_code == 200 and '"ok":true' in r.text.replace(' ', '').lower()
+        return jsonify({"ok": ok, "status": r.status_code}), (200 if r.status_code == 200 else 502)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 502
 
 
 # ── Main ─────────────────────────────────────────────────────────────────
