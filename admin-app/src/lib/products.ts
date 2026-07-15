@@ -58,6 +58,18 @@ export interface ProductEdit {
   name?: string;
   description?: string;
   category?: string;
+  // Extended, optional catalog fields (SEO editor, bundle/cross-sell, model
+  // coverage, bulk import). All additive — older callers are unaffected.
+  brand?: string;
+  licenseType?: string;
+  sku?: string;
+  salePrice?: string | number;
+  tags?: string[];
+  seoTitle?: string;
+  seoDescription?: string;
+  slug?: string;
+  viewer?: string; // 3D viewer / box URL
+  crossSell?: (string | number)[]; // recommended companion product ids
 }
 
 /** Push a single edit to the VPS. Rejects if the VPS is unreachable. */
