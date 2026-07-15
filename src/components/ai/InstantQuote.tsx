@@ -377,10 +377,10 @@ function InstantQuoteInner() {
     <QuoteShell>
       {phase !== 'ready' && (
         <>
-          <h3 className="text-2xl font-semibold text-foreground sm:text-3xl">
+          <h3 className="font-serif text-2xl leading-tight tracking-tight text-foreground sm:text-3xl">
             Tell us what you need. Get a price in seconds.
           </h3>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
             No forms, no waiting. Describe your team or project and we'll build a
             tailored quote right here.
           </p>
@@ -555,12 +555,24 @@ function InstantQuoteInner() {
 
 function QuoteShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-full max-w-xl rounded-2xl border border-border bg-card/80 p-6 shadow-premium backdrop-blur-sm sm:p-8">
-      <div className="mb-4 flex items-center gap-2 text-crimson">
-        <Sparkles className="size-5" aria-hidden />
-        <span className="text-sm font-semibold uppercase tracking-wide">
-          Instant Quote
+    <div className="group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-gradient-to-b from-[#0b0b0f]/90 to-[#050506]/80 p-6 shadow-premium backdrop-blur-sm transition-colors duration-500 hover:border-crimson/25 sm:p-8">
+      {/* Thin crimson accent rail along the top edge. */}
+      <span
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-crimson/50 to-transparent"
+        aria-hidden
+      />
+      <div className="mb-6 flex items-center gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-crimson/25 bg-crimson/[0.08] text-crimson">
+          <Sparkles className="size-5" aria-hidden />
         </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-crimson">
+            Instant Quote
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            A tailored price, built for your team
+          </p>
+        </div>
       </div>
       {children}
     </div>
@@ -675,12 +687,12 @@ function QuoteBetaSignup({ reason, prefillNeed = '', onRetry }: BetaSignupProps)
 
   return (
     <div>
-      <h3 className="text-2xl font-semibold text-foreground sm:text-3xl">
+      <h3 className="font-serif text-2xl leading-tight tracking-tight text-foreground sm:text-3xl">
         {reason === 'error'
           ? 'Let us send you a tailored quote'
           : 'Instant Quote — early access'}
       </h3>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
         {reason === 'error'
           ? "Our quote engine is busy right now. Leave your details and a specialist will email you a tailored quote — usually within a business day."
           : "We're rolling out instant AI quotes. Leave your details and we'll send you a tailored quote and early access."}

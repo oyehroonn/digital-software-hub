@@ -360,6 +360,46 @@ function captureRawLead(lead: LeadInput, annualSpend: number, source: string): v
   fireLeadEmail({ to: SALES_INBOX, subject, body });
 }
 
+// ── Shared card shell ─────────────────────────────────────────────────────────
+// Cohesive dark-crimson shell shared by every state (form / result / beta) so
+// this card reads as a sibling of the Instant Quote card in the same band.
+
+function SavingsShell({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        'group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-gradient-to-b from-[#0b0b0f]/90 to-[#050506]/80 p-6 shadow-premium backdrop-blur-sm transition-colors duration-500 hover:border-crimson/25 sm:p-8',
+        className,
+      )}
+    >
+      <span
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-crimson/50 to-transparent"
+        aria-hidden
+      />
+      <div className="mb-6 flex items-center gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-crimson/25 bg-crimson/[0.08] text-crimson">
+          <PiggyBank className="size-5" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-crimson">
+            Savings Calculator
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            See what you keep by switching to DSM
+          </p>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 // ── Inner UI (only mounted when codex-proxy is healthy) ───────────────────────
 
 function SavingsCalculatorInner({ className }: { className?: string }) {
@@ -450,40 +490,37 @@ function SavingsCalculatorInner({ className }: { className?: string }) {
   // ── Result view ────────────────────────────────────────────────────────────
   if (phase === 'result' && result) {
     return (
-      <div
-        className={cn(
-          'rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-50 to-white p-6 shadow-sm dark:from-emerald-950/40 dark:to-background sm:p-8',
-          className,
-        )}
-      >
-        <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-          <TrendingDown className="h-5 w-5" aria-hidden />
-          <span className="text-sm font-semibold uppercase tracking-wide">Your estimated savings</span>
+      <SavingsShell className={className}>
+        {/* Hero number — the estimated saving, framed for maximum impact. */}
+        <div className="rounded-2xl border border-crimson/20 bg-gradient-to-br from-crimson/[0.10] to-transparent p-5 sm:p-6">
+          <div className="flex items-center gap-2 text-crimson">
+            <TrendingDown className="h-4 w-4" aria-hidden />
+            <span className="text-xs font-semibold uppercase tracking-[0.12em]">Your estimated savings</span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-1">
+            <span className="font-serif text-6xl font-bold leading-none tracking-tight text-[#FEFEFE]">
+              {result.savingsPercent}%
+            </span>
+            <span className="pb-1 text-base text-muted-foreground">
+              ≈ <strong className="text-crimson">{formatMoney(result.annualSavings)}</strong> back in your pocket / year
+            </span>
+          </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-1">
-          <span className="text-5xl font-bold leading-none text-emerald-600 dark:text-emerald-400">
-            {result.savingsPercent}%
-          </span>
-          <span className="pb-1 text-lg text-muted-foreground">
-            ≈ <strong className="text-foreground">{formatMoney(result.annualSavings)}</strong> back in your pocket / year
-          </span>
-        </div>
-
-        <p className="mt-4 text-lg font-semibold text-foreground">{result.headline}</p>
-        <p className="mt-2 text-muted-foreground">{result.summary}</p>
+        <p className="mt-5 font-serif text-lg leading-snug text-foreground">{result.headline}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{result.summary}</p>
 
         {/* Real, consistent breakdown — every figure derived from the spend entered. */}
-        <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <dl className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {[
             { label: 'Per month', value: formatMoney(result.monthlySavings) },
             { label: 'Per year', value: formatMoney(result.annualSavings) },
             { label: 'Over 3 years', value: formatMoney(result.threeYearSavings) },
             { label: 'New annual spend', value: formatMoney(result.newAnnualSpend) },
           ].map((tile) => (
-            <div key={tile.label} className="rounded-lg border border-emerald-500/15 bg-emerald-500/5 p-3">
-              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{tile.label}</dt>
-              <dd className="mt-0.5 text-lg font-bold text-emerald-700 dark:text-emerald-300">{tile.value}</dd>
+            <div key={tile.label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <dt className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">{tile.label}</dt>
+              <dd className="mt-1 text-lg font-bold text-[#FEFEFE]">{tile.value}</dd>
             </div>
           ))}
         </dl>
@@ -491,24 +528,24 @@ function SavingsCalculatorInner({ className }: { className?: string }) {
         {result.recommendations.length > 0 && (
           <ul className="mt-5 space-y-2">
             {result.recommendations.map((rec, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-foreground">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" aria-hidden />
+              <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-crimson" aria-hidden />
                 <span>{rec}</span>
               </li>
             ))}
           </ul>
         )}
 
-        <div className="mt-6 flex items-start gap-2 rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-800 dark:text-emerald-200">
-          <Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        <div className="mt-6 flex items-start gap-2 rounded-xl border border-crimson/25 bg-crimson/[0.06] p-3.5 text-sm text-foreground">
+          <Mail className="mt-0.5 h-4 w-4 shrink-0 text-crimson" aria-hidden />
           <span>
             We&apos;ve sent this estimate to <strong>{lead.email}</strong> and a DSM savings specialist
             will reach out to lock in your price — no obligation.
           </span>
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <Button asChild size="lg" className="font-semibold">
             <a
               href={`mailto:${SALES_INBOX}?subject=${encodeURIComponent(
                 'I want my DSM savings',
@@ -521,33 +558,26 @@ function SavingsCalculatorInner({ className }: { className?: string }) {
               Claim my savings <ArrowRight className="ml-1 h-4 w-4" />
             </a>
           </Button>
-          <Button variant="outline" onClick={reset}>
+          <Button variant="outline" size="lg" onClick={reset}>
             Recalculate
           </Button>
-          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Trusted by businesses since 1994
-          </span>
         </div>
-      </div>
+        <span className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <ShieldCheck className="h-3.5 w-3.5 text-crimson/70" aria-hidden /> Trusted by businesses since 1994
+        </span>
+      </SavingsShell>
     );
   }
 
   // ── Form / calculating / error view ─────────────────────────────────────────
   const busy = phase === 'calculating';
   return (
-    <form
-      onSubmit={onSubmit}
-      className={cn(
-        'rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8',
-        className,
-      )}
-    >
-      <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-        <PiggyBank className="h-5 w-5" aria-hidden />
-        <span className="text-sm font-semibold uppercase tracking-wide">Savings Calculator</span>
-      </div>
-      <h3 className="mt-2 text-2xl font-bold text-foreground">Stop overpaying for software</h3>
-      <p className="mt-1 text-muted-foreground">
+    <SavingsShell className={className}>
+      <form onSubmit={onSubmit} className="flex h-full flex-col">
+      <h3 className="font-serif text-2xl leading-tight tracking-tight text-foreground sm:text-3xl">
+        Stop overpaying for software
+      </h3>
+      <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
         Tell us who you buy from today and roughly what you spend. In seconds you&apos;ll see
         exactly how much DSM can put back in your pocket — free, and no obligation.
       </p>
@@ -590,7 +620,7 @@ function SavingsCalculatorInner({ className }: { className?: string }) {
                 className={cn(
                   'rounded px-3 py-1.5 text-sm font-medium capitalize transition-colors',
                   lead.cadence === c
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-crimson text-crimson-foreground'
                     : 'text-muted-foreground hover:bg-muted',
                 )}
                 aria-pressed={lead.cadence === c}
@@ -642,27 +672,30 @@ function SavingsCalculatorInner({ className }: { className?: string }) {
         </p>
       )}
 
-      <Button
-        type="submit"
-        disabled={busy}
-        className="mt-6 w-full bg-emerald-600 text-base hover:bg-emerald-700 sm:w-auto"
-        size="lg"
-      >
-        {busy ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Crunching your numbers…
-          </>
-        ) : (
-          <>
-            See My Savings <ArrowRight className="ml-1.5 h-4 w-4" />
-          </>
-        )}
-      </Button>
+      <div className="mt-auto pt-6">
+        <Button
+          type="submit"
+          disabled={busy}
+          className="w-full text-base font-semibold"
+          size="lg"
+        >
+          {busy ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Crunching your numbers…
+            </>
+          ) : (
+            <>
+              See My Savings <ArrowRight className="ml-1.5 h-4 w-4" />
+            </>
+          )}
+        </Button>
 
-      <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-        <ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Free estimate · no obligation · trusted since 1994
-      </p>
-    </form>
+        <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <ShieldCheck className="h-3.5 w-3.5 text-crimson/70" aria-hidden /> Free estimate · no obligation · trusted since 1994
+        </p>
+      </div>
+      </form>
+    </SavingsShell>
   );
 }
 
@@ -703,39 +736,30 @@ function SavingsBetaSignup({ className }: { className?: string }) {
 
   if (done) {
     return (
-      <div
-        className={cn(
-          'rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-50 to-white p-6 shadow-sm dark:from-emerald-950/40 dark:to-background sm:p-8',
-          className,
-        )}
-      >
-        <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-          <CheckCircle2 className="h-5 w-5" aria-hidden />
-          <span className="text-sm font-semibold uppercase tracking-wide">You&apos;re on the list</span>
+      <SavingsShell className={className}>
+        <div className="flex items-start gap-2 rounded-xl border border-crimson/25 bg-crimson/[0.06] p-4 text-crimson">
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+          <span className="text-sm font-semibold uppercase tracking-[0.12em]">You&apos;re on the list</span>
         </div>
-        <p className="mt-3 text-lg font-semibold text-foreground">
+        <p className="mt-4 font-serif text-lg leading-snug text-foreground">
           Thanks — a DSM savings specialist will email <strong>{lead.email}</strong> with your
           personalized numbers.
         </p>
-        <p className="mt-2 text-muted-foreground">
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           No obligation. We&apos;ll show you exactly where you&apos;re overpaying and how much you keep by
           switching to DSM.
         </p>
-      </div>
+      </SavingsShell>
     );
   }
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className={cn('rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8', className)}
-    >
-      <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-        <PiggyBank className="h-5 w-5" aria-hidden />
-        <span className="text-sm font-semibold uppercase tracking-wide">Savings Calculator</span>
-      </div>
-      <h3 className="mt-2 text-2xl font-bold text-foreground">Get your personalized savings</h3>
-      <p className="mt-1 text-muted-foreground">
+    <SavingsShell className={className}>
+      <form onSubmit={onSubmit} className="flex h-full flex-col">
+      <h3 className="font-serif text-2xl leading-tight tracking-tight text-foreground sm:text-3xl">
+        Get your personalized savings
+      </h3>
+      <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
         Leave your details and who you buy from today. A DSM specialist will send your estimated
         savings — free and with no obligation.
       </p>
@@ -794,13 +818,16 @@ function SavingsBetaSignup({ className }: { className?: string }) {
         </p>
       )}
 
-      <Button type="submit" size="lg" className="mt-6 w-full bg-emerald-600 text-base hover:bg-emerald-700 sm:w-auto">
-        Send me my savings <ArrowRight className="ml-1.5 h-4 w-4" />
-      </Button>
-      <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-        <ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Free · no obligation · trusted since 1994
-      </p>
-    </form>
+      <div className="mt-auto pt-6">
+        <Button type="submit" size="lg" className="w-full text-base font-semibold">
+          Send me my savings <ArrowRight className="ml-1.5 h-4 w-4" />
+        </Button>
+        <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <ShieldCheck className="h-3.5 w-3.5 text-crimson/70" aria-hidden /> Free · no obligation · trusted since 1994
+        </p>
+      </div>
+      </form>
+    </SavingsShell>
   );
 }
 
