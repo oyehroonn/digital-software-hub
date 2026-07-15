@@ -12,9 +12,13 @@ import BrandSpotlight from "@/components/BrandSpotlight";
 import TrustSection from "@/components/TrustSection";
 import Footer from "@/components/Footer";
 import GrainOverlay from "@/components/GrainOverlay";
-import InstantQuote from "@/components/ai/InstantQuote";
-import SavingsCalculator from "@/components/ai/SavingsCalculator";
 import OwnProductBoxes from "@/components/OwnProductBoxes";
+import { lazy, Suspense } from "react";
+
+// Home-hero AI tools (features 01 + 05) are lazy-loaded so their LLM/quote code
+// stays out of the landing chunk; AIFeature still gates each on proxy health.
+const InstantQuote = lazy(() => import("@/components/ai/InstantQuote"));
+const SavingsCalculator = lazy(() => import("@/components/ai/SavingsCalculator"));
 
 const Index = () => {
   return (
@@ -34,8 +38,12 @@ const Index = () => {
           className="relative z-10 bg-[#030305] px-6 pb-24 -mt-px"
         >
           <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2 md:items-start">
-            <InstantQuote />
-            <SavingsCalculator />
+            <Suspense fallback={null}>
+              <InstantQuote />
+            </Suspense>
+            <Suspense fallback={null}>
+              <SavingsCalculator />
+            </Suspense>
           </div>
         </section>
         <LogoStrip />

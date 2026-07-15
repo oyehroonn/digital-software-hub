@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { ArrowRight, ArrowDown, Check, Zap, Shield } from "lucide-react";
 import { useHeroReveal, useCursorGlow } from "@/hooks/useScrollAnimation";
 import MagnifyText from "./MagnifyText";
-import HeroMesh from "./HeroMesh";
 import type { MeshAccent } from "./HeroMesh";
+
+// three.js (+ postprocessing) is the heaviest client dependency. Lazy-load the
+// canvas so it downloads as its own chunk AFTER the hero text paints, keeping it
+// out of the initial bundle (AL2 / AL10 — defer heavy canvas on slow mobile).
+const HeroMesh = lazy(() => import("./HeroMesh"));
 
 const Hero = () => {
   const ref = useHeroReveal();
@@ -15,9 +19,11 @@ const Hero = () => {
       ref={containerRef}
       className="cursor-glow relative min-h-screen flex items-center justify-center pt-28 overflow-hidden bg-[#030305]"
     >
-      {/* Three.js interactive mesh background */}
+      {/* Three.js interactive mesh background (lazy-loaded chunk) */}
       <div className="absolute inset-0 w-full h-full z-0">
-        <HeroMesh accent={meshAccent} />
+        <Suspense fallback={null}>
+          <HeroMesh accent={meshAccent} />
+        </Suspense>
       </div>
 
       {/* Ambient orbs — layered above mesh, below text (radial gradients, no blur) */}

@@ -1,5 +1,8 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import "@google/model-viewer";
+// NOTE: @google/model-viewer (~large WebGL custom element) is imported
+// dynamically once a card scrolls into view — see the IntersectionObserver
+// effect below — so it downloads as its own chunk and never bloats the initial
+// bundle. The <model-viewer> element only renders after the module registers.
 
 interface ProductModelViewerProps {
   glbSrc: string;
@@ -31,6 +34,7 @@ const ProductModelViewer = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const modelRef = useRef<HTMLElement | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [mvReady, setMvReady] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const animFrameRef = useRef<number>(0);
@@ -58,6 +62,24 @@ const ProductModelViewer = ({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // Lazily register the <model-viewer> custom element the first time a card is
+  // near the viewport. Keeps model-viewer out of the initial JS payload.
+  useEffect(() => {
+    if (!isVisible || mvReady) return;
+    let cancelled = false;
+    import("@google/model-viewer")
+      .then(() => {
+        if (!cancelled) setMvReady(true);
+      })
+      .catch(() => {
+        // model-viewer failed to load — degrade to the static fallback icon.
+        if (!cancelled) setHasError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isVisible, mvReady]);
 
   const animateSpeed = useCallback(
     (from: number, to: number, duration: number, easeFn: (t: number) => number) => {
@@ -180,7 +202,7 @@ const ProductModelViewer = ({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {isVisible ? (
+      {isVisible && mvReady ? (
         <>
           {!isLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-secondary z-10">

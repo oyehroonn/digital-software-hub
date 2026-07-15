@@ -1,7 +1,12 @@
-import { useCallback } from 'react';
+import { useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
-import SmartSearch, { type SmartSearchResult } from '@/components/ai/SmartSearch';
+import type { SmartSearchResult } from '@/components/ai/SmartSearch';
+
+// Smart Product Search (feature 03) is code-split; only the type is imported
+// eagerly (types are erased at build). A layout-matched skeleton holds the space
+// so the header doesn't shift while the small chunk loads.
+const SmartSearch = lazy(() => import('@/components/ai/SmartSearch'));
 
 interface SearchBarProps {
   className?: string;
@@ -41,12 +46,21 @@ export default function SearchBar({ className = '', onProductSelect, darkText = 
   );
 
   return (
-    <SmartSearch
-      className={className}
-      darkText={darkText}
-      placeholder="Search products, brands, or tell us what you need…"
-      onSelect={handleSelect}
-      onSubmit={handleSubmit}
-    />
+    <Suspense
+      fallback={
+        <div
+          className={`h-11 w-full animate-pulse rounded-full border border-white/10 bg-white/[0.04] ${className}`}
+          aria-hidden="true"
+        />
+      }
+    >
+      <SmartSearch
+        className={className}
+        darkText={darkText}
+        placeholder="Search products, brands, or tell us what you need…"
+        onSelect={handleSelect}
+        onSubmit={handleSubmit}
+      />
+    </Suspense>
   );
 }

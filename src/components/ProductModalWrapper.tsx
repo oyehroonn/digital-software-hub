@@ -1,7 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
-import ProductModal from './ProductModal';
+
+// The modal (and everything it pulls in — the 3D viewer, the Upgrade Finder AI
+// feature, the LLM client) only loads when a product is actually opened.
+const ProductModal = lazy(() => import('./ProductModal'));
 
 export default function ProductModalWrapper() {
   const { state, openProduct } = useApp();
@@ -22,6 +25,10 @@ export default function ProductModalWrapper() {
 
   if (!state.selectedProduct) return null;
 
-  return <ProductModal product={state.selectedProduct} />;
+  return (
+    <Suspense fallback={null}>
+      <ProductModal product={state.selectedProduct} />
+    </Suspense>
+  );
 }
 
