@@ -20,10 +20,18 @@
  *     is injected server-side). If the LLM stumbles mid-answer we degrade to a
  *     warm "talk to a specialist" flow rather than a dead avatar.
  *
- * Secrets: the Simli API key/faceId NEVER appear in the browser bundle. This
- * component talks only to a SAME-ORIGIN Simli proxy (`/api/simli`, overridable
- * with VITE_SIMLI_PROXY_BASE) that starts the audio-to-video session and
- * injects the key server-side — mirroring the LLM proxy contract in `@/lib/llm`.
+ * Live session: the avatar is driven by the real `simli-client` (v3) WebRTC SDK
+ * over LiveKit. It needs only a session token — which the SAME-ORIGIN Simli
+ * proxy (`/api/simli`, overridable with VITE_SIMLI_PROXY_BASE) mints for us via
+ * POST `{base}/start`, injecting the Simli apiKey + faceId server-side. The key
+ * NEVER appears in the browser bundle. We use LiveKit transport specifically
+ * because P2P would need ICE servers we cannot generate client-side without
+ * that secret.
+ *
+ * Voice: the SDK renders a face but has no built-in text-to-speech, so the
+ * spoken answer is voiced with the browser's Web Speech API (gated by the
+ * mute/voice toggle) alongside the live captions. If the browser has no speech
+ * synthesis the advisor still shows a live face and readable captions.
  *
  * This file exports the wrapped feature as its default. It does NOT wire itself
  * into any page — the Wire step mounts it (e.g. in the AI Lab / support view).
@@ -37,11 +45,13 @@ import {
   CheckCircle2,
   Loader2,
   MessageSquareText,
-  Mic,
-  MicOff,
+  PhoneOff,
+  RotateCcw,
   Send,
   ShieldCheck,
   Sparkles,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 
 import AIFeature from '@/components/ai/AIFeature';
@@ -63,87 +73,111 @@ import { cn } from '@/lib/utils';
 const SIMLI_PROXY_BASE: string =
   (import.meta.env.VITE_SIMLI_PROXY_BASE as string | undefined) ?? '/api/simli';
 
-/** How long we give the live avatar to actually connect before degrading. */
-const AVATAR_CONNECT_TIMEOUT_MS = 9000;
+/** How long we give the live avatar to actually connect before degrading. The
+ *  SDK runs its own longer retry loop; this is the tighter UX bound. */
+const AVATAR_CONNECT_TIMEOUT_MS = 12000;
 
-/** Shape of what the proxy returns from POST {base}/session. Loose on purpose —
+/** Shape of what the proxy returns from POST {base}/start. Loose on purpose —
  *  the exact Simli payload varies by version; we only depend on a token. */
 interface SimliSession {
   /** Session token minted by Simli's startAudioToVideoSession. */
   session_token?: string;
   sessionToken?: string;
-  /** Optional WebRTC/WebSocket URL the proxy may hand back for the SDK. */
-  simli_url?: string;
-  session_url?: string;
   [k: string]: unknown;
 }
 
-/** Structural type for whichever version of the `simli-client` SDK is present.
- *  All methods are optional so we can feature-detect and never hard-depend. */
+/** Structural view of the parts of the real `simli-client` (v3) SDK we use.
+ *  Kept minimal so we never hard-depend on internals that move between versions. */
 interface SimliClientLike {
-  Initialize?: (cfg: Record<string, unknown>) => void;
-  initialize?: (cfg: Record<string, unknown>) => void;
-  start?: () => void | Promise<void>;
-  Start?: () => void | Promise<void>;
-  close?: () => void;
-  Close?: () => void;
-  /** Opportunistic TTS: make the avatar speak a line, when supported. */
-  sendText?: (text: string) => void;
-  Speak?: (text: string) => void;
-  speak?: (text: string) => void;
-  /** Raw PCM16 push — used to prime silence handling once connected. */
-  sendAudioData?: (data: Uint8Array | ArrayBuffer) => void;
-  /** Lifecycle events (`connected` | `failed` | `disconnected`), when emitted. */
+  start: () => Promise<void>;
+  stop: () => Promise<void>;
   on?: (evt: string, cb: (...args: unknown[]) => void) => void;
   off?: (evt: string, cb: (...args: unknown[]) => void) => void;
+  /** Raw PCM16 push (unused here — we voice answers via Web Speech). */
+  sendAudioData?: (data: Uint8Array) => void;
 }
 
-type SimliClientCtor = new () => SimliClientLike;
+/**
+ * v3 constructor signature:
+ *   new SimliClient(session_token, videoEl, audioEl, iceServers,
+ *                   logLevel?, transport?, signaling?, wsUrl?, audioBufferSize?)
+ * We always pass transport "livekit" (needs no ICE servers) and null iceServers.
+ */
+type SimliClientCtor = new (
+  sessionToken: string,
+  videoElement: HTMLVideoElement,
+  audioElement: HTMLAudioElement,
+  iceServers: RTCIceServer[] | null,
+  logLevel?: number,
+  transport?: 'livekit' | 'p2p',
+) => SimliClientLike;
 
-// Non-literal specifier so `tsc` treats this as a dynamic (any) import and does
-// NOT try to resolve the optional package at build time. `@vite-ignore` keeps
-// the bundler from pre-analysing it too. If the package isn't installed the
-// import rejects at runtime and we degrade to text — exactly as required.
-const SIMLI_CLIENT_MODULE: string = 'simli-client';
+/** LogLevel.ERROR from the SDK — keep the WebRTC client quiet in the console. */
+const SIMLI_LOG_ERROR = 2;
 
+/** Lazy-load the real SDK so its (heavy) WebRTC/LiveKit deps stay out of the
+ *  main bundle and only load once Simli is healthy. Missing → degrade to text. */
 async function loadSimliClient(): Promise<SimliClientCtor | null> {
   try {
-    const mod: Record<string, unknown> = await import(/* @vite-ignore */ SIMLI_CLIENT_MODULE);
-    const ctor = (mod.SimliClient ?? mod.default) as SimliClientCtor | undefined;
-    return typeof ctor === 'function' ? ctor : null;
+    const mod = (await import('simli-client')) as Record<string, unknown>;
+    const ctor = mod.SimliClient;
+    return typeof ctor === 'function' ? (ctor as SimliClientCtor) : null;
   } catch {
     return null;
   }
 }
 
-/** Start a Simli audio-to-video session via the same-origin proxy. */
+/** Start a Simli audio-to-video session via the same-origin proxy. The live
+ *  proxy exposes POST {base}/start (with /session kept as an alias); try both. */
 async function startSimliSession(signal: AbortSignal): Promise<SimliSession> {
-  const res = await fetch(`${SIMLI_PROXY_BASE.replace(/\/$/, '')}/session`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ handleSilence: true, maxSessionLength: 1800, maxIdleTime: 300 }),
-    signal,
-  });
-  if (!res.ok) throw new Error(`Simli session proxy HTTP ${res.status}`);
-  return (await res.json()) as SimliSession;
+  const base = SIMLI_PROXY_BASE.replace(/\/$/, '');
+  const body = JSON.stringify({ handleSilence: true, maxSessionLength: 1800, maxIdleTime: 300 });
+  let lastErr: unknown = new Error('Simli session proxy unreachable');
+  for (const path of ['/start', '/session']) {
+    try {
+      const res = await fetch(`${base}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        signal,
+      });
+      if (res.ok) return (await res.json()) as SimliSession;
+      lastErr = new Error(`Simli session proxy HTTP ${res.status}`);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') throw err;
+      lastErr = err;
+    }
+  }
+  throw lastErr;
 }
 
-/** Best-effort "make the avatar speak this line". No-op when unsupported —
- *  method names vary across simli-client versions, so try the known ones. */
-function speakThroughAvatar(client: SimliClientLike | null, text: string): void {
-  if (!client || !text) return;
+// ── Voice (browser Web Speech API — the SDK renders a face but no TTS) ────────
+
+function cancelSpeech(): void {
   try {
-    const speak = client.sendText ?? client.Speak ?? client.speak;
-    speak?.call(client, text);
+    if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
   } catch {
-    /* never let avatar TTS break the answer flow */
+    /* never let TTS teardown throw */
   }
 }
 
-function stopClient(client: SimliClientLike | null): void {
+/** Voice a spoken line. No-op when muted-by-caller or unsupported. */
+function speakAloud(text: string): void {
+  if (!text || typeof window === 'undefined' || !window.speechSynthesis) return;
   try {
-    client?.close?.();
-    client?.Close?.();
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.03;
+    u.pitch = 1;
+    window.speechSynthesis.speak(u);
+  } catch {
+    /* never let avatar voice break the answer flow */
+  }
+}
+
+async function stopClient(client: SimliClientLike | null): Promise<void> {
+  try {
+    await client?.stop?.();
   } catch {
     /* ignore teardown errors */
   }
@@ -262,6 +296,8 @@ function proposeSlot(): { start: string; end: string } {
 
 // ── The live avatar stage (only mounted when Simli is healthy) ───────────────
 
+type AvatarState = 'connecting' | 'live' | 'failed' | 'stopped';
+
 function AdvisorStage() {
   const navigate = useNavigate();
   const { cartItemCount } = useApp();
@@ -270,9 +306,19 @@ function AdvisorStage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const clientRef = useRef<SimliClientLike | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // True while a user-initiated stop is in progress, so the SDK's own
+  // 'stop'/'error' events don't get mistaken for an outage (→ SalesConcierge).
+  const endingRef = useRef(false);
+  // Latest mute value, readable inside async callbacks without re-binding them.
+  const mutedRef = useRef(true);
 
-  // 'connecting' → trying WebRTC; 'live' → avatar streaming; 'failed' → degrade.
-  const [avatar, setAvatar] = useState<'connecting' | 'live' | 'failed'>('connecting');
+  // 'connecting' → trying WebRTC; 'live' → streaming; 'failed' → degrade to
+  // text; 'stopped' → user ended the session (reversible via restart).
+  const [avatar, setAvatar] = useState<AvatarState>('connecting');
+  // Bumping this re-runs the connect effect (used to restart after a stop).
+  const [sessionNonce, setSessionNonce] = useState(0);
+  // Driven by the SDK's speaking/silent events — a subtle "talking" indicator.
+  const [speaking, setSpeaking] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>([newMessage('assistant', GREETING)]);
   const [input, setInput] = useState('');
@@ -316,6 +362,7 @@ function AdvisorStage() {
       if (disposed || outcome === 'failed') return;
       outcome = 'failed';
       clearConnectTimer();
+      cancelSpeech();
       track({
         event: 'ai_outage',
         eventType: 'error',
@@ -326,8 +373,9 @@ function AdvisorStage() {
         },
       });
       // Release the WebRTC session/mic before swapping in the text UI.
-      stopClient(clientRef.current);
+      void stopClient(clientRef.current);
       clientRef.current = null;
+      setSpeaking(false);
       setAvatar('failed');
     };
 
@@ -336,12 +384,6 @@ function AdvisorStage() {
       outcome = 'live';
       clearConnectTimer();
       setAvatar('live');
-      // Prime silence-handling so the idle face animates before the first reply.
-      try {
-        clientRef.current?.sendAudioData?.(new Uint8Array(0));
-      } catch {
-        /* optional priming; never block going live */
-      }
       track({
         event: 'advisor_avatar_live',
         eventType: 'ai',
@@ -360,48 +402,43 @@ function AdvisorStage() {
         if (disposed) return;
 
         const token = session.session_token ?? session.sessionToken;
-        const simliUrl = session.simli_url ?? session.session_url;
-        const client = new Ctor();
+        if (!token) throw new Error('no session token from proxy');
+
+        const video = videoRef.current;
+        const audioEl = audioRef.current;
+        if (!video || !audioEl) throw new Error('media elements unavailable');
+
+        // LiveKit transport needs only the token — P2P would require ICE servers
+        // we cannot mint in the browser (that needs the Simli key, kept server-side).
+        const client = new Ctor(token, video, audioEl, null, SIMLI_LOG_ERROR, 'livekit');
         clientRef.current = client;
 
-        // Config is a superset across SDK versions; unknown keys are ignored.
-        const cfg: Record<string, unknown> = {
-          videoRef,
-          audioRef,
-          handleSilence: true,
-          maxSessionLength: 1800,
-          maxIdleTime: 300,
-          session_token: token,
-          sessionToken: token,
-          ...(simliUrl ? { SimliURL: simliUrl } : {}),
-          // The proxy already authorised the session, so no key is sent here.
-          apiKey: '',
-          faceID: '',
-        };
-        (client.Initialize ?? client.initialize)?.(cfg);
+        client.on?.('speaking', () => {
+          if (!disposed) setSpeaking(true);
+        });
+        client.on?.('silent', () => {
+          if (!disposed) setSpeaking(false);
+        });
+        client.on?.('error', (m) => {
+          if (!endingRef.current) degrade(new Error(`simli-error:${String(m)}`));
+        });
+        client.on?.('stop', () => {
+          if (!endingRef.current && outcome === 'live') degrade(new Error('simli-stopped'));
+        });
 
-        // Prefer the SDK's own lifecycle signals for readiness/failure…
-        client.on?.('connected', goLive);
-        client.on?.('failed', (...a) =>
-          degrade(new Error(`simli-failed${a[0] != null ? `:${String(a[0])}` : ''}`)),
-        );
-        client.on?.('disconnected', () => degrade(new Error('simli-disconnected')));
-
-        // …and treat the first painted frame as "live" too, in case an older
-        // SDK build emits no `connected` event.
-        const video = videoRef.current;
-        if (video) {
-          video.addEventListener('loadeddata', goLive, { once: true });
-          video.addEventListener('playing', goLive, { once: true });
-        }
-
-        await (client.start ?? client.Start)?.();
+        // Treat the first painted frame as "live" too, belt-and-suspenders.
+        video.addEventListener('playing', goLive, { once: true });
 
         // Hard cap: if nothing signals readiness in time, treat Simli as down.
         connectTimer = setTimeout(
           () => degrade(new Error('avatar-connect-timeout')),
           AVATAR_CONNECT_TIMEOUT_MS,
         );
+
+        // Resolves once connected; rejects on failure or the SDK's own timeout.
+        await client.start();
+        if (disposed) return;
+        goLive();
       } catch (err) {
         const aborted = err instanceof DOMException && err.name === 'AbortError';
         if (!aborted) degrade(err);
@@ -414,25 +451,60 @@ function AdvisorStage() {
       disposed = true;
       clearConnectTimer();
       controller.abort();
-      stopClient(clientRef.current);
+      cancelSpeech();
+      void stopClient(clientRef.current);
       clientRef.current = null;
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionNonce]);
 
-  // Abort any in-flight LLM stream on unmount.
-  useEffect(() => () => abortRef.current?.abort(), []);
-
+  // Keep the video/audio muted state and the latest mute value in sync, and
+  // silence any in-flight speech the moment the user mutes.
   useEffect(() => {
+    mutedRef.current = muted;
+    if (muted) cancelSpeech();
     const v = videoRef.current;
     if (v) v.muted = muted;
+    const a = audioRef.current;
+    if (a) a.muted = muted;
   }, [muted, avatar]);
 
-  // ── Ask the advisor (LLM brain → captions → opportunistic avatar speech) ───
+  // Stop any speech synthesis on unmount.
+  useEffect(() => () => cancelSpeech(), []);
+
+  // ── User-controlled session lifecycle (start / stop) ───────────────────────
+  const endSession = useCallback(() => {
+    endingRef.current = true;
+    cancelSpeech();
+    void stopClient(clientRef.current);
+    clientRef.current = null;
+    setSpeaking(false);
+    setAvatar('stopped');
+    trackClick('advisor_end', {
+      elementId: 'advisor-end',
+      metadata: { feature: 'talking-advisor' },
+    });
+  }, []);
+
+  const restart = useCallback(() => {
+    endingRef.current = false;
+    cancelSpeech();
+    setSpeaking(false);
+    setAvatar('connecting');
+    setSessionNonce((n) => n + 1);
+    trackClick('advisor_restart', {
+      elementId: 'advisor-restart',
+      metadata: { feature: 'talking-advisor' },
+    });
+  }, []);
+
+  // ── Ask the advisor (LLM brain → captions → spoken voice) ──────────────────
   const ask = useCallback(
     async (raw: string) => {
       const text = raw.trim();
       if (!text || streaming) return;
 
+      cancelSpeech();
       const userMsg = newMessage('user', text);
       const assistantMsg = newMessage('assistant', '');
       const priorForModel = [...messages, userMsg];
@@ -448,7 +520,6 @@ function AdvisorStage() {
       });
 
       const controller = new AbortController();
-      abortRef.current = controller;
 
       const chatMessages: ChatMessage[] = [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -467,8 +538,8 @@ function AdvisorStage() {
           },
           { temperature: 0.5, maxTokens: 400, signal: controller.signal },
         );
-        // Let the avatar actually speak the answer, when the SDK supports it.
-        speakThroughAvatar(clientRef.current, full);
+        // Voice the answer aloud (unless muted); captions already streamed above.
+        if (!mutedRef.current) speakAloud(full);
       } catch (err) {
         const fallback =
           err instanceof LLMError
@@ -488,7 +559,6 @@ function AdvisorStage() {
           },
         });
       } finally {
-        if (abortRef.current === controller) abortRef.current = null;
         setStreaming(false);
       }
     },
@@ -553,6 +623,8 @@ function AdvisorStage() {
   }
 
   const connecting = avatar === 'connecting';
+  const stopped = avatar === 'stopped';
+  const live = avatar === 'live';
 
   return (
     <div className="mx-auto grid w-full max-w-4xl gap-6 md:grid-cols-[minmax(0,340px)_1fr]">
@@ -566,10 +638,10 @@ function AdvisorStage() {
             muted={muted}
             className={cn(
               'h-full w-full object-cover transition-opacity duration-500',
-              connecting ? 'opacity-0' : 'opacity-100',
+              live ? 'opacity-100' : 'opacity-0',
             )}
           />
-          <audio ref={audioRef} autoPlay className="hidden" />
+          <audio ref={audioRef} autoPlay muted={muted} className="hidden" />
 
           {connecting && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted-foreground">
@@ -578,20 +650,46 @@ function AdvisorStage() {
             </div>
           )}
 
-          {avatar === 'live' && (
+          {stopped && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center text-muted-foreground">
+              <ShieldCheck className="size-8 text-crimson" aria-hidden />
+              <p className="text-sm">Session ended. Your chat is still here whenever you need it.</p>
+              <Button type="button" size="sm" onClick={restart} className="font-semibold">
+                <RotateCcw className="size-4" aria-hidden />
+                Start advisor again
+              </Button>
+            </div>
+          )}
+
+          {live && (
             <>
               <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-background/80 px-2.5 py-1 text-xs font-medium text-foreground backdrop-blur">
-                <span className="inline-block size-1.5 rounded-full bg-green-500" />
-                Live
+                <span
+                  className={cn(
+                    'inline-block size-1.5 rounded-full bg-green-500',
+                    speaking && 'animate-pulse',
+                  )}
+                />
+                {speaking ? 'Speaking' : 'Live'}
               </div>
-              <button
-                type="button"
-                aria-label={muted ? 'Unmute advisor' : 'Mute advisor'}
-                onClick={() => setMuted((m) => !m)}
-                className="absolute bottom-3 right-3 flex size-9 items-center justify-center rounded-full bg-background/80 text-foreground backdrop-blur transition-colors hover:bg-background"
-              >
-                {muted ? <MicOff className="size-4" aria-hidden /> : <Mic className="size-4" aria-hidden />}
-              </button>
+              <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  aria-label={muted ? 'Turn advisor voice on' : 'Turn advisor voice off'}
+                  onClick={() => setMuted((m) => !m)}
+                  className="flex size-9 items-center justify-center rounded-full bg-background/80 text-foreground backdrop-blur transition-colors hover:bg-background"
+                >
+                  {muted ? <VolumeX className="size-4" aria-hidden /> : <Volume2 className="size-4" aria-hidden />}
+                </button>
+                <button
+                  type="button"
+                  aria-label="End session"
+                  onClick={endSession}
+                  className="flex size-9 items-center justify-center rounded-full bg-background/80 text-destructive backdrop-blur transition-colors hover:bg-background"
+                >
+                  <PhoneOff className="size-4" aria-hidden />
+                </button>
+              </div>
             </>
           )}
         </div>
