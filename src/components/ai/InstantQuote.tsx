@@ -4,17 +4,21 @@
  * A sales-first, plain-English quote builder for non-technical buyers. The
  * visitor types what they need in one sentence ("I run a 5-person architecture
  * studio and need AutoCAD for everyone"), taps "Get My Quote", and instantly
- * gets a tailored recommendation: the right products, a friendly price, and a
- * one-tap "Email me this quote".
+ * gets a tailored recommendation: the right products (shown as real 3D boxes
+ * grounded in the live catalog), a friendly price, and a one-tap "Email me
+ * this quote".
  *
  * Backends (per the resilience contract):
  *  - codex-proxy (UNSTABLE)  → the wrapper below (`backend="codex"`) only mounts
- *    the feature when the LLM is healthy; the hero silently omits it otherwise.
- *  - VPS product API (UNSTABLE) → used to ground the quote in the real catalog
- *    when reachable; on failure we degrade to an LLM-only estimate (no crash).
- *  - Email bridge (STABLE) → sends the quote. If the local bridge is momentarily
- *    unreachable, the send is queued via the offline queue and auto-flushed
- *    later, so the buyer is always told "on its way".
+ *    the feature when the LLM is healthy; when it is down the hero degrades to a
+ *    beta-signup card (still a real lead capture) instead of vanishing silently.
+ *  - VPS product API (UNSTABLE) → grounds the quote in the real catalog and
+ *    powers the matched 3D product boxes when reachable; on failure we degrade
+ *    to an LLM-only estimate with no boxes (never a crash).
+ *  - Ecommerce Apps Script (STABLE) → the quote / lead is captured here. This is
+ *    the always-reachable path: the request lands in the Orders sheet and a
+ *    specialist follows up by email. A local mail bridge, when present (admin
+ *    app), also fires the formatted HTML quote instantly as a bonus.
  *  - Ecommerce/analytics (STABLE) → fire-and-forget telemetry for the funnel.
  *
  * This file exports the wrapped feature as its default; drop <InstantQuote/> into
@@ -22,28 +26,27 @@
  */
 
 import { useState } from 'react';
-import { Sparkles, Send, Loader2, CheckCircle2, ArrowRight, RefreshCw } from 'lucide-react';
+import {
+  Sparkles,
+  Send,
+  Loader2,
+  CheckCircle2,
+  ArrowRight,
+  RefreshCw,
+  ExternalLink,
+} from 'lucide-react';
 
 import AIFeature from '@/components/ai/AIFeature';
+import ProductModelViewer from '@/components/ProductModelViewer';
 import { chat, LLMError, type ChatMessage } from '@/lib/llm';
 import { searchProducts, getTopProducts, type Product } from '@/lib/api';
-import { sendEmail, type SendEmailArgs } from '@/lib/stable/email';
-import { enqueue, registerProcessor } from '@/lib/offlineQueue';
+import { sendEmail } from '@/lib/stable/email';
+import { submitOrder, type OrderPayload } from '@/lib/stable/orders';
 import { sendTelemetry } from '@/lib/telemetry';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-
-// ── Offline email delivery ──────────────────────────────────────────────────
-// If the local mail bridge is down at send time we don't lose the quote: we
-// enqueue it and register a processor that retries when the bridge returns.
-
-const QUOTE_EMAIL_KIND = 'quote-email';
-
-registerProcessor<SendEmailArgs>(QUOTE_EMAIL_KIND, async (payload) => {
-  await sendEmail(payload);
-});
 
 // ── Quote shape returned by the LLM ─────────────────────────────────────────
 
@@ -134,7 +137,7 @@ function catalogContext(products: Product[]): string {
     const lic = String(p.licenseType ?? '').trim();
     return `- id=${p.id} | ${p.name} | brand=${p.brand} | license=${lic} | price=${price}`;
   });
-  return `\n\nHere is our live catalog to price against (use these exact names and prices where they fit; reference id when you use one):\n${lines.join(
+  return `\n\nHere is our live catalog to price against (use these exact names and prices where they fit; ALWAYS set "productId" to the matching id when you recommend one of these):\n${lines.join(
     '\n',
   )}`;
 }
@@ -153,6 +156,35 @@ async function fetchCatalog(need: string): Promise<Product[]> {
   } catch {
     return [];
   }
+}
+
+/**
+ * Resolve the quote to 2–3 real catalog products to show as 3D boxes. Prefers
+ * the ids the model referenced, then tops up from the fetched catalog so the
+ * buyer always sees something tangible when the VPS was reachable.
+ */
+function pickMatches(quote: Quote, products: Product[]): Product[] {
+  if (products.length === 0) return [];
+  const byId = new Map(products.map((p) => [String(p.id), p]));
+  const chosen: Product[] = [];
+  const seen = new Set<string>();
+
+  for (const item of quote.items) {
+    if (item.productId == null) continue;
+    const p = byId.get(String(item.productId));
+    if (p && !seen.has(String(p.id))) {
+      chosen.push(p);
+      seen.add(String(p.id));
+    }
+  }
+  for (const p of products) {
+    if (chosen.length >= 3) break;
+    if (!seen.has(String(p.id))) {
+      chosen.push(p);
+      seen.add(String(p.id));
+    }
+  }
+  return chosen.slice(0, 3);
 }
 
 function buildMessages(need: string, products: Product[]): ChatMessage[] {
@@ -178,12 +210,42 @@ function buildMessages(need: string, products: Product[]): ChatMessage[] {
   ];
 }
 
+// ── Stable lead capture (Ecommerce Apps Script) ──────────────────────────────
+// The always-reachable path: the quote request is written to the Orders sheet
+// so a specialist can follow up + email even when no mail bridge is running.
+
+function buildLeadOrder(
+  email: string,
+  need: string,
+  quote: Quote | null,
+  source: string,
+): OrderPayload {
+  const matchedId = quote?.items.find((i) => i.productId != null)?.productId;
+  const productName = quote
+    ? `Instant Quote — ${quote.headline}`.slice(0, 160)
+    : 'Instant Quote request';
+  const notes = quote
+    ? `[${source}] ${quoteToText(quote, need)}`
+    : `[${source}] Website visitor requested a quote.\nWhat they told us: ${need.trim()}`;
+
+  return {
+    customerName: email.split('@')[0] || 'Website visitor',
+    email,
+    productId: matchedId ?? 'quote-genie',
+    productName,
+    quantity: 1,
+    price: quote?.total ?? 'Estimate pending',
+    notes,
+  };
+}
+
 // ── Inner feature (only mounted when codex-proxy is healthy) ─────────────────
 
 function InstantQuoteInner() {
   const [need, setNeed] = useState('');
   const [phase, setPhase] = useState<Phase>('idle');
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [matches, setMatches] = useState<Product[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
 
   const [email, setEmail] = useState('');
@@ -191,12 +253,14 @@ function InstantQuoteInner() {
   const [sent, setSent] = useState<'no' | 'delivered' | 'queued'>('no');
   const [emailError, setEmailError] = useState('');
 
-  const canQuote = need.trim().length >= 3 && phase !== 'thinking';
+  const trimmed = need.trim();
+  const canQuote = trimmed.length >= 3 && phase !== 'thinking';
 
   async function handleGetQuote() {
     if (!canQuote) return;
     setPhase('thinking');
     setQuote(null);
+    setMatches([]);
     setErrorMsg('');
     setSent('no');
     setEmailError('');
@@ -205,7 +269,7 @@ function InstantQuoteInner() {
       event: 'quote_requested',
       eventType: 'ai',
       elementId: 'instant-quote',
-      metadata: { feature: 'quote-genie', needLength: need.trim().length },
+      metadata: { feature: 'quote-genie', needLength: trimmed.length },
     });
 
     try {
@@ -215,7 +279,9 @@ function InstantQuoteInner() {
         maxTokens: 700,
       });
       const parsed = coerceQuote(extractJson(reply));
+      const matched = pickMatches(parsed, products);
       setQuote(parsed);
+      setMatches(matched);
       setPhase('ready');
       sendTelemetry({
         event: 'quote_generated',
@@ -224,6 +290,7 @@ function InstantQuoteInner() {
           feature: 'quote-genie',
           items: parsed.items.length,
           grounded: products.length > 0,
+          matched: matched.length,
         },
       });
     } catch (err) {
@@ -238,7 +305,7 @@ function InstantQuoteInner() {
     }
   }
 
-  function handleEmailQuote() {
+  async function handleEmailQuote() {
     if (!quote) return;
     const to = email.trim();
     if (!EMAIL_RE.test(to)) {
@@ -248,13 +315,6 @@ function InstantQuoteInner() {
     setEmailError('');
     setSending(true);
 
-    const payload: SendEmailArgs = {
-      to,
-      subject: 'Your DSM quote is ready',
-      html: true,
-      body: quoteToHtml(quote, need),
-    };
-
     sendTelemetry({
       event: 'quote_emailed',
       eventType: 'lead',
@@ -262,21 +322,34 @@ function InstantQuoteInner() {
       metadata: { feature: 'quote-genie', items: quote.items.length },
     });
 
-    sendEmail(payload)
-      .then(() => {
-        setSent('delivered');
-      })
-      .catch(() => {
-        // Mail bridge momentarily down → queue it; it flushes automatically.
-        enqueue(QUOTE_EMAIL_KIND, payload);
-        setSent('queued');
-      })
-      .finally(() => setSending(false));
+    // Bonus: if a local mail bridge is running (admin app), fire the formatted
+    // HTML quote instantly. Best-effort only — the lead capture below is what
+    // actually guarantees the buyer is reached, so ignore any bridge failure.
+    void sendEmail({
+      to,
+      subject: 'Your DSM quote is ready',
+      html: true,
+      body: quoteToHtml(quote, need),
+    }).catch(() => {
+      /* no admin bridge on this machine — the Apps Script lead covers it */
+    });
+
+    // Stable path: record the quote as a lead in the Orders sheet. submitOrder
+    // never rejects — it confirms, or parks in the offline queue and retries.
+    try {
+      const res = await submitOrder(buildLeadOrder(to, need, quote, 'instant-quote'));
+      setSent(res.confirmed ? 'delivered' : 'queued');
+    } catch {
+      setSent('queued');
+    } finally {
+      setSending(false);
+    }
   }
 
   function reset() {
     setNeed('');
     setQuote(null);
+    setMatches([]);
     setPhase('idle');
     setErrorMsg('');
     setEmail('');
@@ -284,15 +357,25 @@ function InstantQuoteInner() {
     setEmailError('');
   }
 
-  return (
-    <div className="w-full max-w-xl rounded-2xl border border-border bg-card/80 p-6 shadow-premium backdrop-blur-sm sm:p-8">
-      <div className="mb-4 flex items-center gap-2 text-crimson">
-        <Sparkles className="size-5" aria-hidden />
-        <span className="text-sm font-semibold uppercase tracking-wide">
-          Instant Quote
-        </span>
-      </div>
+  // Runtime failure → don't dead-end the buyer; offer the beta-signup capture.
+  if (phase === 'error') {
+    return (
+      <QuoteShell>
+        <QuoteBetaSignup
+          reason="error"
+          prefillNeed={trimmed}
+          detail={errorMsg}
+          onRetry={() => {
+            setErrorMsg('');
+            setPhase('idle');
+          }}
+        />
+      </QuoteShell>
+    );
+  }
 
+  return (
+    <QuoteShell>
       {phase !== 'ready' && (
         <>
           <h3 className="text-2xl font-semibold text-foreground sm:text-3xl">
@@ -333,13 +416,17 @@ function InstantQuoteInner() {
             )}
           </Button>
 
-          {phase === 'error' && (
-            <p className="mt-3 text-sm text-destructive">
-              We couldn't build that quote just now. Please try again — or tweak
-              your wording.
-              {errorMsg ? (
-                <span className="mt-1 block text-xs opacity-70">{errorMsg}</span>
-              ) : null}
+          {phase === 'thinking' ? (
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Matching your need to our live catalog and pricing it up…
+            </p>
+          ) : trimmed.length > 0 && trimmed.length < 3 ? (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Add a little more detail so we can tailor it to you.
+            </p>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Tip: mention team size and the tools you use for the sharpest quote.
             </p>
           )}
         </>
@@ -377,7 +464,21 @@ function InstantQuoteInner() {
             </span>
           </div>
 
-          <p className="mt-3 text-sm text-muted-foreground">{quote.closing}</p>
+          {/* Matched catalog products, shown as real 3D boxes. */}
+          {matches.length > 0 && (
+            <div className="mt-6">
+              <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                Matched from our catalog
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {matches.map((p) => (
+                  <ProductBox key={p.id} product={p} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <p className="mt-4 text-sm text-muted-foreground">{quote.closing}</p>
 
           {/* Email capture / send */}
           {sent === 'no' ? (
@@ -431,8 +532,8 @@ function InstantQuoteInner() {
               <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-crimson" aria-hidden />
               <span>
                 {sent === 'delivered'
-                  ? "Sent! Check your inbox — a specialist will follow up shortly."
-                  : "You're all set — your quote is on its way and will land in your inbox shortly. A specialist will follow up."}
+                  ? "Got it — your quote is saved and a specialist will email you shortly."
+                  : "You're all set — your quote request is saved and on its way. A specialist will follow up by email."}
               </span>
             </div>
           )}
@@ -447,11 +548,209 @@ function InstantQuoteInner() {
           </button>
         </div>
       )}
+    </QuoteShell>
+  );
+}
+
+// ── Shared card shell ────────────────────────────────────────────────────────
+
+function QuoteShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="w-full max-w-xl rounded-2xl border border-border bg-card/80 p-6 shadow-premium backdrop-blur-sm sm:p-8">
+      <div className="mb-4 flex items-center gap-2 text-crimson">
+        <Sparkles className="size-5" aria-hidden />
+        <span className="text-sm font-semibold uppercase tracking-wide">
+          Instant Quote
+        </span>
+      </div>
+      {children}
     </div>
   );
 }
 
-// ── Email body ───────────────────────────────────────────────────────────────
+// ── Matched product box (real 3D model from the live catalog) ─────────────────
+
+function ProductBox({ product }: { product: Product }) {
+  const href = product.viewer || product.link || undefined;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={() =>
+        sendTelemetry({
+          event: 'quote_product_opened',
+          eventType: 'ai',
+          productId: product.id,
+          metadata: { feature: 'quote-genie', name: product.name },
+        })
+      }
+      className="group flex flex-col rounded-xl border border-border bg-background/40 p-2 transition-colors hover:border-crimson/40"
+    >
+      <div className="relative aspect-square overflow-hidden rounded-lg bg-secondary/40">
+        {product.link ? (
+          <ProductModelViewer
+            glbSrc={product.link}
+            fallbackIcon={
+              <div className="flex h-full w-full items-center justify-center">
+                <span className="font-serif text-2xl text-foreground/30">
+                  {product.name.charAt(0)}
+                </span>
+              </div>
+            }
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <span className="font-serif text-2xl text-foreground/30">
+              {product.name.charAt(0)}
+            </span>
+          </div>
+        )}
+        <span className="absolute right-1.5 top-1.5 rounded-full bg-background/70 p-1 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+          <ExternalLink className="size-3 text-foreground" aria-hidden />
+        </span>
+      </div>
+      <p className="mt-2 line-clamp-2 text-xs font-medium text-foreground">
+        {product.name}
+      </p>
+      {product.price && (
+        <p className="mt-0.5 text-xs font-semibold text-crimson">{product.price}</p>
+      )}
+    </a>
+  );
+}
+
+// ── Beta-signup degradation (codex down, or a runtime failure) ────────────────
+
+interface BetaSignupProps {
+  /** Why we're degrading — tunes the copy and the telemetry. */
+  reason: 'offline' | 'error';
+  prefillNeed?: string;
+  detail?: string;
+  onRetry?: () => void;
+}
+
+function QuoteBetaSignup({ reason, prefillNeed = '', detail, onRetry }: BetaSignupProps) {
+  const [need, setNeed] = useState(prefillNeed);
+  const [email, setEmail] = useState('');
+  const [sending, setSending] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
+
+  async function submit() {
+    const to = email.trim();
+    if (!EMAIL_RE.test(to)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    setError('');
+    setSending(true);
+
+    sendTelemetry({
+      event: 'quote_beta_signup',
+      eventType: 'lead',
+      elementText: to,
+      metadata: { feature: 'quote-genie', reason },
+    });
+
+    try {
+      await submitOrder(buildLeadOrder(to, need, null, `quote-beta:${reason}`));
+    } catch {
+      /* submitOrder self-queues; the visitor is captured either way */
+    } finally {
+      setSending(false);
+      setDone(true);
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="flex items-start gap-2 rounded-xl border border-crimson/30 bg-crimson/5 p-4 text-sm text-foreground">
+        <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-crimson" aria-hidden />
+        <span>
+          Thank you — you're on the list. A DSM specialist will email you a
+          tailored quote shortly.
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h3 className="text-2xl font-semibold text-foreground sm:text-3xl">
+        {reason === 'error'
+          ? 'Let us send you a tailored quote'
+          : 'Instant Quote — early access'}
+      </h3>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {reason === 'error'
+          ? "Our quote engine is busy right now. Leave your details and a specialist will email you a tailored quote — usually within a business day."
+          : "We're rolling out instant AI quotes. Leave your details and we'll send you a tailored quote and early access."}
+      </p>
+
+      <Textarea
+        value={need}
+        onChange={(e) => setNeed(e.target.value)}
+        placeholder="Tell us what you need (team size, tools, project)…"
+        className="mt-5 min-h-[88px] resize-none text-base"
+        disabled={sending}
+      />
+
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <Input
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') submit();
+          }}
+          placeholder="you@company.com"
+          className="flex-1 text-base"
+          disabled={sending}
+        />
+        <Button
+          onClick={submit}
+          disabled={sending}
+          size="lg"
+          className="font-semibold"
+        >
+          {sending ? (
+            <>
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+              Sending…
+            </>
+          ) : (
+            <>
+              <Send className="size-4" aria-hidden />
+              Send me a quote
+            </>
+          )}
+        </Button>
+      </div>
+
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+
+      {reason === 'error' && onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <RefreshCw className="size-4" aria-hidden />
+          Try the instant quote again
+        </button>
+      )}
+
+      {detail && (
+        <p className="mt-3 text-xs opacity-60">{detail}</p>
+      )}
+    </div>
+  );
+}
+
+// ── Email / lead body builders ───────────────────────────────────────────────
 
 function escapeHtml(s: string): string {
   return s
@@ -459,6 +758,19 @@ function escapeHtml(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/** Plain-text quote used for the Orders-sheet `notes` column. */
+function quoteToText(quote: Quote, need: string): string {
+  const lines = quote.items.map(
+    (it) => `• ${it.name} — ${it.price}${it.why ? ` (${it.why})` : ''}`,
+  );
+  return [
+    `Quote: ${quote.headline}`,
+    `What they told us: ${need.trim()}`,
+    ...lines,
+    `Estimate: ${quote.total}`,
+  ].join('\n');
 }
 
 function quoteToHtml(quote: Quote, need: string): string {
@@ -505,12 +817,23 @@ function quoteToHtml(quote: Quote, need: string): string {
 // ── Public export: codex-gated wrapper ───────────────────────────────────────
 
 /**
- * Home-hero Instant Quote. Renders nothing unless the LLM backend is healthy
- * (the resilience contract). Drop it straight into the hero — no props.
+ * Home-hero Instant Quote. When the LLM backend is healthy it renders the live
+ * quote builder; when it's down it degrades to a beta-signup lead capture rather
+ * than disappearing, so the hero always converts (the resilience contract).
+ * Drop it straight into the hero — no props.
  */
 export default function InstantQuote() {
   return (
-    <AIFeature backend="codex" feature="quote-genie">
+    <AIFeature
+      backend="codex"
+      feature="quote-genie"
+      recheckMs={60000}
+      fallback={
+        <QuoteShell>
+          <QuoteBetaSignup reason="offline" />
+        </QuoteShell>
+      }
+    >
       <InstantQuoteInner />
     </AIFeature>
   );

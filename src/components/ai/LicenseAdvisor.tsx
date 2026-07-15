@@ -2,15 +2,27 @@
  * LicenseAdvisor — AI feature #2 ("Help Me Choose")
  * --------------------------------------------------
  * A sales-first, plain-English edition picker for non-technical buyers.
- * The visitor answers 2–3 dead-simple questions and the AI recommends the
- * exact DSM edition to buy, with an action-oriented buy CTA.
+ * The visitor answers 3 dead-simple questions and the AI recommends the EXACT
+ * real product/edition to buy from the LIVE DSM catalog, with a buy CTA that
+ * deep-links straight to that product in the store (`/store?product=<id>`).
+ *
+ * How the recommendation is built:
+ *  1. The answers are turned into a focused catalog search against the live
+ *     product API (`VITE_API_BASE/search`) to pull real candidate editions —
+ *     with real names, prices and license types.
+ *  2. Those candidates are handed to the codex-proxy LLM, which picks the single
+ *     best-fit product id and writes a warm, jargon-free headline + reasons.
+ *  3. We map the chosen id back to the real product and render a buy CTA.
  *
  * Resilience contract:
  *  - The whole feature is wrapped in <AIFeature backend="codex">. If the
  *    codex-proxy is unhealthy the CTA never renders (no spinner, no error).
- *  - The recommendation call (src/lib/llm.ts `chat`) is bounded + catches; on
- *    failure we degrade to a deterministic local recommendation so the buyer
- *    is NEVER left without an answer, and we report the outage via telemetry.
+ *  - The catalog search hits the UNSTABLE VPS API: it is bounded + caught. If it
+ *    fails we report an `ai_outage` and degrade to a real "browse the right
+ *    range" CTA into the store, so the buyer always has a next step.
+ *  - The LLM pick is bounded + caught. On failure we report an `ai_outage` and
+ *    degrade to the top real search result — still a genuine product with a buy
+ *    CTA, never a dead end.
  *  - "Email me this" uses the STABLE mail bridge (src/lib/stable/email). If the
  *    bridge is down the send is parked in the offline queue and retried later.
  *
@@ -18,14 +30,15 @@
  */
 
 import { useState } from 'react';
-import { Check, Sparkles, Loader2, ArrowRight, Mail } from 'lucide-react';
+import { Check, Sparkles, Loader2, ArrowRight, Mail, Store } from 'lucide-react';
 
 import AIFeature from '@/components/ai/AIFeature';
 import { chat, LLMError } from '@/lib/llm';
 import { checkCodex } from '@/lib/health';
 import { track, reportAiOutage } from '@/lib/stable/analytics';
-import { sendEmail } from '@/lib/stable/email';
-import { enqueue } from '@/lib/offlineQueue';
+import { sendEmail, type SendEmailArgs } from '@/lib/stable/email';
+import { enqueue, registerProcessor } from '@/lib/offlineQueue';
+import type { Product, SearchResponse } from '@/lib/api';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,59 +59,60 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-// ── Edition catalog (sales-first copy; the single source of truth the AI
-//    must choose from). Keeping it local means we can always fall back to a
-//    deterministic pick when the LLM is unavailable. ─────────────────────────
+const FEATURE = 'license-advisor';
+const EMAIL_QUEUE_KIND = 'license_advice_email';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5051';
+const SEARCH_TIMEOUT_MS = 6000;
+const MAX_CANDIDATES = 8;
 
-interface Edition {
-  id: string;
-  name: string;
-  tagline: string;
-  priceLabel: string;
-  /** Plain-English "who it's for" used in the fallback + the prompt. */
-  bestFor: string;
-  highlights: string[];
-  /** Where the buy CTA sends the visitor. */
-  buyHref: string;
-}
-
-const EDITIONS: Edition[] = [
-  {
-    id: 'standard',
-    name: 'DSM Standard',
-    tagline: 'Everything a solo pro or small team needs to start winning work.',
-    priceLabel: 'from $49/mo',
-    bestFor: 'Individuals and teams of up to 3 who want the essentials without the extras.',
-    highlights: ['1–3 seats', 'Core design toolkit', 'Email support', 'Cloud project storage'],
-    buyHref: '/pricing?edition=standard',
-  },
-  {
-    id: 'professional',
-    name: 'DSM Professional',
-    tagline: 'The best-value edition for growing studios that ship every week.',
-    priceLabel: 'from $99/mo',
-    bestFor: 'Busy teams of 4–20 who need collaboration, faster rendering, and priority help.',
-    highlights: ['Up to 20 seats', 'Real-time collaboration', 'Priority support', 'Advanced 3D + render tools'],
-    buyHref: '/pricing?edition=professional',
-  },
-  {
-    id: 'enterprise',
-    name: 'DSM Enterprise',
-    tagline: 'Security, control, and a dedicated team behind every deployment.',
-    priceLabel: 'custom pricing',
-    bestFor: 'Larger organizations (20+) that need SSO, admin controls, and a named account manager.',
-    highlights: ['Unlimited seats', 'SSO + admin controls', 'Dedicated account manager', 'Onboarding & SLAs'],
-    buyHref: '/pricing?edition=enterprise',
-  },
-];
-
-const DEFAULT_EDITION_ID = 'professional';
-
-function editionById(id: string): Edition {
-  return EDITIONS.find((e) => e.id === id) ?? EDITIONS.find((e) => e.id === DEFAULT_EDITION_ID)!;
-}
+// Drain queued recommendation emails once the mail bridge recovers, so a lead
+// captured during an outage is never silently lost.
+registerProcessor<SendEmailArgs>(EMAIL_QUEUE_KIND, async (args) => {
+  await sendEmail(args);
+});
 
 // ── The 3 simple questions ───────────────────────────────────────────────────
+// Q1 (need) is the primary driver: each option carries a catalog search query
+// plus plain-English copy used when we have to fall back to a "browse the range"
+// recommendation.
+
+interface NeedInfo {
+  /** Catalog search terms that surface real candidate editions. */
+  query: string;
+  /** Human name of the range, for fallback copy. */
+  label: string;
+  /** One-line plain-English blurb, used as a fallback reason. */
+  blurb: string;
+}
+
+const NEEDS: Record<string, NeedInfo> = {
+  design: {
+    query: 'AutoCAD Revit Fusion design CAD',
+    label: 'design & CAD',
+    blurb: 'Industry-standard design and CAD tools like AutoCAD, Revit and Fusion.',
+  },
+  office: {
+    query: 'Microsoft Office 365 productivity',
+    label: 'Office & productivity',
+    blurb: 'Everyday productivity — Word, Excel, Teams and Microsoft 365.',
+  },
+  server: {
+    query: 'Windows Server infrastructure',
+    label: 'servers & IT infrastructure',
+    blurb: 'Server and infrastructure licensing for your IT backbone.',
+  },
+  rendering: {
+    query: 'V-Ray Corona rendering visualization',
+    label: 'rendering & visualisation',
+    blurb: 'Photorealistic rendering engines like V-Ray and Corona.',
+  },
+};
+
+const DEFAULT_NEED = 'office';
+
+function needFor(answers: Answers): NeedInfo {
+  return NEEDS[answers.need ?? ''] ?? NEEDS[DEFAULT_NEED];
+}
 
 interface QuestionOption {
   value: string;
@@ -106,15 +120,25 @@ interface QuestionOption {
 }
 
 interface Question {
-  id: 'teamSize' | 'goal' | 'priority';
+  id: 'need' | 'teamSize' | 'buying';
   prompt: string;
   options: QuestionOption[];
 }
 
 const QUESTIONS: Question[] = [
   {
+    id: 'need',
+    prompt: 'What do you need the software for?',
+    options: [
+      { value: 'design', label: 'Design, CAD & 3D modelling' },
+      { value: 'office', label: 'Office & everyday productivity' },
+      { value: 'server', label: 'Servers & IT infrastructure' },
+      { value: 'rendering', label: 'Photorealistic rendering & visuals' },
+    ],
+  },
+  {
     id: 'teamSize',
-    prompt: 'How many people will be using DSM?',
+    prompt: 'How many people will use it?',
     options: [
       { value: 'solo', label: 'Just me' },
       { value: 'small', label: 'A small team (2–20)' },
@@ -122,83 +146,96 @@ const QUESTIONS: Question[] = [
     ],
   },
   {
-    id: 'goal',
-    prompt: "What matters most to you right now?",
+    id: 'buying',
+    prompt: 'How would you like to pay?',
     options: [
-      { value: 'start', label: 'Get started affordably' },
-      { value: 'grow', label: 'Work faster & together' },
-      { value: 'control', label: 'Security & central control' },
-    ],
-  },
-  {
-    id: 'priority',
-    prompt: 'How hands-on do you want our team to be?',
-    options: [
-      { value: 'self', label: "I'll set it up myself" },
-      { value: 'guided', label: 'Some guidance is nice' },
-      { value: 'managed', label: 'Do it with me, end to end' },
+      { value: 'subscription', label: 'Yearly subscription' },
+      { value: 'perpetual', label: 'One-time / own it outright' },
+      { value: 'unsure', label: "Not sure — recommend for me" },
     ],
   },
 ];
 
 type Answers = Partial<Record<Question['id'], string>>;
 
+function answerLabel(qid: Question['id'], value?: string): string {
+  const q = QUESTIONS.find((x) => x.id === qid);
+  return q?.options.find((o) => o.value === value)?.label ?? 'no preference';
+}
+
 interface Recommendation {
-  edition: Edition;
+  /** The real chosen product, or null when we degrade to a range CTA. */
+  product: Product | null;
   headline: string;
   reasons: string[];
-  /** true when this came from the deterministic fallback, not the LLM. */
-  fallback: boolean;
+  priceLabel: string;
+  /** Deep-link into the store for the buy CTA. */
+  buyHref: string;
+  ctaLabel: string;
+  /** How this recommendation was produced (telemetry). */
+  source: 'ai' | 'top-result' | 'range';
 }
 
-// ── Deterministic fallback so a buyer is never left without an answer ────────
+// ── Live catalog search (UNSTABLE VPS) — bounded + tolerant ──────────────────
 
-function localRecommend(answers: Answers): Recommendation {
-  let id: string = DEFAULT_EDITION_ID;
-  if (answers.teamSize === 'large' || answers.goal === 'control' || answers.priority === 'managed') {
-    id = 'enterprise';
-  } else if (answers.teamSize === 'solo' && answers.goal === 'start') {
-    id = 'standard';
-  } else {
-    id = 'professional';
+async function searchCatalog(query: string): Promise<Product[]> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SEARCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`, {
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`search HTTP ${res.status}`);
+    const data = (await res.json()) as SearchResponse;
+    return Array.isArray(data.products) ? data.products.slice(0, MAX_CANDIDATES) : [];
+  } finally {
+    clearTimeout(timer);
   }
-  const edition = editionById(id);
-  return {
-    edition,
-    headline: `${edition.name} is your best fit`,
-    reasons: [edition.bestFor, edition.tagline],
-    fallback: true,
-  };
 }
 
-// ── LLM-powered recommendation ───────────────────────────────────────────────
+function priceLabel(p: Product): string {
+  const raw = (p.price ?? '').toString().trim();
+  return raw && raw.toLowerCase() !== 'variable' ? raw : 'Contact for pricing';
+}
+
+function buyHref(p: Product): string {
+  return `/store?product=${encodeURIComponent(String(p.id))}`;
+}
+
+// ── LLM-powered pick from the REAL candidates ────────────────────────────────
 
 interface LlmPick {
-  editionId?: string;
+  productId?: string | number;
   headline?: string;
   reasons?: string[];
 }
 
-function buildMessages(answers: Answers) {
-  const catalog = EDITIONS.map(
-    (e) => `- id="${e.id}" | ${e.name} (${e.priceLabel}): ${e.bestFor}`,
-  ).join('\n');
+function candidateLine(p: Product): string {
+  const parts = [`id="${p.id}"`, p.name];
+  parts.push(`price: ${priceLabel(p)}`);
+  if (p.licenseType) parts.push(`license: ${p.licenseType}`);
+  if (p.category) parts.push(`category: ${p.category}`);
+  if (p.description) parts.push(`about: ${p.description.slice(0, 160)}`);
+  return `- ${parts.join(' | ')}`;
+}
 
-  const said = QUESTIONS.map((q) => {
-    const opt = q.options.find((o) => o.value === answers[q.id]);
-    return `${q.prompt} → ${opt ? opt.label : 'no answer'}`;
-  }).join('\n');
+function buildMessages(answers: Answers, candidates: Product[]) {
+  const said = QUESTIONS.map((q) => `${q.prompt} → ${answerLabel(q.id, answers[q.id])}`).join('\n');
+  const catalog = candidates.map(candidateLine).join('\n');
 
   const system =
-    'You are a friendly DSM sales advisor helping a NON-TECHNICAL buyer pick the right edition. ' +
-    'Speak in warm, plain English. Be confident, concise, and action-oriented. ' +
-    'You MUST choose exactly one edition id from the catalog. ' +
+    'You are a friendly DSM sales advisor helping a NON-TECHNICAL buyer pick the exact ' +
+    'software edition to buy from a software & IT licensing store. Speak in warm, plain ' +
+    'English — confident, concise, no jargon. You MUST choose exactly ONE product by its ' +
+    'id from the candidate list; never invent products, prices, or features. Match the ' +
+    "edition to the buyer's team size (prefer solo/single-user editions for one person, " +
+    'multi-user or volume editions for larger teams) and how they prefer to pay. ' +
     'Reply with ONLY a JSON object, no markdown, shaped like: ' +
-    '{"editionId":"<one of the catalog ids>","headline":"<short benefit-led headline>",' +
+    '{"productId":"<one id from the candidates>","headline":"<short benefit-led headline>",' +
     '"reasons":["<plain-English reason>","<plain-English reason>"]}. ' +
-    'Give 2–3 reasons, each one short sentence, focused on what the buyer gets — not jargon.';
+    'Give 2–3 reasons, each one short sentence, focused on what the buyer gets.';
 
-  const user = `Editions:\n${catalog}\n\nThe buyer told us:\n${said}\n\nRecommend the single best edition.`;
+  const user = `Candidate editions:\n${catalog}\n\nThe buyer told us:\n${said}\n\nRecommend the single best-fit edition.`;
 
   return [
     { role: 'system' as const, content: system },
@@ -208,7 +245,6 @@ function buildMessages(answers: Answers) {
 
 function parseLlmPick(raw: string): LlmPick | null {
   try {
-    // Tolerate stray prose / code fences around the JSON.
     const start = raw.indexOf('{');
     const end = raw.lastIndexOf('}');
     if (start === -1 || end === -1 || end < start) return null;
@@ -218,35 +254,80 @@ function parseLlmPick(raw: string): LlmPick | null {
   }
 }
 
+function cleanReasons(reasons: unknown, product: Product): string[] {
+  if (Array.isArray(reasons)) {
+    const cleaned = reasons
+      .filter((r): r is string => typeof r === 'string' && r.trim().length > 0)
+      .map((r) => r.trim())
+      .slice(0, 3);
+    if (cleaned.length) return cleaned;
+  }
+  const desc = (product.description ?? '').trim();
+  return desc ? [desc] : ['A great fit for what you described.'];
+}
+
+/** Wrap a real product as a recommendation (used for AI + top-result paths). */
+function fromProduct(product: Product, source: Recommendation['source'], pick?: LlmPick): Recommendation {
+  return {
+    product,
+    headline: pick?.headline?.trim() || `${product.name} is your best fit`,
+    reasons: cleanReasons(pick?.reasons, product),
+    priceLabel: priceLabel(product),
+    buyHref: buyHref(product),
+    ctaLabel: 'View & buy',
+    source,
+  };
+}
+
+/** Last-resort real destination when the live catalog is unreachable. */
+function rangeFallback(answers: Answers): Recommendation {
+  const need = needFor(answers);
+  return {
+    product: null,
+    headline: `Explore our ${need.label} range`,
+    reasons: [
+      need.blurb,
+      "Our catalog is refreshing right now — browse the range or ask our team for a tailored quote.",
+    ],
+    priceLabel: 'See live pricing',
+    buyHref: `/store?q=${encodeURIComponent(need.query)}`,
+    ctaLabel: 'Browse the range',
+    source: 'range',
+  };
+}
+
 async function recommend(answers: Answers): Promise<Recommendation> {
-  // Belt-and-suspenders: the proxy may have gone down since mount. A quick
-  // bounded probe lets us skip a doomed 20s call and degrade instantly.
+  const need = needFor(answers);
+
+  // 1. Pull real candidate editions from the live catalog (unstable VPS).
+  let candidates: Product[] = [];
+  try {
+    candidates = await searchCatalog(need.query);
+  } catch (err) {
+    reportAiOutage('vps', FEATURE, err);
+  }
+  if (candidates.length === 0) return rangeFallback(answers);
+
+  // 2. Ask the LLM to pick the single best real product. Belt-and-suspenders
+  //    codex probe so a proxy that died since mount degrades instantly.
   const health = await checkCodex();
   if (!health.ok) {
-    reportAiOutage('codex', 'license-advisor', health.error);
-    return localRecommend(answers);
+    reportAiOutage('codex', FEATURE, health.error);
+    return fromProduct(candidates[0], 'top-result');
   }
 
   try {
-    const text = await chat(buildMessages(answers), { temperature: 0.5, maxTokens: 400 });
+    const text = await chat(buildMessages(answers, candidates), { temperature: 0.4, maxTokens: 400 });
     const pick = parseLlmPick(text);
-    const edition = pick?.editionId ? editionById(pick.editionId) : null;
-    if (!edition) return localRecommend(answers);
-
-    const reasons =
-      Array.isArray(pick?.reasons) && pick!.reasons!.length
-        ? pick!.reasons!.filter((r): r is string => typeof r === 'string' && r.trim().length > 0).slice(0, 3)
-        : [edition.bestFor, edition.tagline];
-
-    return {
-      edition,
-      headline: pick?.headline?.trim() || `${edition.name} is your best fit`,
-      reasons,
-      fallback: false,
-    };
+    const product =
+      pick?.productId != null
+        ? candidates.find((p) => String(p.id) === String(pick.productId))
+        : undefined;
+    if (!product) return fromProduct(candidates[0], 'top-result', pick ?? undefined);
+    return fromProduct(product, 'ai', pick);
   } catch (err) {
-    reportAiOutage('codex', 'license-advisor', err instanceof LLMError ? err.message : err);
-    return localRecommend(answers);
+    reportAiOutage('codex', FEATURE, err instanceof LLMError ? err.message : err);
+    return fromProduct(candidates[0], 'top-result');
   }
 }
 
@@ -281,7 +362,6 @@ function LicenseAdvisorInner() {
     if (next) {
       track({ event: 'license_advisor_open', eventType: 'ai' });
     } else {
-      // Reset shortly after the dialog closes so it's fresh next time.
       reset();
     }
   }
@@ -304,7 +384,7 @@ function LicenseAdvisorInner() {
     track({
       event: 'license_advisor_result',
       eventType: 'ai',
-      metadata: { editionId: result.edition.id, fallback: result.fallback },
+      metadata: { productId: result.product?.id ?? null, source: result.source },
     });
   }
 
@@ -313,13 +393,14 @@ function LicenseAdvisorInner() {
     track({
       event: 'license_advisor_buy_click',
       eventType: 'click',
-      elementText: `Get ${rec.edition.name}`,
-      metadata: { editionId: rec.edition.id },
+      elementText: rec.ctaLabel,
+      metadata: { productId: rec.product?.id ?? null, source: rec.source },
     });
-    // Also drop a durable lead so sales can follow up even if the buyer
-    // bounces before checkout. Fire-and-forget; never blocks navigation.
+    // Drop a durable lead so sales can follow up even if the buyer bounces
+    // before checkout. Fire-and-forget; never blocks navigation.
     enqueue('license_lead', {
-      editionId: rec.edition.id,
+      productId: rec.product?.id ?? null,
+      productName: rec.product?.name ?? null,
       answers,
       email: email || undefined,
       at: Date.now(),
@@ -330,31 +411,32 @@ function LicenseAdvisorInner() {
     if (!rec || !email.trim()) return;
     setEmailState('sending');
 
-    const subject = `Your DSM recommendation: ${rec.edition.name}`;
+    const title = rec.product?.name ?? rec.headline;
+    const subject = `Your DSM recommendation: ${title}`;
     const body = [
       `Hi,`,
       ``,
-      `Based on your answers, we recommend ${rec.edition.name} (${rec.edition.priceLabel}).`,
+      `Based on your answers, we recommend ${title} (${rec.priceLabel}).`,
       ``,
       rec.headline,
       ...rec.reasons.map((r) => `• ${r}`),
       ``,
-      `What you get:`,
-      ...rec.edition.highlights.map((h) => `• ${h}`),
+      rec.product ? `See it here: ${rec.buyHref}` : `Browse the range: ${rec.buyHref}`,
       ``,
       `Ready when you are — reply to this email and we'll get you set up.`,
       `— The DSM Team`,
     ].join('\n');
 
+    const args: SendEmailArgs = { to: email.trim(), subject, body };
     try {
-      await sendEmail({ to: email.trim(), subject, body });
+      await sendEmail(args);
       setEmailState('sent');
-      track({ event: 'license_advisor_email_sent', eventType: 'ai', metadata: { editionId: rec.edition.id } });
+      track({ event: 'license_advisor_email_sent', eventType: 'ai', metadata: { productId: rec.product?.id ?? null } });
     } catch {
       // Mail bridge down → park it for retry so the lead is never lost.
-      enqueue('license_advice_email', { to: email.trim(), subject, body, editionId: rec.edition.id });
+      enqueue(EMAIL_QUEUE_KIND, args);
       setEmailState('queued');
-      track({ event: 'license_advisor_email_queued', eventType: 'ai', metadata: { editionId: rec.edition.id } });
+      track({ event: 'license_advisor_email_queued', eventType: 'ai', metadata: { productId: rec.product?.id ?? null } });
     }
   }
 
@@ -373,7 +455,7 @@ function LicenseAdvisorInner() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            Find your perfect DSM edition
+            Find your perfect edition
           </DialogTitle>
           <DialogDescription>
             Answer {QUESTIONS.length} quick questions — no tech knowledge needed. We'll point you to the exact
@@ -432,10 +514,10 @@ function LicenseAdvisorInner() {
                     <Check className="h-3 w-3" />
                     Recommended for you
                   </Badge>
-                  <span className="text-sm font-semibold text-muted-foreground">{rec.edition.priceLabel}</span>
+                  <span className="text-sm font-semibold text-muted-foreground">{rec.priceLabel}</span>
                 </div>
-                <CardTitle className="text-xl">{rec.edition.name}</CardTitle>
-                <CardDescription>{rec.headline}</CardDescription>
+                <CardTitle className="text-xl">{rec.product?.name ?? rec.headline}</CardTitle>
+                {rec.product && <CardDescription>{rec.headline}</CardDescription>}
               </CardHeader>
               <CardContent className="space-y-3">
                 <ul className="space-y-1.5">
@@ -448,9 +530,9 @@ function LicenseAdvisorInner() {
                 </ul>
 
                 <Button asChild size="lg" className="w-full gap-2">
-                  <a href={rec.edition.buyHref} onClick={onBuy}>
-                    Get {rec.edition.name}
-                    <ArrowRight className="h-4 w-4" />
+                  <a href={rec.buyHref} onClick={onBuy}>
+                    {rec.product ? <ArrowRight className="h-4 w-4" /> : <Store className="h-4 w-4" />}
+                    {rec.ctaLabel}
                   </a>
                 </Button>
 
@@ -509,7 +591,7 @@ function LicenseAdvisorInner() {
 
 export default function LicenseAdvisor() {
   return (
-    <AIFeature backend="codex" feature="license-advisor" fallback={null}>
+    <AIFeature backend="codex" feature={FEATURE} fallback={null}>
       <LicenseAdvisorInner />
     </AIFeature>
   );

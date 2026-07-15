@@ -11,8 +11,12 @@
  * so a specialist walks in already knowing the pitch.
  *
  * Resilience contract:
- *  - Wrapped in <AIFeature backend="codex">, so the whole widget renders NOTHING
- *    when the LLM proxy is unhealthy — it never blocks or breaks the page.
+ *  - Wrapped in <AIFeature backend="codex"> with a beta-signup degradation: when
+ *    the LLM proxy is unhealthy the widget swaps to a lightweight capture form
+ *    (same fields, same STABLE booking) that skips the AI brief but STILL books
+ *    the call from the prospect's own words — a down model never means a lost
+ *    lead or a dead-end. The wrapper re-checks the proxy on an interval, so the
+ *    full AI experience returns automatically once it recovers.
  *  - Booking uses ONLY stable backends. The calendar/email goes through the
  *    local mail bridge; if that bridge is down the booking + the sales notice are
  *    parked in the offline queue and retried automatically. The prospect is
@@ -102,6 +106,13 @@ interface CallBrief {
 }
 
 type Phase = 'form' | 'booking' | 'booked' | 'error';
+
+/**
+ * Which experience produced a booking:
+ *  - 'ai'   → codex-proxy healthy, the form used the AI-generated brief;
+ *  - 'beta' → LLM degraded, the form booked straight from the prospect's words.
+ */
+type BookingSource = 'ai' | 'beta';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -283,7 +294,13 @@ function buildNotifyEmail(input: CallbackInput, brief: CallBrief, startIso: stri
  *  - notify the sales desk by email with the AI brief
  * Any bridge failure parks the action in the offline queue for automatic retry.
  */
-function bookCallback(input: CallbackInput, brief: CallBrief, startIso: string, endIso: string): void {
+function bookCallback(
+  input: CallbackInput,
+  brief: CallBrief,
+  startIso: string,
+  endIso: string,
+  source: BookingSource,
+): void {
   const eventArgs = buildEventArgs(input, brief, startIso, endIso);
   const notifyArgs = buildNotifyEmail(input, brief, startIso);
 
@@ -293,6 +310,7 @@ function bookCallback(input: CallbackInput, brief: CallBrief, startIso: string, 
     elementText: 'smart-callback',
     metadata: {
       feature: 'smart-callback',
+      source, // 'ai' when the LLM brief succeeded, 'beta' when degraded
       email: input.email,
       name: input.name,
       company: input.company,
@@ -310,9 +328,22 @@ function bookCallback(input: CallbackInput, brief: CallBrief, startIso: string, 
   });
 }
 
-// ── Inner UI (only mounted when codex-proxy is healthy) ───────────────────────
+// ── Shared form (serves both the AI path and the degraded beta path) ──────────
+//
+// One form drives both experiences so they stay in lock-step (identical fields,
+// validation and STABLE booking). The only difference is how the call brief is
+// produced: the 'ai' mode asks codex-proxy for a polished brief; the 'beta' mode
+// (mounted by <AIFeature> when the proxy is down) skips the model entirely and
+// books straight from the prospect's own words. Neither mode can lose a lead.
 
-function SmartCallbackInner({ className }: { className?: string }) {
+interface CallbackFormProps {
+  className?: string;
+  /** 'ai' when codex-proxy is healthy; 'beta' when degraded via <AIFeature>. */
+  mode: BookingSource;
+}
+
+function CallbackForm({ className, mode }: CallbackFormProps) {
+  const isBeta = mode === 'beta';
   const fieldId = useId();
   const [input, setInput] = useState<CallbackInput>({
     name: '',
@@ -360,33 +391,41 @@ function SmartCallbackInner({ className }: { className?: string }) {
       track({
         event: 'smart_callback_submit',
         eventType: 'ai',
-        metadata: { feature: 'smart-callback', company: input.company, start: startIso },
+        metadata: { feature: 'smart-callback', mode, company: input.company, start: startIso },
       });
 
-      // Get the AI brief — but NEVER drop the booking if the model hiccups.
+      // Decide how to build the sales brief. In beta mode the LLM is known-down,
+      // so we skip it entirely; otherwise we ask codex-proxy but NEVER drop the
+      // booking if the model hiccups — the prospect's own words become the brief.
       let brief: CallBrief;
-      try {
-        const reply = await chat(buildMessages(input), { temperature: 0.4, maxTokens: 400 });
-        brief = extractBrief(reply);
-      } catch (err) {
-        track({
-          event: 'ai_outage',
-          eventType: 'error',
-          metadata: {
-            service: 'codex',
-            feature: 'smart-callback',
-            error: err instanceof Error ? err.message : String(err),
-          },
-        });
+      let source: BookingSource = mode;
+      if (isBeta) {
         brief = fallbackBrief(input);
+      } else {
+        try {
+          const reply = await chat(buildMessages(input), { temperature: 0.4, maxTokens: 400 });
+          brief = extractBrief(reply);
+        } catch (err) {
+          track({
+            event: 'ai_outage',
+            eventType: 'error',
+            metadata: {
+              service: 'codex',
+              feature: 'smart-callback',
+              error: err instanceof Error ? err.message : String(err),
+            },
+          });
+          brief = fallbackBrief(input);
+          source = 'beta'; // AI was meant to run but degraded on this request
+        }
       }
 
       // Book on stable backends only — resolves instantly, retries in background.
-      bookCallback(input, brief, startIso, endIso);
+      bookCallback(input, brief, startIso, endIso, source);
       setConfirmedWhen(startIso);
       setPhase('booked');
     },
-    [input, validationError],
+    [input, validationError, mode, isBeta],
   );
 
   const reset = useCallback(() => {
@@ -416,8 +455,10 @@ function SmartCallbackInner({ className }: { className?: string }) {
         <p className="mt-2 text-muted-foreground">
           A DSM specialist will call you on{' '}
           <strong className="text-foreground">{friendlyWhen(confirmedWhen)}</strong>. We&apos;ve
-          emailed a calendar invite to <strong className="text-foreground">{input.email}</strong> and
-          briefed the team on exactly what you need — so no time is wasted.
+          emailed a calendar invite to <strong className="text-foreground">{input.email}</strong> and{' '}
+          {isBeta
+            ? 'passed your notes straight to the team — so no time is wasted.'
+            : 'briefed the team with an AI summary of exactly what you need — so no time is wasted.'}
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -558,7 +599,9 @@ function SmartCallbackInner({ className }: { className?: string }) {
 
       <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
         <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
-        We brief the specialist with an AI summary of your request, so the call gets straight to value.
+        {isBeta
+          ? 'We pass your notes straight to the specialist, so the call gets straight to value.'
+          : 'We brief the specialist with an AI summary of your request, so the call gets straight to value.'}
       </p>
     </form>
   );
@@ -572,13 +615,21 @@ export interface SmartCallbackProps {
 }
 
 /**
- * Drop-in Smart Callback. Renders nothing when the LLM backend is down (per the
- * resilience contract), so it is always safe to place in the AI Lab or footer.
+ * Drop-in Smart Callback. When codex-proxy is healthy (checked, and periodically
+ * re-checked, by <AIFeature>) it runs the full AI-briefed booking flow. When the
+ * proxy is down it degrades to the SAME form in beta mode — still capturing the
+ * intent and booking the 30-minute call on STABLE backends — so it is always
+ * safe to place in the AI Lab or footer and never a dead-end for a lead.
  */
 export default function SmartCallback({ className }: SmartCallbackProps) {
   return (
-    <AIFeature backend="codex" feature="smart-callback">
-      <SmartCallbackInner className={className} />
+    <AIFeature
+      backend="codex"
+      feature="smart-callback"
+      recheckMs={60_000}
+      fallback={<CallbackForm mode="beta" className={className} />}
+    >
+      <CallbackForm mode="ai" className={className} />
     </AIFeature>
   );
 }

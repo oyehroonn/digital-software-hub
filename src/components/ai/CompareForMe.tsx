@@ -2,11 +2,21 @@
  * CompareForMe — AI feature #4 ("Compare & Recommend").
  *
  * A sales-first, plain-English product comparison tool for NON-technical buyers.
- * The shopper ticks 2–3 products, hits "Compare & Recommend", and the codex-proxy
- * LLM streams back a jargon-free side-by-side plus a clear "buy this one" verdict
- * and a next step. Optionally the shopper can have the write-up emailed to them
- * (lead capture) — sent via the STABLE email bridge and parked in the offline
- * queue if the bridge is momentarily down.
+ * The shopper searches the REAL DSM catalogue, ticks 2–3 products, optionally
+ * says what matters most to them, hits "Compare & Recommend", and the
+ * codex-proxy LLM streams back a jargon-free side-by-side plus a clear
+ * "buy this one" verdict tailored to their priorities, and a next step.
+ * Optionally the shopper can have the write-up emailed to them (lead capture) —
+ * sent via the STABLE email bridge and parked in the offline queue if the
+ * bridge is momentarily down.
+ *
+ * Catalogue source:
+ *  - If `products` are passed in (e.g. the page already has a catalogue slice),
+ *    those are used and searched client-side.
+ *  - Otherwise the component loads the live catalogue itself from the products
+ *    API (`getTopProducts` for a curated starting set, `searchProducts` as the
+ *    shopper types). Picks persist across searches so a buyer can find one
+ *    product, tick it, search again, and tick another.
  *
  * Resilience contract:
  *  - The whole thing is wrapped in <AIFeature backend="codex">. If the LLM proxy
@@ -14,20 +24,25 @@
  *    `ai_outage` telemetry event is fired by the wrapper.
  *  - A runtime LLM failure (proxy dies mid-request) is caught, degrades to a
  *    friendly inline message, and ALSO reports an `ai_outage` event.
+ *  - The catalogue lives on the UNSTABLE products API, so every load is bounded
+ *    and failure-tolerant: a search that errors falls back to filtering the
+ *    already-loaded products locally and a `products_api` outage is reported —
+ *    the compare flow keeps working with whatever is on screen.
  *  - Emailing never blocks: on bridge failure the request is queued for retry.
  *
  * This component is self-contained and is NOT wired into any page here — the Wire
- * step decides where it mounts and what catalogue it receives.
+ * step decides where it mounts and what catalogue (if any) it receives.
  */
 
-import { useMemo, useState } from 'react';
-import { Sparkles, Check, Mail, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Sparkles, Check, Mail, AlertCircle, Loader2, RefreshCw, Search, X } from 'lucide-react';
 
 import AIFeature from '@/components/ai/AIFeature';
 import { chatStream, LLMError, type ChatMessage } from '@/lib/llm';
 import { reportAiOutage } from '@/lib/telemetry';
 import { sendEmail, type SendEmailArgs } from '@/lib/stable/email';
 import { enqueue, registerProcessor } from '@/lib/offlineQueue';
+import { getTopProducts, searchProducts, type Product } from '@/lib/api';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -45,6 +60,8 @@ const FEATURE = 'compare-for-me';
 const MIN_PICKS = 2;
 const MAX_PICKS = 3;
 const EMAIL_QUEUE_KIND = 'compare-email';
+const CATALOG_LIMIT = 24; // how many catalogue rows to show in the picker
+const SEARCH_DEBOUNCE_MS = 350;
 
 /**
  * The shape we need to compare a product. Deliberately loose so it accepts the
@@ -65,8 +82,11 @@ export interface ComparableProduct {
 }
 
 export interface CompareForMeProps {
-  /** The catalogue the shopper may pick from. */
-  products: ComparableProduct[];
+  /**
+   * An optional catalogue slice to pick from. When omitted (or empty) the
+   * component loads the live catalogue itself from the products API.
+   */
+  products?: ComparableProduct[];
   /** Optionally pre-tick some products (e.g. the one being viewed). */
   preselectedIds?: Array<string | number>;
   /** Extra classes for the outer card wrapper. */
@@ -80,11 +100,49 @@ registerProcessor<SendEmailArgs>(EMAIL_QUEUE_KIND, async (args) => {
   await sendEmail(args);
 });
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Narrow the full `Product` to the loose comparable shape we display/prompt. */
+function toComparable(p: Product): ComparableProduct {
+  return {
+    id: p.id,
+    name: p.name,
+    price: p.price,
+    category: p.category,
+    brand: p.brand,
+    licenseType: p.licenseType,
+    platform: p.platform,
+    validity: p.validity,
+    description: p.description,
+    tags: p.tags,
+    whatsIncluded: p.whatsIncluded,
+  };
+}
+
+/** A price is only worth showing to a buyer if it's an actual figure. */
+function displayPrice(price: ComparableProduct['price']): string | null {
+  if (price == null || price === '') return null;
+  if (typeof price === 'number') return `AED ${price}`;
+  return /\d/.test(price) ? price : null; // hide "Contact for pricing" etc.
+}
+
+/** Client-side filter used for a provided catalogue or as a search fallback. */
+function localFilter(items: ComparableProduct[], q: string): ComparableProduct[] {
+  const needle = q.trim().toLowerCase();
+  if (!needle) return items;
+  return items.filter((p) =>
+    [p.name, p.brand, p.category, p.description, ...(p.tags ?? [])]
+      .filter(Boolean)
+      .some((field) => String(field).toLowerCase().includes(needle)),
+  );
+}
+
 // ── Prompt construction ──────────────────────────────────────────────────────
 
 function productToPromptLine(p: ComparableProduct): string {
   const parts: string[] = [`• ${p.name}`];
-  if (p.price != null && p.price !== '') parts.push(`price: ${p.price}`);
+  const price = displayPrice(p.price);
+  if (price) parts.push(`price: ${price}`);
   if (p.category) parts.push(`category: ${p.category}`);
   if (p.brand) parts.push(`brand: ${p.brand}`);
   if (p.licenseType) parts.push(`license: ${p.licenseType}`);
@@ -96,7 +154,7 @@ function productToPromptLine(p: ComparableProduct): string {
   return parts.join(' | ');
 }
 
-function buildMessages(picked: ComparableProduct[]): ChatMessage[] {
+function buildMessages(picked: ComparableProduct[], priorities: string): ChatMessage[] {
   const system: ChatMessage = {
     role: 'system',
     content: [
@@ -110,17 +168,23 @@ function buildMessages(picked: ComparableProduct[]): ChatMessage[] {
       '  "Quick comparison:" 2-4 short bullet lines contrasting the options in everyday terms (price, what you get, who it suits).',
       '  "Why this pick:" 2-3 short bullets on the concrete benefits of your recommendation.',
       '  "Next step:" one encouraging sentence inviting them to add it to the cart or ask for a tailored quote.',
-      '- Never invent specs, prices, or features that were not given. If unsure, speak in benefit terms.',
+      '- If the buyer told you what matters most to them, treat that as the deciding factor and refer to it directly in "Bottom line" and "Why this pick".',
+      '- Never invent specs, prices, or features that were not given. If a price is not listed, say pricing is on request rather than guessing a number.',
       '- Sound helpful and confident, never pushy.',
     ].join('\n'),
   };
 
+  const trimmedPriorities = priorities.trim();
   const user: ChatMessage = {
     role: 'user',
     content: [
       'Please compare these products and tell me which to buy and why:',
       '',
       ...picked.map(productToPromptLine),
+      '',
+      trimmedPriorities
+        ? `What matters most to me: ${trimmedPriorities}`
+        : 'I have not said what matters most — recommend the best all-round choice for a typical buyer.',
     ].join('\n'),
   };
 
@@ -136,37 +200,101 @@ function isValidEmail(value: string): boolean {
 }
 
 function CompareForMeInner({ products, preselectedIds, className }: CompareForMeProps) {
-  const initialSelected = useMemo(() => {
-    const set = new Set<string>();
-    (preselectedIds ?? []).forEach((id) => set.add(String(id)));
-    return set;
-  }, [preselectedIds]);
+  const providedProducts = products ?? [];
+  const selfFetch = providedProducts.length === 0;
 
-  const [selected, setSelected] = useState<Set<string>>(initialSelected);
+  // Which products the shopper has ticked. We keep the whole object (not just
+  // the id) so a pick survives when the visible list changes under a new search.
+  const [selected, setSelected] = useState<Map<string, ComparableProduct>>(new Map());
+  const seededRef = useRef(false);
+
+  // Catalogue picker state.
+  const [query, setQuery] = useState('');
+  const [catalog, setCatalog] = useState<ComparableProduct[]>(providedProducts);
+  const [loadingCatalog, setLoadingCatalog] = useState(selfFetch);
+  const [catalogNote, setCatalogNote] = useState('');
+
+  // Comparison state.
+  const [priorities, setPriorities] = useState('');
   const [phase, setPhase] = useState<Phase>('select');
   const [result, setResult] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Email capture (lead gen)
+  // Email capture (lead gen).
   const [email, setEmail] = useState('');
   const [emailState, setEmailState] = useState<'idle' | 'queued' | 'sent'>('idle');
 
-  const pickedProducts = useMemo(
-    () => products.filter((p) => selected.has(String(p.id))),
-    [products, selected],
-  );
+  // ── Load the live catalogue when none was provided, and re-query on search ──
+  useEffect(() => {
+    if (!selfFetch) {
+      // Provided catalogue → filter locally, no network.
+      setCatalog(localFilter(providedProducts, query));
+      return;
+    }
 
+    let active = true;
+    const q = query.trim();
+    setLoadingCatalog(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = q ? await searchProducts(q) : await getTopProducts(CATALOG_LIMIT);
+        if (!active) return;
+        setCatalog((res.products ?? []).slice(0, CATALOG_LIMIT).map(toComparable));
+        setCatalogNote('');
+      } catch (err) {
+        if (!active) return;
+        // The products API (VPS Flask) is unstable — report and keep the picker
+        // usable by falling back to whatever we already have on screen.
+        reportAiOutage('vps', FEATURE, err);
+        setCatalog((prev) => localFilter(prev, q));
+        setCatalogNote(
+          q
+            ? "Live search is momentarily unavailable — showing what we've already loaded."
+            : 'Our catalogue is momentarily unavailable — you can still compare any items shown below.',
+        );
+      } finally {
+        if (active) setLoadingCatalog(false);
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+    // providedProducts is derived from the (stable) prop; query/selfFetch drive it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, selfFetch]);
+
+  // ── Seed preselected picks once, from whatever catalogue is first known ─────
+  useEffect(() => {
+    if (seededRef.current || !preselectedIds?.length) return;
+    const wanted = new Set(preselectedIds.map(String));
+    const pool = selfFetch ? catalog : providedProducts;
+    const found = pool.filter((p) => wanted.has(String(p.id)));
+    if (found.length === 0 && (loadingCatalog || pool.length === 0)) return; // wait for a pool
+    seededRef.current = true;
+    if (found.length === 0) return;
+    setSelected((prev) => {
+      const next = new Map(prev);
+      found.slice(0, MAX_PICKS).forEach((p) => next.set(String(p.id), p));
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalog, loadingCatalog, preselectedIds, selfFetch]);
+
+  const pickedProducts = useMemo(() => Array.from(selected.values()), [selected]);
   const canCompare = selected.size >= MIN_PICKS && selected.size <= MAX_PICKS;
 
-  function toggle(id: string | number) {
-    const key = String(id);
+  function toggle(p: ComparableProduct) {
+    const key = String(p.id);
     setSelected((prev) => {
-      const next = new Set(prev);
+      const next = new Map(prev);
       if (next.has(key)) {
         next.delete(key);
       } else {
         if (next.size >= MAX_PICKS) return prev; // cap at MAX_PICKS
-        next.add(key);
+        next.set(key, p);
       }
       return next;
     });
@@ -182,7 +310,7 @@ function CompareForMeInner({ products, preselectedIds, className }: CompareForMe
 
     try {
       await chatStream(
-        buildMessages(picked),
+        buildMessages(picked, priorities),
         (token) => setResult((prev) => prev + token),
         { temperature: 0.5, maxTokens: 500 },
       );
@@ -197,13 +325,6 @@ function CompareForMeInner({ products, preselectedIds, className }: CompareForMe
       );
       setPhase('error');
     }
-  }
-
-  function reset() {
-    setPhase('select');
-    setResult('');
-    setErrorMsg('');
-    setEmailState('idle');
   }
 
   function emailMe() {
@@ -244,8 +365,8 @@ function CompareForMeInner({ products, preselectedIds, className }: CompareForMe
           <CardTitle className="text-xl">Compare & Recommend</CardTitle>
         </div>
         <CardDescription>
-          Not sure which to buy? Tick {MIN_PICKS}–{MAX_PICKS} options and we'll explain
-          the difference in plain English and tell you the best pick.
+          Not sure which to buy? Search our catalogue, tick {MIN_PICKS}–{MAX_PICKS} options
+          and we'll explain the difference in plain English and tell you the best pick for you.
         </CardDescription>
       </CardHeader>
 
@@ -259,14 +380,56 @@ function CompareForMeInner({ products, preselectedIds, className }: CompareForMe
             </Badge>
           </div>
 
-          <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
-            {products.length === 0 && (
-              <p className="text-sm text-muted-foreground">No products available to compare yet.</p>
+          {/* Search the real catalogue */}
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search products (e.g. Autodesk, rendering, antivirus)…"
+              className="pl-9"
+              aria-label="Search products to compare"
+            />
+            {loadingCatalog && (
+              <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
             )}
-            {products.map((p) => {
+          </div>
+
+          {/* Currently-picked chips (persist across searches) */}
+          {pickedProducts.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {pickedProducts.map((p) => (
+                <button
+                  key={String(p.id)}
+                  type="button"
+                  onClick={() => toggle(p)}
+                  className="inline-flex items-center gap-1 rounded-full border border-crimson/40 bg-crimson/5 px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-crimson/10"
+                  aria-label={`Remove ${p.name}`}
+                >
+                  {p.name}
+                  <X className="h-3 w-3 text-muted-foreground" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {catalogNote && (
+            <p className="text-xs text-muted-foreground">{catalogNote}</p>
+          )}
+
+          <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
+            {!loadingCatalog && catalog.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                {query
+                  ? `No products match "${query.trim()}". Try another word.`
+                  : 'No products available to compare yet.'}
+              </p>
+            )}
+            {catalog.map((p) => {
               const key = String(p.id);
               const isChecked = selected.has(key);
               const atCap = !isChecked && selected.size >= MAX_PICKS;
+              const price = displayPrice(p.price);
               return (
                 <label
                   key={key}
@@ -281,19 +444,37 @@ function CompareForMeInner({ products, preselectedIds, className }: CompareForMe
                   <Checkbox
                     checked={isChecked}
                     disabled={atCap}
-                    onCheckedChange={() => toggle(p.id)}
+                    onCheckedChange={() => toggle(p)}
                     aria-label={`Compare ${p.name}`}
                   />
-                  <span className="flex-1 text-sm text-foreground">{p.name}</span>
-                  {p.price != null && p.price !== '' && (
+                  <span className="flex-1 text-sm text-foreground">
+                    {p.name}
+                    {p.brand && (
+                      <span className="ml-1 text-xs text-muted-foreground">· {p.brand}</span>
+                    )}
+                  </span>
+                  {price && (
                     <span className="whitespace-nowrap text-sm font-medium text-muted-foreground">
-                      {typeof p.price === 'number' ? `AED ${p.price}` : p.price}
+                      {price}
                     </span>
                   )}
                 </label>
               );
             })}
           </div>
+        </div>
+
+        {/* Optional: tailor the recommendation */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground" htmlFor="compare-priorities">
+            What matters most to you? <span className="text-muted-foreground">(optional)</span>
+          </label>
+          <Input
+            id="compare-priorities"
+            value={priorities}
+            onChange={(e) => setPriorities(e.target.value)}
+            placeholder="e.g. tightest budget, easiest to use, for a 5-person team"
+          />
         </div>
 
         {/* Primary CTA */}

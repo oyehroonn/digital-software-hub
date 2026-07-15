@@ -14,6 +14,7 @@ import Footer from "@/components/Footer";
 import GrainOverlay from "@/components/GrainOverlay";
 import InstantQuote from "@/components/ai/InstantQuote";
 import SavingsCalculator from "@/components/ai/SavingsCalculator";
+import OwnProductBoxes from "@/components/OwnProductBoxes";
 
 const Index = () => {
   return (
@@ -46,6 +47,27 @@ const Index = () => {
         <BrandSpotlight />
         <PopularProducts />
         <TrustSection />
+        {/*
+          End-of-page scroll animation — our own products drift past as
+          DSM-style 3D boxes (fixed priority order, DSM first). The row only
+          animates once it scrolls into view and pauses on hover; pure CSS 3D
+          keeps it smooth on mobile. Each box links to that product.
+        */}
+        <section className="relative z-10 overflow-hidden border-t border-white/[0.06] bg-[#050507] py-24">
+          <div className="mb-12 px-6 text-center">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-crimson">
+              The DSM Family
+            </span>
+            <h2 className="mt-2 font-serif text-3xl text-[#FEFEFE] sm:text-4xl">
+              More than a marketplace
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-[#B1B2B3]">
+              A studio of products built by the DSM team. Hover to pause, click
+              any box to explore.
+            </p>
+          </div>
+          <OwnProductBoxes variant="marquee" />
+        </section>
       </main>
       <Footer />
     </>

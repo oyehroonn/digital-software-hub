@@ -33,6 +33,7 @@ import {
 
 import AIFeature from '@/components/ai/AIFeature';
 import { chat, LLMError } from '@/lib/llm';
+import { searchProducts, type Product } from '@/lib/api';
 import { sendEmail, type SendEmailArgs } from '@/lib/stable/email';
 import { enqueue, registerProcessor } from '@/lib/offlineQueue';
 import { reportAiOutage, track } from '@/lib/stable/analytics';
@@ -73,6 +74,15 @@ export interface UpgradeOffer {
   priceHint?: string;
   /** Optional highlight badge, e.g. "Most popular", "Best value". */
   badge?: string;
+  /**
+   * When the offer is grounded in the live catalog, the real product id — the
+   * CTA links straight to this product's page instead of a generic prompt.
+   */
+  productId?: string;
+  /** Relative link to the real product page (only set for catalog-grounded offers). */
+  href?: string;
+  /** Real catalog price string, e.g. "Contact for pricing" (catalog-grounded offers). */
+  price?: string;
 }
 
 export interface UpgradeFinderProps {
@@ -134,13 +144,18 @@ function extractJson(raw: string): unknown {
   }
 }
 
+/** Pull the `offers` array out of a parsed LLM reply, tolerating a bare array. */
+function toOfferList(parsed: unknown): unknown[] {
+  if (parsed && typeof parsed === 'object' && Array.isArray((parsed as { offers?: unknown }).offers)) {
+    return (parsed as { offers: unknown[] }).offers;
+  }
+  return Array.isArray(parsed) ? (parsed as unknown[]) : [];
+}
+
+const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
+
 function coerceOffers(parsed: unknown): UpgradeOffer[] {
-  const list =
-    parsed && typeof parsed === 'object' && Array.isArray((parsed as { offers?: unknown }).offers)
-      ? ((parsed as { offers: unknown[] }).offers)
-      : Array.isArray(parsed)
-        ? (parsed as unknown[])
-        : [];
+  const list = toOfferList(parsed);
 
   const offers: UpgradeOffer[] = [];
   for (const item of list) {
@@ -176,6 +191,133 @@ async function findUpgrades(owned: string[]): Promise<UpgradeOffer[]> {
   return coerceOffers(extractJson(reply));
 }
 
+// ── Catalog-grounded upgrades (VPS product API + LLM) ─────────────────────────
+// The stronger path: instead of letting the LLM invent product names, we pull
+// real candidate products from the live catalog and make the LLM pick upgrades
+// ONLY from that set, referencing each by its real id. Every offer then links
+// straight to a real product page with a real price. If the catalog is
+// unreachable we fall back to the freeform path above (findUpgrades).
+
+const MAX_CANDIDATES = 30;
+
+/** Link to the real product page in the store (mirrors SmartSearch). */
+function productHref(id: string | number): string {
+  return `/store?product=${encodeURIComponent(String(id))}`;
+}
+
+/**
+ * Pull candidate products from the live catalog by searching each owned item.
+ * Deduped by id and capped. Throws only if EVERY search failed (catalog down),
+ * so the caller can report the outage and fall back to the freeform path.
+ */
+async function fetchCandidates(owned: string[]): Promise<Product[]> {
+  const results = await Promise.allSettled(owned.slice(0, 8).map((q) => searchProducts(q)));
+  const seen = new Set<string>();
+  const out: Product[] = [];
+  let anyOk = false;
+
+  for (const r of results) {
+    if (r.status !== 'fulfilled') continue;
+    anyOk = true;
+    for (const p of r.value.products) {
+      const id = String(p.id);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push(p);
+      if (out.length >= MAX_CANDIDATES) break;
+    }
+    if (out.length >= MAX_CANDIDATES) break;
+  }
+
+  if (!anyOk) throw new Error('catalog search unavailable');
+  return out;
+}
+
+/** Compact one-line-per-product catalog the LLM chooses upgrades from. */
+function catalogLines(products: Product[]): string {
+  return products
+    .map((p) => {
+      const meta = [p.brand, p.category].filter(Boolean).join(' · ');
+      const price = str(p.price) ? ` — ${str(p.price)}` : '';
+      return `[${p.id}] ${p.name}${meta ? ` (${meta})` : ''}${price}`;
+    })
+    .join('\n');
+}
+
+const CATALOG_SYSTEM_PROMPT = [
+  'You are a friendly, straight-talking sales specialist for DSM, a reseller of',
+  'professional design, engineering and productivity software and workstations.',
+  'The customer tells you what they already own. You are ALSO given DSM\'s real',
+  'product catalog — each line is "[id] Name (brand · category) — price".',
+  'Recommend the best UPGRADES for the customer, choosing ONLY products from that',
+  'catalog and referencing each by its exact [id].',
+  'Rules:',
+  '- NEVER invent a product or an id. Only use ids that appear in the catalog.',
+  '- Pick genuine upgrades to what they own: a newer edition, a higher tier, or the',
+  '  natural next product. If nothing in the catalog is a sensible upgrade for an',
+  '  item, skip that item rather than forcing a weak match.',
+  '- Write for a NON-TECHNICAL buyer. Plain English, warm, confident, no jargon.',
+  '- Be sales-first: make the value obvious and easy to say yes to.',
+  '- Return AT MOST 4 offers, best first.',
+  'Respond with ONLY a JSON object of the shape:',
+  '{"offers":[{"upgradeToId":string,"from":string,"why":string,"benefit":string,',
+  '"cta":string,"badge"?:string}]}',
+  'No markdown, no code fences, no prose before or after the JSON.',
+].join(' ');
+
+/**
+ * Ask the LLM to pick upgrades strictly from the supplied catalog, then resolve
+ * each returned id back to the REAL product (name, price, link). Offers whose id
+ * is not a real catalog product are dropped, so the buyer only ever sees genuine
+ * catalog upgrades.
+ */
+async function findCatalogUpgrades(owned: string[], candidates: Product[]): Promise<UpgradeOffer[]> {
+  const byId = new Map(candidates.map((p) => [String(p.id), p]));
+  const reply = await chat(
+    [
+      { role: 'system', content: CATALOG_SYSTEM_PROMPT },
+      {
+        role: 'user',
+        content: [
+          'What I already own:',
+          owned.map((o) => `- ${o}`).join('\n'),
+          '',
+          'DSM catalog (choose upgrades ONLY from here, by id):',
+          catalogLines(candidates),
+          '',
+          'What should I upgrade to?',
+        ].join('\n'),
+      },
+    ],
+    { temperature: 0.4, maxTokens: 900 },
+  );
+
+  const offers: UpgradeOffer[] = [];
+  const used = new Set<string>();
+  for (const item of toOfferList(extractJson(reply))) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const id = str(o.upgradeToId) || str(o.productId) || str(o.id);
+    const product = byId.get(id);
+    if (!product || used.has(id)) continue; // enforce a REAL, distinct catalog product
+    used.add(id);
+    const price = str(product.price);
+    offers.push({
+      from: str(o.from),
+      upgradeTo: product.name,
+      why: str(o.why),
+      benefit: str(o.benefit),
+      cta: str(o.cta) || 'See the upgrade',
+      badge: str(o.badge) || undefined,
+      productId: String(product.id),
+      href: productHref(product.id),
+      price: price || undefined,
+    });
+    if (offers.length >= 4) break;
+  }
+  return offers;
+}
+
 // ── Owned-products chip input ────────────────────────────────────────────────
 
 function splitEntries(text: string): string[] {
@@ -201,6 +343,7 @@ function UpgradeFinderInner({
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(false);
   const [offers, setOffers] = useState<UpgradeOffer[] | null>(null);
+  const [grounded, setGrounded] = useState(false);
   const [degraded, setDegraded] = useState(false);
   const [email, setEmail] = useState('');
   const [emailing, setEmailing] = useState(false);
@@ -250,17 +393,40 @@ function UpgradeFinderInner({
 
     setLoading(true);
     setDegraded(false);
+    setGrounded(false);
     setOffers(null);
     setEmailed(false);
     track({ event: 'upgrade_finder_search', eventType: 'ai', metadata: { count: combined.length } });
 
     try {
-      const result = await findUpgrades(combined);
+      // Preferred path: ground the LLM in the live catalog so every offer maps
+      // to a real product with a real price and a working upgrade link.
+      let result: UpgradeOffer[] = [];
+      let fromCatalog = false;
+      try {
+        const candidates = await fetchCandidates(combined);
+        if (candidates.length > 0) {
+          result = await findCatalogUpgrades(combined, candidates);
+          fromCatalog = result.length > 0;
+        }
+      } catch (catalogErr) {
+        // Catalog (VPS) is unstable — report and fall back to the freeform path.
+        reportAiOutage('vps', FEATURE, catalogErr instanceof Error ? catalogErr.message : catalogErr);
+      }
+
+      // Fall back to the freeform recommendation when the catalog is down or
+      // yielded no usable candidates, so the buyer still gets guidance.
+      if (result.length === 0) {
+        result = await findUpgrades(combined);
+        fromCatalog = false;
+      }
+
+      setGrounded(fromCatalog);
       setOffers(result);
       track({
         event: 'upgrade_finder_results',
         eventType: 'ai',
-        metadata: { count: result.length },
+        metadata: { count: result.length, grounded: fromCatalog },
       });
     } catch (err) {
       // Runtime LLM failure — degrade gracefully and report the outage.
@@ -274,13 +440,22 @@ function UpgradeFinderInner({
 
   const offersText = useMemo(() => {
     if (!offers || offers.length === 0) return '';
+    const origin =
+      typeof window !== 'undefined' && window.location ? window.location.origin : '';
     return offers
-      .map(
-        (o, i) =>
-          `${i + 1}. ${o.upgradeTo}${o.from ? ` (upgrade from ${o.from})` : ''}\n   Why: ${o.why}\n   You get: ${o.benefit}${
-            o.priceHint ? `\n   ${o.priceHint}` : ''
-          }`,
-      )
+      .map((o, i) => {
+        const priceLine = o.price || o.priceHint;
+        const linkLine = o.href ? `${origin}${o.href}` : '';
+        return [
+          `${i + 1}. ${o.upgradeTo}${o.from ? ` (upgrade from ${o.from})` : ''}`,
+          o.why ? `   Why: ${o.why}` : '',
+          o.benefit ? `   You get: ${o.benefit}` : '',
+          priceLine ? `   ${priceLine}` : '',
+          linkLine ? `   See it: ${linkLine}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n');
+      })
       .join('\n\n');
   }, [offers]);
 
@@ -410,6 +585,12 @@ function UpgradeFinderInner({
         {/* Offers */}
         {offers && offers.length > 0 && (
           <div className="space-y-3">
+            {grounded && (
+              <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                Matched to real products in the DSM catalog.
+              </p>
+            )}
             {offers.map((o, i) => (
               <div
                 key={`${o.upgradeTo}-${i}`}
@@ -436,11 +617,20 @@ function UpgradeFinderInner({
                 )}
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <Button size="sm" variant="default">
-                    {o.cta}
-                  </Button>
-                  {o.priceHint && (
-                    <span className="text-xs text-muted-foreground">{o.priceHint}</span>
+                  {o.href ? (
+                    <Button asChild size="sm" variant="default">
+                      <a href={o.href}>
+                        {o.cta}
+                        <ArrowUpRight className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="default">
+                      {o.cta}
+                    </Button>
+                  )}
+                  {(o.price || o.priceHint) && (
+                    <span className="text-xs text-muted-foreground">{o.price || o.priceHint}</span>
                   )}
                 </div>
               </div>

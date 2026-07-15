@@ -7,20 +7,33 @@
  * the right products, the right seat counts, automatic volume pricing, and
  * a formal quote emailed to whoever needs to sign off.
  *
- * Backend: codex-proxy (LLM) — UNSTABLE. The whole feature is wrapped in
- * <AIFeature backend="codex">, so if the proxy is down the section simply
- * doesn't render (no spinner, no broken UI) and an `ai_outage` telemetry
- * event is fired automatically by the wrapper (resilience contract).
+ * How it works (two grounded stages, not a hallucinated price list):
+ *  1. codex-proxy reads the plain-English team description and PLANS the roles
+ *     — which software each group needs, seat counts, and a one-line reason.
+ *  2. Each planned role is looked up against the LIVE DSM catalogue
+ *     (VITE_API_BASE `/search`) so the cart carries REAL products: real names,
+ *     real product ids, and the real AED list price where the catalogue has one.
+ *     If the catalogue is down or a line is "Contact for pricing", we fall back
+ *     to the model's AED estimate for that line and flag it as indicative.
  *
- * STABLE dependencies only for anything that must not fail:
- *  - Email API (via the local mail bridge) sends the formal quote.
- *  - Analytics/telemetry records interest even if the email bridge is down.
+ * Backend: codex-proxy (LLM) — UNSTABLE. The whole feature is wrapped in
+ * <AIFeature backend="codex">, so if the proxy is down the AI builder is
+ * replaced by a lightweight beta-signup card (still captures the B2B lead on
+ * the STABLE Apps Script) and an `ai_outage` telemetry event is fired by the
+ * wrapper (resilience contract). The product `/search` API is treated as
+ * unstable too and degrades per-line as described above.
+ *
+ * STABLE dependencies for anything that must not fail:
+ *  - Apps Script (orders) — the formal quote is recorded here via submitOrder,
+ *    which is always up and needs no local bridge, so the lead is never lost.
+ *  - Email API (via the local mail bridge) delivers the formatted HTML quote;
+ *    if the bridge is down the email is parked in the offline queue.
+ *  - Analytics/telemetry records interest independently of both.
  *  - The on-screen quote is ALWAYS shown once built, so the buyer gets value
- *    even if the email step can't reach the bridge — it degrades to
- *    "we'll email this to you" instead of blocking.
+ *    even if delivery is delayed.
  *
  * No secrets live here. The LLM key is injected by the same-origin proxy
- * (see src/lib/llm.ts); the mail secret lives in the admin bridge only.
+ * (see src/lib/llm.ts); the mail/Apps Script secrets live server-side only.
  */
 
 import { useCallback, useMemo, useState } from 'react';
@@ -34,12 +47,15 @@ import {
   Send,
   CheckCircle2,
   BadgePercent,
+  PackageCheck,
 } from 'lucide-react';
 
 import AIFeature from '@/components/ai/AIFeature';
 import { chat, LLMError } from '@/lib/llm';
+import { searchProducts, type Product } from '@/lib/api';
 import { track } from '@/lib/stable/analytics';
 import { sendEmail } from '@/lib/stable/email';
+import { submitOrder } from '@/lib/stable/orders';
 import { enqueue } from '@/lib/offlineQueue';
 
 import { Button } from '@/components/ui/button';
@@ -59,16 +75,18 @@ import { Separator } from '@/components/ui/separator';
 // ── Types ─────────────────────────────────────────────────────────────────
 
 const FEATURE = 'bulk-quote-builder';
-const CURRENCY = 'USD';
+// The live DSM catalogue quotes AED, so the whole builder works in AED to stay
+// consistent with the real product prices we pull from `/search`.
+const CURRENCY = 'AED';
 const QUEUE_KIND = 'bulk-quote-email';
 
-/** One proposed line the assistant suggests for the team. */
+/** One line in the order — grounded on a real catalogue product where possible. */
 interface QuoteLine {
   /** Stable client id for React keys + edits. */
   id: string;
-  /** Product / edition name, e.g. "AutoCAD 2026 — Commercial". */
+  /** Product / edition name, e.g. "AutoCAD 2026 (Yearly Subscription)". */
   name: string;
-  /** License edition / tier label, plain English. */
+  /** License edition / tier label, plain English (brand · license type). */
   edition: string;
   /** Per-seat list price before any volume discount. */
   unitPrice: number;
@@ -76,15 +94,40 @@ interface QuoteLine {
   quantity: number;
   /** One-line reason this fits the team (sales-friendly). */
   reason: string;
+  /** Real catalogue product id when this line was matched to the live catalogue. */
+  productId?: string | number;
+  /**
+   * True when both the product AND its price came from the live catalogue.
+   * False means the model's indicative estimate is shown (catalogue down, or
+   * the product is "Contact for pricing").
+   */
+  grounded: boolean;
 }
 
-/** Raw shape the LLM is asked to return (before we normalize it). */
-interface RawQuoteLine {
-  name?: unknown;
+/**
+ * What the model returns in stage 1: a plan of roles to fulfil, each with a
+ * short catalogue search term. We do NOT trust it to invent product ids.
+ */
+interface RolePlan {
+  /** Concise product/software search term, e.g. "AutoCAD 2026", "Revit". */
+  query: string;
+  /** License edition / tier hint, plain English. */
+  edition?: string;
+  /** Seats for this role. */
+  seats: number;
+  /** One buyer-friendly sentence explaining the fit. */
+  reason: string;
+  /** Indicative per-seat AED price, used only if the catalogue has none. */
+  estPrice: number;
+}
+
+/** Raw (untrusted) shape of a single role before normalization. */
+interface RawRolePlan {
+  query?: unknown;
   edition?: unknown;
-  unitPrice?: unknown;
-  quantity?: unknown;
+  seats?: unknown;
   reason?: unknown;
+  estPrice?: unknown;
 }
 
 interface VolumeTier {
@@ -126,17 +169,18 @@ function newId(): string {
 
 // ── LLM plumbing ────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are a B2B sales specialist for DSM, a reseller of professional design, CAD, and creative software licenses. A business customer describes their team in plain English. Turn that description into a concrete multi-seat order.
+const SYSTEM_PROMPT = `You are a B2B sales specialist for DSM (Al Jash Trading), a reseller of professional design, CAD, and creative software licenses. A business customer describes their team in plain English. Plan the roles they need to license.
 
 Rules:
-- Recommend real, well-known professional software editions (e.g. AutoCAD, Autodesk Revit, Adobe Creative Cloud, SolidWorks, 3ds Max, Windows 11 Pro) that match what the team actually does.
-- Choose sensible seat counts from the description.
-- Give a realistic per-seat annual list price in whole US dollars.
-- Keep every "reason" to one short, buyer-friendly sentence with no jargon.
-- Prefer 2-6 line items. Do not invent add-ons the team did not ask for.
+- Map the team to real, well-known professional software (e.g. AutoCAD, Autodesk Revit, Adobe Creative Cloud, SolidWorks, 3ds Max, V-Ray, Windows 11 Pro) that matches what they actually do.
+- For each role give "query": a SHORT product name a catalogue search can match (e.g. "AutoCAD 2026", "Revit", "Adobe Creative Cloud", "Windows 11 Pro"). No marketing words in the query.
+- "seats": how many seats that role needs (a whole number from the description).
+- "estPrice": an indicative per-seat annual list price in whole AED (UAE dirhams) — only used if the live catalogue has no price.
+- "reason": one short, buyer-friendly sentence, no jargon.
+- Prefer 2-6 roles. Do not invent add-ons the team did not ask for.
 
 Respond with STRICT JSON only — no prose, no markdown fences. Shape:
-{"lines":[{"name":string,"edition":string,"unitPrice":number,"quantity":number,"reason":string}]}`;
+{"roles":[{"query":string,"edition":string,"seats":number,"estPrice":number,"reason":string}]}`;
 
 /** Pull the first balanced JSON object out of an LLM reply, fences or not. */
 function extractJson(raw: string): string {
@@ -155,18 +199,78 @@ function toNumber(value: unknown, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
-function normalizeLines(raw: RawQuoteLine[]): QuoteLine[] {
+function normalizeRoles(raw: RawRolePlan[]): RolePlan[] {
   return raw
-    .filter((r) => r && typeof r.name === 'string' && (r.name as string).trim().length > 0)
-    .slice(0, 8)
+    .filter((r) => r && typeof r.query === 'string' && (r.query as string).trim().length > 0)
+    .slice(0, 6)
     .map((r) => ({
-      id: newId(),
-      name: String(r.name).trim(),
-      edition: typeof r.edition === 'string' && r.edition.trim() ? r.edition.trim() : 'Commercial',
-      unitPrice: Math.round(toNumber(r.unitPrice, 499)),
-      quantity: Math.max(1, Math.round(toNumber(r.quantity, 1))),
+      query: String(r.query).trim().slice(0, 80),
+      edition: typeof r.edition === 'string' && r.edition.trim() ? r.edition.trim() : undefined,
+      seats: Math.max(1, Math.round(toNumber(r.seats, 1))),
       reason: typeof r.reason === 'string' ? r.reason.trim() : '',
+      estPrice: Math.round(toNumber(r.estPrice, 1800)),
     }));
+}
+
+/** "AED 1,098.00" → 1098 ; "Contact for pricing" / "" → null. */
+function parsePrice(raw: unknown): number | null {
+  if (typeof raw === 'number') return Number.isFinite(raw) && raw > 0 ? raw : null;
+  if (typeof raw !== 'string') return null;
+  const cleaned = raw.replace(/,/g, '').replace(/[^0-9.]/g, ' ').trim();
+  const match = cleaned.match(/\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const n = parseFloat(match[0]);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** A short, buyer-friendly edition label from a real catalogue product. */
+function editionLabel(p: Product, fallback?: string): string {
+  const parts = [p.brand, p.licenseType].filter((s): s is string => Boolean(s && String(s).trim()));
+  return parts.length ? parts.join(' · ') : fallback?.trim() || 'Commercial';
+}
+
+/** searchProducts with a hard timeout so a slow/dead VPS can't hang the build. */
+async function searchWithTimeout(query: string, timeoutMs = 4000): Promise<Product[]> {
+  return Promise.race([
+    searchProducts(query)
+      .then((r) => r.products ?? [])
+      .catch(() => [] as Product[]),
+    new Promise<Product[]>((resolve) => setTimeout(() => resolve([]), timeoutMs)),
+  ]);
+}
+
+/**
+ * Stage 2 — turn each planned role into a real cart line. We look the role up in
+ * the live catalogue and, if we find a match, carry the real product id, name,
+ * edition and (when priced) the real AED unit price. Anything the catalogue
+ * can't ground falls back to the model's indicative estimate. Runs in parallel;
+ * a failing catalogue never breaks the build (contract: degrade, don't throw).
+ */
+async function groundRolesToCatalogue(roles: RolePlan[]): Promise<QuoteLine[]> {
+  const results = await Promise.all(
+    roles.map(async (role): Promise<QuoteLine> => {
+      let match: Product | undefined;
+      try {
+        const hits = await searchWithTimeout(role.query);
+        match = hits.find((p) => p && p.name && p.status !== 'error') ?? hits[0];
+      } catch {
+        match = undefined; // catalogue unstable → estimate below
+      }
+
+      const realPrice = match ? parsePrice(match.price) : null;
+      return {
+        id: newId(),
+        name: match?.name?.trim() || role.query,
+        edition: match ? editionLabel(match, role.edition) : role.edition || 'Commercial',
+        unitPrice: Math.round(realPrice ?? role.estPrice),
+        quantity: role.seats,
+        reason: role.reason,
+        productId: match?.id,
+        grounded: Boolean(match && realPrice != null),
+      };
+    }),
+  );
+  return results;
 }
 
 async function buildQuoteFromDescription(description: string): Promise<QuoteLine[]> {
@@ -178,18 +282,18 @@ async function buildQuoteFromDescription(description: string): Promise<QuoteLine
     { temperature: 0.3, maxTokens: 900 },
   );
 
-  let parsed: { lines?: RawQuoteLine[] };
+  let parsed: { roles?: RawRolePlan[] };
   try {
-    parsed = JSON.parse(extractJson(reply)) as { lines?: RawQuoteLine[] };
+    parsed = JSON.parse(extractJson(reply)) as { roles?: RawRolePlan[] };
   } catch {
     throw new LLMError('We could not read the recommendation. Please try describing your team again.');
   }
 
-  const lines = normalizeLines(Array.isArray(parsed.lines) ? parsed.lines : []);
-  if (lines.length === 0) {
+  const roles = normalizeRoles(Array.isArray(parsed.roles) ? parsed.roles : []);
+  if (roles.length === 0) {
     throw new LLMError('No products matched that description. Add a little more detail about what your team does.');
   }
-  return lines;
+  return groundRolesToCatalogue(roles);
 }
 
 // ── Quote email ─────────────────────────────────────────────────────────────
@@ -218,11 +322,12 @@ interface QuoteContact {
 
 function buildQuoteEmail(contact: QuoteContact, lines: QuoteLine[], totals: QuoteTotals) {
   const ref = `DSM-BQ-${Date.now().toString(36).toUpperCase()}`;
+  const hasEstimate = lines.some((l) => !l.grounded);
   const rows = lines
     .map(
       (l) =>
         `<tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #eee">${escapeHtml(l.name)}<br>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee">${escapeHtml(l.name)}${l.grounded ? '' : ' *'}<br>
             <span style="color:#666;font-size:12px">${escapeHtml(l.edition)}</span></td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center">${l.quantity}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">${money(l.unitPrice)}</td>
@@ -230,6 +335,9 @@ function buildQuoteEmail(contact: QuoteContact, lines: QuoteLine[], totals: Quot
         </tr>`,
     )
     .join('');
+  const estimateNote = hasEstimate
+    ? '<p style="margin:8px 0 0;color:#999;font-size:12px">* Indicative price — your DSM specialist will confirm the exact figure for this line.</p>'
+    : '';
 
   const body = `<div style="font-family:Arial,Helvetica,sans-serif;color:#111;max-width:640px">
     <h2 style="margin:0 0 4px">Your DSM Volume Quote</h2>
@@ -252,7 +360,8 @@ function buildQuoteEmail(contact: QuoteContact, lines: QuoteLine[], totals: Quot
       <tr><td style="padding:4px 12px">Volume discount (${totals.tier.label})</td><td style="padding:4px 12px;text-align:right;color:#0a7d33">-${money(totals.discount)}</td></tr>
       <tr><td style="padding:8px 12px;font-weight:bold;border-top:2px solid #111">Total</td><td style="padding:8px 12px;text-align:right;font-weight:bold;border-top:2px solid #111">${money(totals.total)}</td></tr>
     </table>
-    <p style="margin:20px 0 4px;color:#666;font-size:13px">Prices are per seat, per year, and valid for 30 days. Reply to this email to place the order or ask for changes and a DSM specialist will follow up.</p>
+    ${estimateNote}
+    <p style="margin:20px 0 4px;color:#666;font-size:13px">Prices are in AED, per seat, per year, and valid for 30 days. Reply to this email to place the order or ask for changes and a DSM specialist will follow up.</p>
     <p style="margin:16px 0 0;font-weight:bold">DSM — Al Jash Trading</p>
   </div>`;
 
@@ -351,7 +460,7 @@ function BulkQuoteBuilderInner() {
     };
     const { ref, subject, body } = buildQuoteEmail(contact, lines, totals);
 
-    // Record the lead on the STABLE analytics backend regardless of email outcome.
+    // Record the lead on the STABLE analytics backend regardless of delivery.
     track({
       event: 'bulk_quote_requested',
       eventType: 'ecommerce',
@@ -362,9 +471,41 @@ function BulkQuoteBuilderInner() {
         seats: totals.totalSeats,
         total: totals.total,
         tier: totals.tier.label,
+        grounded: lines.every((l) => l.grounded),
       },
     });
 
+    // 1) DURABLE record via the always-up Apps Script (no local bridge needed).
+    //    This is the formal quote of record that the admin Orders view reads;
+    //    submitOrder self-queues if the network is momentarily down, so the
+    //    B2B lead can never be lost even when the mail bridge is offline.
+    const breakdown = lines
+      .map(
+        (l) =>
+          `${l.quantity} x ${l.name} (${l.edition}) @ ${money(l.unitPrice)}/seat${l.grounded ? '' : ' [indicative]'}`,
+      )
+      .join('\n');
+    submitOrder({
+      customerName: contact.contactName || contact.company || 'Bulk quote lead',
+      email: contact.email,
+      productId: ref,
+      productName: `Bulk quote — ${contact.company || 'team'} (${lines.length} lines)`,
+      quantity: totals.totalSeats,
+      price: totals.total,
+      currency: CURRENCY,
+      notes: [
+        `Bulk Quote Builder ${ref}`,
+        `Company: ${contact.company || '—'}`,
+        `Tier: ${totals.tier.label} (${Math.round(totals.tier.rate * 100)}% off)`,
+        `Subtotal ${money(totals.subtotal)} · Discount -${money(totals.discount)} · Total ${money(totals.total)}`,
+        '',
+        breakdown,
+      ].join('\n'),
+    }).catch(() => {
+      /* submitOrder already queues on failure; never block the buyer */
+    });
+
+    // 2) Deliver the formatted HTML quote by email (best-effort via the bridge).
     try {
       await sendEmail({ to: contact.email, subject, body, html: true });
       setEmailQueued(false);
@@ -482,7 +623,19 @@ function BulkQuoteBuilderInner() {
                     className="rounded-lg border p-3 sm:flex sm:items-start sm:justify-between sm:gap-4"
                   >
                     <div className="min-w-0">
-                      <p className="font-medium">{line.name}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{line.name}</p>
+                        {line.grounded ? (
+                          <Badge variant="outline" className="gap-1 text-[10px]">
+                            <PackageCheck className="h-3 w-3" />
+                            From catalogue
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-[10px]">
+                            Indicative price
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">{line.edition}</p>
                       {line.reason && (
                         <p className="mt-1 text-sm text-muted-foreground">{line.reason}</p>
@@ -617,16 +770,171 @@ function BulkQuoteBuilderInner() {
   );
 }
 
+// ── Beta-signup degradation (rendered when codex-proxy is down) ──────────────
+
+/**
+ * When the LLM is unavailable the AI builder can't plan an order — but we still
+ * don't want to drop a B2B lead. This lightweight card captures the team's
+ * details and files them on the STABLE Apps Script (submitOrder self-queues if
+ * the network flaps), so a DSM specialist can follow up and build the quote by
+ * hand. No LLM, no product API — only the always-up backend is touched.
+ */
+function BulkQuoteBetaSignup() {
+  const [company, setCompany] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [email, setEmail] = useState('');
+  const [team, setTeam] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  const handleSubmit = useCallback(async () => {
+    if (!emailValid) {
+      setError('Add a valid work email so a specialist can reach you.');
+      return;
+    }
+    if (team.trim().length < 8) {
+      setError('Tell us a little about your team so we can prepare the right quote.');
+      return;
+    }
+    setError(null);
+    setSubmitting(true);
+
+    const ref = `DSM-BQ-${Date.now().toString(36).toUpperCase()}`;
+    track({
+      event: 'bulk_quote_beta_signup',
+      eventType: 'ecommerce',
+      metadata: { ref, company: company.trim(), email: email.trim() },
+    });
+    submitOrder({
+      customerName: contactName.trim() || company.trim() || 'Bulk quote lead',
+      email: email.trim(),
+      productId: ref,
+      productName: `Bulk quote request — ${company.trim() || 'team'}`,
+      quantity: 1,
+      price: 'TBD',
+      currency: CURRENCY,
+      notes: [
+        `Bulk Quote Builder request ${ref} (AI builder offline — manual follow-up)`,
+        `Company: ${company.trim() || '—'}`,
+        '',
+        team.trim(),
+      ].join('\n'),
+    }).catch(() => {
+      /* submitOrder already queues on failure */
+    });
+
+    setDone(true);
+    setSubmitting(false);
+  }, [emailValid, team, company, contactName, email]);
+
+  if (done) {
+    return (
+      <Card className="border-primary/30">
+        <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+          <CheckCircle2 className="h-10 w-10 text-primary" />
+          <h3 className="text-lg font-semibold">Thanks — we've got your request</h3>
+          <p className="max-w-md text-sm text-muted-foreground">
+            A DSM specialist will build your volume quote and email it to {email.trim()} shortly.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Building2 className="h-5 w-5 text-primary" />
+          <CardTitle>Bulk Quote Builder</CardTitle>
+          <Badge variant="secondary" className="ml-1">
+            Beta
+          </Badge>
+        </div>
+        <CardDescription>
+          Our instant AI builder is warming up. Leave your team's details and a DSM specialist will
+          prepare a volume quote — usually within one business day.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="bqb-beta-company">Company</Label>
+            <Input
+              id="bqb-beta-company"
+              placeholder="Acme Design Studio"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="bqb-beta-name">Your name</Label>
+            <Input
+              id="bqb-beta-name"
+              placeholder="Jordan Lee"
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="bqb-beta-email">Work email</Label>
+            <Input
+              id="bqb-beta-email"
+              type="email"
+              placeholder="jordan@acme.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="bqb-beta-team">Tell us about your team</Label>
+            <Textarea
+              id="bqb-beta-team"
+              placeholder="e.g. 14-person architecture studio on Windows: 8 on AutoCAD, 4 need Revit, 2 use Adobe."
+              value={team}
+              onChange={(e) => setTeam(e.target.value)}
+              rows={3}
+            />
+          </div>
+        </div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <Button onClick={handleSubmit} disabled={submitting} className="w-full sm:w-auto">
+          {submitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sending…
+            </>
+          ) : (
+            <>
+              <Send className="mr-2 h-4 w-4" />
+              Request my volume quote
+            </>
+          )}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ── Public export — resilience wrapper ──────────────────────────────────────
 
 /**
- * B2B Bulk Quote Builder. Renders only when the codex-proxy (LLM) is healthy;
- * otherwise the section is silently omitted and an `ai_outage` event is fired.
- * Poll every 30s so it can reappear if the proxy recovers.
+ * B2B Bulk Quote Builder. Renders the AI builder only when the codex-proxy
+ * (LLM) is healthy; otherwise it degrades to a beta-signup card that still
+ * captures the lead on the STABLE backend, and an `ai_outage` event is fired.
+ * Poll every 30s so the AI builder can reappear if the proxy recovers.
  */
 export default function BulkQuoteBuilder() {
   return (
-    <AIFeature backend="codex" feature={FEATURE} recheckMs={30000}>
+    <AIFeature
+      backend="codex"
+      feature={FEATURE}
+      recheckMs={30000}
+      fallback={<BulkQuoteBetaSignup />}
+    >
       <BulkQuoteBuilderInner />
     </AIFeature>
   );

@@ -3,6 +3,7 @@ import DSMAILabLoader from '../components/DSMAILabLoader';
 import Footer from '../components/Footer';
 import TalkingAdvisor from '@/components/ai/TalkingAdvisor';
 import SmartCallback from '@/components/ai/SmartCallback';
+import OwnProductBoxes from '@/components/OwnProductBoxes';
 
 const Services = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -73,6 +74,29 @@ const Services = () => {
               <SmartCallback />
             </div>
           </div>
+        </div>
+      </section>
+
+      {/*
+        Own-product showcase — features OUR products as DSM-style 3D boxes in
+        the fixed priority order (DSM first). Pure CSS 3D so it renders with no
+        backend and stays light on mobile; each box links to that product.
+      */}
+      <section className="relative z-10 border-t border-white/[0.06] bg-[#050507] px-6 py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 text-center">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-crimson">
+              Built by DSM
+            </span>
+            <h2 className="mt-2 font-serif text-3xl text-[#FEFEFE] sm:text-4xl">
+              Our product studio
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-[#B1B2B3]">
+              The same team behind this AI Lab ships real products. Explore the
+              stack — hover any box to bring it forward, click to open it.
+            </p>
+          </div>
+          <OwnProductBoxes variant="grid" />
         </div>
       </section>
 

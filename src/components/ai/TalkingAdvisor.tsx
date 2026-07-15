@@ -72,6 +72,9 @@ interface SimliSession {
   /** Session token minted by Simli's startAudioToVideoSession. */
   session_token?: string;
   sessionToken?: string;
+  /** Optional WebRTC/WebSocket URL the proxy may hand back for the SDK. */
+  simli_url?: string;
+  session_url?: string;
   [k: string]: unknown;
 }
 
@@ -86,7 +89,13 @@ interface SimliClientLike {
   Close?: () => void;
   /** Opportunistic TTS: make the avatar speak a line, when supported. */
   sendText?: (text: string) => void;
+  Speak?: (text: string) => void;
+  speak?: (text: string) => void;
+  /** Raw PCM16 push — used to prime silence handling once connected. */
+  sendAudioData?: (data: Uint8Array | ArrayBuffer) => void;
+  /** Lifecycle events (`connected` | `failed` | `disconnected`), when emitted. */
   on?: (evt: string, cb: (...args: unknown[]) => void) => void;
+  off?: (evt: string, cb: (...args: unknown[]) => void) => void;
 }
 
 type SimliClientCtor = new () => SimliClientLike;
@@ -119,10 +128,13 @@ async function startSimliSession(signal: AbortSignal): Promise<SimliSession> {
   return (await res.json()) as SimliSession;
 }
 
-/** Best-effort "make the avatar speak this line". No-op when unsupported. */
+/** Best-effort "make the avatar speak this line". No-op when unsupported —
+ *  method names vary across simli-client versions, so try the known ones. */
 function speakThroughAvatar(client: SimliClientLike | null, text: string): void {
+  if (!client || !text) return;
   try {
-    client?.sendText?.(text);
+    const speak = client.sendText ?? client.Speak ?? client.speak;
+    speak?.call(client, text);
   } catch {
     /* never let avatar TTS break the answer flow */
   }
@@ -283,14 +295,27 @@ function AdvisorStage() {
 
   // ── Bring up the live Simli avatar (bounded; degrades on any failure) ──────
   useEffect(() => {
-    let cancelled = false;
+    let disposed = false;
+    // 'pending' until we either go live or degrade; keeps both transitions
+    // idempotent AND lets a mid-session drop (post-'live') still degrade.
+    let outcome: 'pending' | 'live' | 'failed' = 'pending';
     const controller = new AbortController();
     abortRef.current = controller;
     let connectTimer: ReturnType<typeof setTimeout> | undefined;
 
-    const fail = (error: unknown) => {
-      if (cancelled) return;
-      cancelled = true;
+    const clearConnectTimer = () => {
+      if (connectTimer) {
+        clearTimeout(connectTimer);
+        connectTimer = undefined;
+      }
+    };
+
+    // Fall back to the text concierge and report the outage exactly once — on a
+    // failed handshake OR a live session that later drops (Simli is unstable).
+    const degrade = (error: unknown) => {
+      if (disposed || outcome === 'failed') return;
+      outcome = 'failed';
+      clearConnectTimer();
       track({
         event: 'ai_outage',
         eventType: 'error',
@@ -300,19 +325,42 @@ function AdvisorStage() {
           error: error instanceof Error ? error.message : String(error),
         },
       });
+      // Release the WebRTC session/mic before swapping in the text UI.
+      stopClient(clientRef.current);
+      clientRef.current = null;
       setAvatar('failed');
+    };
+
+    const goLive = () => {
+      if (disposed || outcome !== 'pending') return;
+      outcome = 'live';
+      clearConnectTimer();
+      setAvatar('live');
+      // Prime silence-handling so the idle face animates before the first reply.
+      try {
+        clientRef.current?.sendAudioData?.(new Uint8Array(0));
+      } catch {
+        /* optional priming; never block going live */
+      }
+      track({
+        event: 'advisor_avatar_live',
+        eventType: 'ai',
+        metadata: { feature: 'talking-advisor' },
+      });
     };
 
     const connect = async () => {
       try {
         const Ctor = await loadSimliClient();
         if (!Ctor) throw new Error('simli-client unavailable');
-        if (cancelled) return;
+        if (disposed) return;
 
+        // Proxy mints the session server-side (key + faceId injected there).
         const session = await startSimliSession(controller.signal);
-        if (cancelled) return;
+        if (disposed) return;
 
         const token = session.session_token ?? session.sessionToken;
+        const simliUrl = session.simli_url ?? session.session_url;
         const client = new Ctor();
         clientRef.current = client;
 
@@ -325,45 +373,46 @@ function AdvisorStage() {
           maxIdleTime: 300,
           session_token: token,
           sessionToken: token,
+          ...(simliUrl ? { SimliURL: simliUrl } : {}),
           // The proxy already authorised the session, so no key is sent here.
           apiKey: '',
           faceID: '',
         };
         (client.Initialize ?? client.initialize)?.(cfg);
 
-        // Consider the avatar "live" once its video track produces frames.
+        // Prefer the SDK's own lifecycle signals for readiness/failure…
+        client.on?.('connected', goLive);
+        client.on?.('failed', (...a) =>
+          degrade(new Error(`simli-failed${a[0] != null ? `:${String(a[0])}` : ''}`)),
+        );
+        client.on?.('disconnected', () => degrade(new Error('simli-disconnected')));
+
+        // …and treat the first painted frame as "live" too, in case an older
+        // SDK build emits no `connected` event.
         const video = videoRef.current;
         if (video) {
-          const onReady = () => {
-            if (cancelled) return;
-            cancelled = true;
-            if (connectTimer) clearTimeout(connectTimer);
-            setAvatar('live');
-            track({
-              event: 'advisor_avatar_live',
-              eventType: 'ai',
-              metadata: { feature: 'talking-advisor' },
-            });
-          };
-          video.addEventListener('loadeddata', onReady, { once: true });
-          video.addEventListener('playing', onReady, { once: true });
+          video.addEventListener('loadeddata', goLive, { once: true });
+          video.addEventListener('playing', goLive, { once: true });
         }
 
         await (client.start ?? client.Start)?.();
 
-        // Hard cap: if no frames arrive in time, treat Simli as down.
-        connectTimer = setTimeout(() => fail(new Error('avatar-connect-timeout')), AVATAR_CONNECT_TIMEOUT_MS);
+        // Hard cap: if nothing signals readiness in time, treat Simli as down.
+        connectTimer = setTimeout(
+          () => degrade(new Error('avatar-connect-timeout')),
+          AVATAR_CONNECT_TIMEOUT_MS,
+        );
       } catch (err) {
         const aborted = err instanceof DOMException && err.name === 'AbortError';
-        if (!aborted) fail(err);
+        if (!aborted) degrade(err);
       }
     };
 
     void connect();
 
     return () => {
-      cancelled = true;
-      if (connectTimer) clearTimeout(connectTimer);
+      disposed = true;
+      clearConnectTimer();
       controller.abort();
       stopClient(clientRef.current);
       clientRef.current = null;

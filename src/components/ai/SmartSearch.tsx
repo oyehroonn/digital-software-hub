@@ -48,6 +48,10 @@ export interface SmartSearchResult {
   href: string;
   /** Plain-English reason this matched, e.g. "On sale — save AED 450". */
   reason?: string;
+  /** Brand (Microsoft, Autodesk…) — drives the box thumbnail tint/initial. */
+  brand?: string;
+  /** Optional poster image for the thumbnail; falls back to a branded box. */
+  image?: string;
   /** Relevance score (higher is better). */
   score: number;
 }
@@ -125,6 +129,19 @@ function parsePrice(price?: string): number | null {
 
 function productHref(id: string | number): string {
   return `/store?product=${encodeURIComponent(String(id))}`;
+}
+
+/** First alphanumeric of the brand/name — the glyph shown on the box tile. */
+function productInitial(text: string): string {
+  const m = text.trim().match(/[A-Za-z0-9]/);
+  return (m ? m[0] : '?').toUpperCase();
+}
+
+/** Deterministic hue so each product box reads as its own on-brand tile. */
+function accentHue(seed: string): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i += 1) h = (h * 31 + seed.charCodeAt(i)) % 360;
+  return h;
 }
 
 /** Turn price/discount signal into a short sales-first reason line. */
@@ -293,8 +310,11 @@ function mapProduct(p: Product): SmartSearchResult {
     name: p.name,
     category: p.category,
     price: p.price,
-    href: p.link || productHref(p.id),
+    // NB: the live API `p.link`/`p.viewer` point at the raw .glb model and the
+    // standalone 3D viewer — NOT the store page. Always deep-link into the shop.
+    href: productHref(p.id),
     reason,
+    brand: p.brand || undefined,
     score: 1,
   };
 }
@@ -350,6 +370,50 @@ const staticSearch: SearchFn = async (query) => ({
   suggestions: staticSuggestions(query),
   mode: 'offline',
 });
+
+// ── Product box thumbnail ────────────────────────────────────────────────────
+// A compact "product box" tile shown beside every hit. When a poster image is
+// available it's used; otherwise we render a branded box in the DSM look (the
+// same visual language as the 3D card fallback) so results ALWAYS carry a
+// thumbnail — live or fully offline, with zero extra network cost per keystroke.
+
+function ResultThumb({
+  name,
+  category,
+  brand,
+  image,
+}: Pick<SmartSearchResult, 'name' | 'category' | 'brand' | 'image'>) {
+  const [broken, setBroken] = useState(false);
+  const seed = brand || category || name;
+  const hue = accentHue(seed);
+
+  if (image && !broken) {
+    return (
+      <div className="w-11 h-11 shrink-0 rounded-md overflow-hidden border border-white/[0.08] bg-white/[0.03]">
+        <img
+          src={image}
+          alt=""
+          loading="lazy"
+          onError={() => setBroken(true)}
+          className="w-full h-full object-cover"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative w-11 h-11 shrink-0 rounded-md border border-white/[0.08] flex items-center justify-center overflow-hidden"
+      style={{ background: `linear-gradient(135deg, hsl(${hue} 32% 15%), #0b0c0e)` }}
+      aria-hidden
+    >
+      <span className="text-sm font-semibold text-[#FEFEFE]/85">
+        {productInitial(brand || name)}
+      </span>
+      <span className="absolute inset-0 rounded-md ring-1 ring-inset ring-white/[0.05]" />
+    </div>
+  );
+}
 
 // ── Shared presentational view ───────────────────────────────────────────────
 
@@ -599,22 +663,36 @@ function SmartSearchView({
                       active === i ? 'bg-white/[0.06]' : 'hover:bg-white/[0.04]',
                     )}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-[#FEFEFE] group-hover:text-crimson transition-colors truncate">
-                        {r.name}
-                      </span>
-                      <span className="text-sm font-medium text-[#FEFEFE] shrink-0">{r.price}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      {r.oldPrice && parsePrice(r.oldPrice) != null && (
-                        <span className="text-xs text-[#B1B2B3]/40 line-through">{r.oldPrice}</span>
-                      )}
-                      {r.reason && (
-                        <span className="flex items-center gap-1 text-xs text-[#B1B2B3]/60">
-                          {r.reason.startsWith('On sale') && <Tag className="w-3 h-3 text-crimson" />}
-                          {r.reason}
-                        </span>
-                      )}
+                    <div className="flex items-center gap-3">
+                      <ResultThumb
+                        name={r.name}
+                        category={r.category}
+                        brand={r.brand}
+                        image={r.image}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-sm text-[#FEFEFE] group-hover:text-crimson transition-colors truncate">
+                            {r.name}
+                          </span>
+                          <span className="text-sm font-medium text-[#FEFEFE] shrink-0">
+                            {r.price}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {r.oldPrice && parsePrice(r.oldPrice) != null && (
+                            <span className="text-xs text-[#B1B2B3]/40 line-through">{r.oldPrice}</span>
+                          )}
+                          {r.reason && (
+                            <span className="flex items-center gap-1 text-xs text-[#B1B2B3]/60 truncate">
+                              {r.reason.startsWith('On sale') && (
+                                <Tag className="w-3 h-3 text-crimson shrink-0" />
+                              )}
+                              {r.reason}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </button>
                 ))}
