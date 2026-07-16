@@ -1,7 +1,7 @@
 /**
  * DashboardView — the admin home. A KPI snapshot built from the shared analytics
- * data hook (Telemetry + Orders, with the deterministic seed fallback) plus the
- * live backend health passed down from the shell:
+ * data hook (Telemetry + Orders, real data only — honest zero/empty states when
+ * the sheets aren't connected yet) plus the live backend health from the shell:
  *   • headline tiles — today's sales, orders, sessions and conversion (vs
  *     yesterday),
  *   • a 14-day sales trend,
@@ -40,7 +40,6 @@ import { buildLeaderboard, type LeaderRow } from "@/lib/leaderboard";
 import { useAnalyticsData } from "@/views/analytics/useAnalyticsData";
 import { StatTile, MeterBar } from "@/views/analytics/shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Empty } from "@/components/Empty";
 import { StatusDot } from "@/components/StatusDot";
@@ -104,7 +103,7 @@ const QUICK_LINKS: { key: string; label: string; icon: typeof BarChart3 }[] = [
 
 export function DashboardView({ ctx }: { ctx: NavCtx }) {
   const { config, statuses, goto } = ctx;
-  const { events, orders, seeded, loading, refresh } = useAnalyticsData(config);
+  const { events, orders, loading, refresh } = useAnalyticsData(config);
 
   const m = useMemo(() => {
     const now = Date.now();
@@ -206,11 +205,6 @@ export function DashboardView({ ctx }: { ctx: NavCtx }) {
         <div>
           <h1 className="flex items-center gap-2 text-lg font-semibold">
             <Gauge className="h-5 w-5 text-primary" /> Dashboard
-            {seeded && (
-              <Badge variant="warn" title="Showing deterministic seed data until the read endpoint is live.">
-                seed data
-              </Badge>
-            )}
           </h1>
           <p className="text-xs text-muted-foreground">
             Today at a glance — sales, orders, traffic and backend health.

@@ -5,23 +5,26 @@
 import { Eye } from "lucide-react";
 import type { AppConfig } from "@/lib/config";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty } from "./shell";
 import { LookMap } from "./LookMap";
 
 export function AttentionMapView({ config }: { config: AppConfig }) {
-  const { events, seeded, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
+  const { events, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
   return (
     <div className="flex flex-col gap-4">
       <AnalyticsHeader
         icon={<Eye className="h-4 w-4 text-primary" />}
         title="Look map · attention"
         subtitle="Where attention rests per page, weighted by dwell time — a spot stared at for seconds glows far hotter than one the cursor merely swept past."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
-      <LookMap events={events} />
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<Eye className="h-7 w-7" />} />
+      ) : (
+        <LookMap events={events} />
+      )}
     </div>
   );
 }

@@ -8,10 +8,11 @@
  * one accent per series.
  */
 import type { ReactNode } from "react";
-import { ArrowDownRight, ArrowUpRight, Database, Minus, RefreshCw } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Minus, RefreshCw, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Empty } from "@/components/Empty";
 import { cn } from "@/lib/utils";
 import { useDateRange } from "./dateRange";
 
@@ -287,15 +288,30 @@ export function CompareLegend() {
 }
 
 /**
+ * Standard on-brand empty state for report pages — shown when there is no real
+ * telemetry/orders yet. Never fabricates data.
+ */
+export function ReportEmpty({
+  icon,
+  title = "No data yet",
+  hint = "Reports populate once the Telemetry and Orders sheets are connected — share them as Viewer.",
+}: {
+  icon?: ReactNode;
+  title?: string;
+  hint?: string;
+}) {
+  return <Empty icon={icon ?? <Radio className="h-7 w-7" />} title={title} hint={hint} />;
+}
+
+/**
  * Report page header — title, description, the resolved range label and the
- * standard seed/live badge + refresh, mirroring `AnalyticsHeader` but wired to
- * the global range so every report announces which window it is showing.
+ * standard live badge + refresh, mirroring `AnalyticsHeader` but wired to the
+ * global range so every report announces which window it is showing.
  */
 export function ReportHeader({
   icon,
   title,
   subtitle,
-  seeded,
   loading,
   liveCount,
   onRefresh,
@@ -304,7 +320,6 @@ export function ReportHeader({
   icon?: ReactNode;
   title: string;
   subtitle: string;
-  seeded?: boolean;
   loading?: boolean;
   liveCount?: number;
   onRefresh?: () => void;
@@ -318,12 +333,7 @@ export function ReportHeader({
         <h1 className="flex items-center gap-2 text-lg font-semibold">
           {icon}
           {title}
-          {seeded && (
-            <Badge variant="warn" className="gap-1" title="Read endpoint returned no rows — showing the deterministic seed.">
-              <Database className="h-3 w-3" /> seed data
-            </Badge>
-          )}
-          {seeded === false && typeof liveCount === "number" && liveCount > 0 && (
+          {typeof liveCount === "number" && liveCount > 0 && (
             <Badge variant="ok" title="Reading live telemetry from the sheet.">
               live · {liveCount.toLocaleString("en-US")}
             </Badge>

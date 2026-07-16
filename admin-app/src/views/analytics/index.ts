@@ -3,8 +3,8 @@
  *
  * The integration step wires `AnalyticsHub` (the whole area behind one nav
  * entry) or any individual view into src/App.tsx and the nav. Every view takes
- * `{ config }`, self-fetches live telemetry, and falls back to the deterministic
- * seed so it renders before the read endpoint is deployed.
+ * `{ config }`, self-fetches live telemetry, and renders a clean empty state
+ * (never fabricated data) until the read endpoint is deployed.
  */
 
 // Composed area (recommended single entry point).
@@ -32,6 +32,5 @@ export { HeatmapOverlay } from "./HeatmapOverlay";
 export { ClickHeatmap } from "./ClickHeatmap";
 export { LookMap } from "./LookMap";
 
-// Shared data hook + deterministic seed (for tests / new views).
+// Shared data hook (for tests / new views).
 export { useAnalyticsData, type AnalyticsData } from "./useAnalyticsData";
-export { generateSeed, isSeed, SEED_FLAG } from "./seed";

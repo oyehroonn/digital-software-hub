@@ -9,7 +9,7 @@ import { MousePointerClick, Zap } from "lucide-react";
 import type { AppConfig } from "@/lib/config";
 import { detectRage } from "@/lib/rageClicks";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader, StatTile, MeterBar } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty, StatTile, MeterBar } from "./shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ import { timeAgo } from "@/lib/utils";
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 
 export function RageClicksView({ config }: { config: AppConfig }) {
-  const { events, seeded, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
+  const { events, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
   const rage = useMemo(() => detectRage(events), [events]);
   const maxScore = rage.elements[0]?.score ?? 1;
 
@@ -29,12 +29,15 @@ export function RageClicksView({ config }: { config: AppConfig }) {
         icon={<Zap className="h-4 w-4 text-warn" />}
         title="Rage & dead clicks"
         subtitle="Bursts of frantic repeat clicks (rage) and clicks that produced no response (dead) — the clearest signal of a broken or confusing control."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<Zap className="h-7 w-7" />} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Rage incidents" value={rage.incidents.length.toLocaleString("en-US")} tone="warn" />
         <StatTile
@@ -143,6 +146,8 @@ export function RageClicksView({ config }: { config: AppConfig }) {
           </CardContent>
         </Card>
       </div>
+        </>
+      )}
     </div>
   );
 }

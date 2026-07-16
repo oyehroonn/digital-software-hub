@@ -13,8 +13,8 @@
  * `pageUrl`) or run standalone (internal selector).
  *
  * Real telemetry flows once the Apps Script GET read action (`?action=telemetry`
- * → {rows:[…]}) is deployed. Pass `demo` to fall back to synthetic clustered
- * clicks only when no real click data is present.
+ * → {rows:[…]}) is deployed. With no real click data the component renders a
+ * clean empty state — it never fabricates points.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Flame, MousePointerClick } from "lucide-react";
@@ -110,37 +110,6 @@ export function extractClickPoints(events: TelemetryEvent[], page: string): Heat
   });
 }
 
-/** Synthetic clustered clicks for dev/preview (only used when `demo`). */
-export function sampleClickEvents(): TelemetryEvent[] {
-  const out: TelemetryEvent[] = [];
-  const clusters = [
-    { x: 0.5, y: 0.08, n: 90, id: "nav-cta", text: "Get My Quote" }, // header CTA
-    { x: 0.5, y: 0.34, n: 140, id: "hero-cta", text: "Start Free" }, // hero
-    { x: 0.28, y: 0.62, n: 60, id: "card-1", text: "DSM" },
-    { x: 0.72, y: 0.62, n: 40, id: "card-2", text: "Virtual Try-On" },
-    { x: 0.5, y: 0.9, n: 25, id: "footer-link", text: "Contact" },
-  ];
-  const vw = 1440;
-  const vh = 3200;
-  for (const c of clusters) {
-    for (let i = 0; i < c.n; i++) {
-      const gx = c.x + (Math.random() - 0.5) * 0.09 + (Math.random() - 0.5) * 0.05;
-      const gy = c.y + (Math.random() - 0.5) * 0.07 + (Math.random() - 0.5) * 0.04;
-      out.push({
-        eventType: "click",
-        event: "click",
-        pageUrl: "https://dsm.example/",
-        x: Math.round(clamp01(gx) * vw),
-        y: Math.round(clamp01(gy) * vh),
-        elementId: c.id,
-        elementText: c.text,
-        metadata: { vw, dh: vh },
-      });
-    }
-  }
-  return out;
-}
-
 /* ------------------------------------------------------------------ */
 /* Component                                                           */
 /* ------------------------------------------------------------------ */
@@ -152,8 +121,6 @@ export interface ClickHeatmapProps {
   /** Controlled page path (from a shared filter bar). Omit for internal selector. */
   pageUrl?: string;
   onPageUrlChange?: (path: string) => void;
-  /** Inject synthetic clicks when the data layer has no real clicks (preview only). */
-  demo?: boolean;
   className?: string;
 }
 
@@ -161,15 +128,9 @@ export function ClickHeatmap({
   events,
   pageUrl,
   onPageUrlChange,
-  demo = false,
   className,
 }: ClickHeatmapProps) {
-  const hasReal = useMemo(() => events.some(isClickEvent), [events]);
-  const data = useMemo<TelemetryEvent[]>(
-    () => (demo && !hasReal ? sampleClickEvents() : events),
-    [events, demo, hasReal],
-  );
-  const usingSample = demo && !hasReal;
+  const data = events;
 
   const pages = useMemo(() => pageUrlsFromClicks(data), [data]);
 
@@ -265,11 +226,6 @@ export function ClickHeatmap({
           <Badge variant="muted" className="tabular-nums">
             {totalClicks} clicks
           </Badge>
-          {usingSample && (
-            <Badge variant="warn" title="No real click telemetry yet — showing seed data.">
-              sample
-            </Badge>
-          )}
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -293,7 +249,7 @@ export function ClickHeatmap({
           <Empty
             icon={<MousePointerClick className="h-8 w-8" />}
             title="No click telemetry for this page"
-            hint="Waiting on the ecommerce Apps Script read endpoint (GET ?action=telemetry → {rows:[…]}). Pass demo to preview."
+            hint="Click telemetry appears here once the tracking sheet is connected — share the Telemetry sheet as Viewer."
           />
         ) : (
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,560px)_minmax(0,1fr)]">

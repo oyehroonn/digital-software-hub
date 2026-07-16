@@ -1,19 +1,20 @@
 /**
  * Shared chrome for the Analytics & Heatmaps views: a consistent page header
- * (title + subtitle + seed badge + refresh) and a couple of small presentational
- * primitives (KPI tile, labeled progress bar) so every view reads as one system.
+ * (title + subtitle + live badge + refresh) and a couple of small presentational
+ * primitives (KPI tile, labeled progress bar, empty state) so every view reads
+ * as one system.
  */
 import type { ReactNode } from "react";
-import { Database, RefreshCw } from "lucide-react";
+import { RefreshCw, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Empty } from "@/components/Empty";
 import { cn } from "@/lib/utils";
 
 export function AnalyticsHeader({
   icon,
   title,
   subtitle,
-  seeded,
   loading,
   liveCount,
   onRefresh,
@@ -22,7 +23,6 @@ export function AnalyticsHeader({
   icon?: ReactNode;
   title: string;
   subtitle: string;
-  seeded?: boolean;
   loading?: boolean;
   liveCount?: number;
   onRefresh?: () => void;
@@ -34,16 +34,7 @@ export function AnalyticsHeader({
         <h1 className="flex items-center gap-2 text-lg font-semibold">
           {icon}
           {title}
-          {seeded && (
-            <Badge
-              variant="warn"
-              className="gap-1"
-              title="Live read endpoint returned no rows — showing the deterministic seed so the view renders now."
-            >
-              <Database className="h-3 w-3" /> seed data
-            </Badge>
-          )}
-          {seeded === false && typeof liveCount === "number" && liveCount > 0 && (
+          {typeof liveCount === "number" && liveCount > 0 && (
             <Badge variant="ok" title="Reading live telemetry from the sheet.">
               live · {liveCount.toLocaleString("en-US")}
             </Badge>
@@ -61,6 +52,23 @@ export function AnalyticsHeader({
       </div>
     </div>
   );
+}
+
+/**
+ * Standard on-brand empty state for analytics views — shown when there is no
+ * real telemetry/orders yet (the tracking sheet isn't connected). Never renders
+ * fabricated data; the moment the sheet is shared as Viewer, real rows appear.
+ */
+export function AnalyticsEmpty({
+  icon,
+  title = "No data yet",
+  hint = "Telemetry appears here once the tracking sheet is connected — share the Telemetry sheet as Viewer.",
+}: {
+  icon?: ReactNode;
+  title?: string;
+  hint?: string;
+}) {
+  return <Empty icon={icon ?? <Radio className="h-7 w-7" />} title={title} hint={hint} />;
 }
 
 export function StatTile({

@@ -234,6 +234,10 @@ const ProductModelViewer = ({
             rotation-per-second={`${IDLE_SPEED}deg`}
             touch-action="pan-y"
             style={{
+              // Let clicks pass through to the product card (which opens the detail
+              // modal). model-viewer's camera-controls would otherwise swallow the
+              // tap. The box still auto-rotates for visual interest.
+              pointerEvents: "none",
               width: "100%",
               height: "100%",
               outline: "none",

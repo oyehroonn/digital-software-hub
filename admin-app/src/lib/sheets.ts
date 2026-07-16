@@ -15,7 +15,7 @@
  *
  * When the sheet is not published yet Google returns an HTML sign-in / error
  * page instead of CSV; we detect that (and any fetch failure) and return `[]`
- * so every caller cleanly falls back to its deterministic seed.
+ * so every caller cleanly renders an empty state (never fabricated data).
  */
 import { httpGet, runtime } from "./rpc";
 import type { AppConfig } from "./config";
@@ -110,7 +110,7 @@ function looksLikeHtml(t: string): boolean {
 /**
  * Fetch a Google Sheet as parsed CSV rows. Never throws: returns `[]` when the
  * sheet is not published yet (HTML response), when the fetch fails, or when the
- * id is blank — so callers fall back to their deterministic seed.
+ * id is blank — so callers render a clean empty state (never fabricated data).
  *
  * In the desktop build we try the direct CSV export first (via the native http
  * bridge) and fall back to the VPS proxy; in the browser we go straight to the

@@ -2,7 +2,7 @@
  * DrillDownProvider + slide-over host.
  *
  * Wrap the analytics reports area in this once; it fetches the shared Telemetry
- * + Orders dataset (deterministic-seed fallback) and exposes the drill-down API
+ * + Orders dataset (real data only) and exposes the drill-down API
  * through context. Any <DrillLink> then opens a right-hand slide-over rendering
  * the matching detail lens (ProductAnalytics / PageAnalytics / CustomerAnalytics
  * / CampaignAnalytics). Detail views can themselves contain <DrillLink>s, which
@@ -11,10 +11,9 @@
  */
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, X, Package, FileText, User, Megaphone, RefreshCw, Database } from "lucide-react";
+import { ArrowLeft, X, Package, FileText, User, Megaphone, RefreshCw } from "lucide-react";
 import type { AppConfig } from "@/lib/config";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { useAnalyticsData } from "../useAnalyticsData";
 import {
   DrillDownContext,
@@ -36,7 +35,7 @@ const KIND_META: Record<DrillTarget["kind"], { icon: typeof Package; label: stri
 };
 
 export function DrillDownProvider({ config, children }: { config: AppConfig; children: ReactNode }) {
-  const { events, orders, seeded, loading, refresh } = useAnalyticsData(config);
+  const { events, orders, loading, refresh } = useAnalyticsData(config);
   const [stack, setStack] = useState<DrillTarget[]>([]);
 
   const open = useCallback((t: DrillTarget) => {

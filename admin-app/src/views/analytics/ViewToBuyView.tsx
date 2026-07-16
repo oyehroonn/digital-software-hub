@@ -9,7 +9,7 @@ import { Trophy, Target, Sparkles } from "lucide-react";
 import type { AppConfig } from "@/lib/config";
 import { buildLeaderboard, type LeaderSort } from "@/lib/leaderboard";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader, StatTile } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty, StatTile } from "./shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";

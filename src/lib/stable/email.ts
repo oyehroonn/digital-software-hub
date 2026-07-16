@@ -104,9 +104,20 @@ async function callBridge<R = unknown>(req: BridgeRequest, timeoutMs = 15000): P
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-/** Send an email (e.g. an AI-generated quote). */
-export function sendEmail(args: SendEmailArgs, endpoint?: MailEndpoint): Promise<unknown> {
-  return callBridge({ command: 'sendEmail', args: { ...args }, _endpoint: endpoint });
+/** Send an email (e.g. an AI-generated quote) via the live email proxy.
+ * The mailcli bridge isn't reachable from a browser, so we POST to the API's
+ * /api/email endpoint, which forwards to the email Apps Script server-side. */
+export async function sendEmail(args: SendEmailArgs, _endpoint?: MailEndpoint): Promise<unknown> {
+  const base =
+    (import.meta.env.VITE_API_BASE as string | undefined) || 'https://dsm-api.techrealm.ai';
+  const res = await fetch(`${base}/api/email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to: args.to, subject: args.subject, body: args.body }),
+  });
+  const data = await res.json().catch(() => ({} as { ok?: boolean; error?: string }));
+  if (!res.ok || !data.ok) throw new Error(data.error || `email failed (${res.status})`);
+  return data;
 }
 
 /** Book a calendar event (feature 10 — Smart Callback). */

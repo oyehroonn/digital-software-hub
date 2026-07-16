@@ -95,7 +95,6 @@ export interface DrillDownApi {
   events: TelemetryEvent[];
   orders: Order[];
   config: AppConfig | null;
-  seeded: boolean;
   loading: boolean;
   refresh: () => void;
 }
@@ -111,7 +110,6 @@ const NOOP: DrillDownApi = {
   events: [],
   orders: [],
   config: null,
-  seeded: false,
   loading: false,
   refresh: () => {},
 };

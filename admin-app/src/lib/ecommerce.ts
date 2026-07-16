@@ -9,7 +9,8 @@
  * page_url, metadata_json, customer_name, product_id, …); `normalizeEvent` /
  * `normalizeOrder` map them onto the camelCase shapes the app expects. Reads
  * are defensive: a not-yet-published sheet or an outage yields `[]`, never a
- * throw, so callers fall back to their deterministic seed.
+ * throw — REAL data only, so the UI shows a clean empty state (never fabricated
+ * rows) until the sheet is shared.
  */
 import { fetchSheetRows } from "./sheets";
 import type { AppConfig } from "./config";

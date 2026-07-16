@@ -1576,32 +1576,46 @@ def handle_options():
 # Frontend AI features call {origin}/api/llm/* so the codex-proxy key never
 # ships in the browser bundle. /models is used for health checks.
 
+import threading as _threading, time as _time
+# Cached LLM health so the probe is FAST (a real chat completion takes ~5s, which
+# blows past the frontend's 2.5s health-check timeout and wrongly hides AI features).
+_LLM_HEALTH = {"ok": True, "ts": 0.0, "err": None}
+_LLM_HEALTH_LOCK = _threading.Lock()
+
+def _probe_llm():
+    import requests as _rq
+    try:
+        r = _rq.post(f"{KIRO_BASE_URL}/chat/completions",
+                     headers={"Authorization": f"Bearer {KIRO_API_KEY}", "Content-Type": "application/json"},
+                     json={"model": KIRO_MODEL, "max_tokens": 5, "messages": [{"role": "user", "content": "ok"}]},
+                     timeout=8)
+        data = r.json() if 'json' in r.headers.get('content-type', '') else {}
+        content = (data.get('choices') or [{}])[0].get('message', {}).get('content', '')
+        ok = r.status_code == 200 and bool(content) and not data.get('error')
+        err = None if ok else ((data.get('error') or {}).get('message') if isinstance(data.get('error'), dict) else 'llm unavailable')
+    except Exception as e:
+        ok, err = False, str(e)
+    with _LLM_HEALTH_LOCK:
+        _LLM_HEALTH.update(ok=ok, ts=_time.time(), err=err)
+    return ok
+
 @app.route('/api/llm/models', methods=['GET', 'OPTIONS'])
 def llm_proxy_models():
-    """Health probe for AI features. Does a REAL chat completion — /models alone
-    stays 200 even when the pooled account is de-authed, which would leave AI
-    tools (incl. the concierge) visible-but-broken. 503 here => features hide."""
+    """Fast cached health probe. Real chat health is refreshed in the background
+    every ~30s; requests return the last-known result instantly. 503 => hide AI."""
     if request.method == 'OPTIONS':
         return '', 200
-    try:
-        import requests as _rq
-        r = _rq.post(f"{KIRO_BASE_URL}/chat/completions",
-                     headers={"Authorization": f"Bearer {KIRO_API_KEY}",
-                              "Content-Type": "application/json"},
-                     json={"model": KIRO_MODEL, "max_tokens": 5,
-                           "messages": [{"role": "user", "content": "ok"}]},
-                     timeout=8)
-        try:
-            data = r.json()
-        except Exception:
-            data = {}
-        content = (data.get('choices') or [{}])[0].get('message', {}).get('content', '')
-        if r.status_code == 200 and content and not data.get('error'):
-            return jsonify({"object": "list", "data": [{"id": KIRO_MODEL}], "healthy": True}), 200
-        msg = (data.get('error') or {}).get('message') if isinstance(data.get('error'), dict) else data.get('error')
-        return jsonify({"healthy": False, "error": msg or "llm unavailable"}), 503
-    except Exception as e:
-        return jsonify({"healthy": False, "error": str(e)}), 503
+    with _LLM_HEALTH_LOCK:
+        ts, ok, err = _LLM_HEALTH['ts'], _LLM_HEALTH['ok'], _LLM_HEALTH['err']
+    if ts == 0:  # first ever call: one synchronous probe
+        ok = _probe_llm()
+        with _LLM_HEALTH_LOCK:
+            err = _LLM_HEALTH['err']
+    elif _time.time() - ts > 30:  # stale: refresh in background, serve last-known now
+        _threading.Thread(target=_probe_llm, daemon=True).start()
+    if ok:
+        return jsonify({"object": "list", "data": [{"id": KIRO_MODEL}], "healthy": True}), 200
+    return jsonify({"healthy": False, "error": err or "llm unavailable"}), 503
 
 
 @app.route('/api/llm/chat/completions', methods=['POST', 'OPTIONS'])

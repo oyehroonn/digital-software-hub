@@ -10,8 +10,8 @@
  * (indigo→magenta→amber) so it reads as a distinct lens from the click map.
  *
  * Real telemetry flows once the site emits movement/dwell events and the Apps
- * Script GET read action is live. `demo` seeds synthetic attention only when no
- * real dwell data is present.
+ * Script GET read action is live. With no real dwell data the map renders a
+ * clean empty state — it never fabricates attention.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Eye, ScanEye } from "lucide-react";
@@ -139,38 +139,6 @@ export function pageUrlsFromAttention(events: TelemetryEvent[]): string[] {
   return pageUrlsFromEvents(events, isAttentionEvent);
 }
 
-/** Synthetic dwell field for dev/preview (only used when `demo` and no real data). */
-export function sampleAttentionEvents(): TelemetryEvent[] {
-  const out: TelemetryEvent[] = [];
-  const zones = [
-    { x: 0.5, y: 0.24, n: 160, dwell: 6.5, id: "hero-copy", text: "Hero headline" },
-    { x: 0.5, y: 0.35, n: 90, dwell: 3.2, id: "hero-cta", text: "Start Free" },
-    { x: 0.28, y: 0.62, n: 120, dwell: 4.8, id: "card-1", text: "DSM" },
-    { x: 0.72, y: 0.62, n: 70, dwell: 2.1, id: "card-2", text: "Virtual Try-On" },
-    { x: 0.5, y: 0.48, n: 60, dwell: 1.4, id: "spec", text: "Specs" },
-    { x: 0.5, y: 0.86, n: 40, dwell: 2.6, id: "footer", text: "Contact" },
-  ];
-  const vw = 1440;
-  const vh = 3200;
-  for (const z of zones) {
-    for (let i = 0; i < z.n; i++) {
-      const gx = z.x + (Math.random() - 0.5) * 0.1 + (Math.random() - 0.5) * 0.05;
-      const gy = z.y + (Math.random() - 0.5) * 0.06 + (Math.random() - 0.5) * 0.03;
-      out.push({
-        eventType: "hover",
-        event: "attention",
-        pageUrl: "https://dsm.example/",
-        x: Math.round(clamp01(gx) * vw),
-        y: Math.round(clamp01(gy) * vh),
-        elementId: z.id,
-        elementText: z.text,
-        metadata: { vw, dh: vh, dwellMs: Math.round((z.dwell + (Math.random() - 0.5)) * 1000) },
-      });
-    }
-  }
-  return out;
-}
-
 /* ------------------------------------------------------------------ */
 /* Component                                                           */
 /* ------------------------------------------------------------------ */
@@ -181,17 +149,11 @@ export interface LookMapProps {
   events: TelemetryEvent[];
   pageUrl?: string;
   onPageUrlChange?: (path: string) => void;
-  demo?: boolean;
   className?: string;
 }
 
-export function LookMap({ events, pageUrl, onPageUrlChange, demo = false, className }: LookMapProps) {
-  const hasReal = useMemo(() => events.some(isAttentionEvent), [events]);
-  const data = useMemo<TelemetryEvent[]>(
-    () => (demo && !hasReal ? sampleAttentionEvents() : events),
-    [events, demo, hasReal],
-  );
-  const usingSample = demo && !hasReal;
+export function LookMap({ events, pageUrl, onPageUrlChange, className }: LookMapProps) {
+  const data = events;
 
   const pages = useMemo(() => pageUrlsFromAttention(data), [data]);
 
@@ -279,11 +241,6 @@ export function LookMap({ events, pageUrl, onPageUrlChange, demo = false, classN
           <Badge variant="muted" className="tabular-nums">
             {samples} samples
           </Badge>
-          {usingSample && (
-            <Badge variant="warn" title="No real attention telemetry yet — showing seed data.">
-              sample
-            </Badge>
-          )}
         </div>
         <select
           value={page || ""}
@@ -305,7 +262,7 @@ export function LookMap({ events, pageUrl, onPageUrlChange, demo = false, classN
           <Empty
             icon={<ScanEye className="h-8 w-8" />}
             title="No attention telemetry for this page"
-            hint="The Look map needs movement / hover / dwell events carrying x,y (and ideally a dwell time in metadata). Deploy the Apps Script GET read action, or preview with demo."
+            hint="The Look map needs movement / hover / dwell events carrying x,y. Attention appears here once the tracking sheet is connected — share the Telemetry sheet as Viewer."
           />
         ) : (
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,560px)_minmax(0,1fr)]">

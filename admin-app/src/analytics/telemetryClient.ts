@@ -13,15 +13,12 @@
  *     coercing `x/y` to numbers and parsing `metadata_json`.
  *  3. Provide pure, memo-friendly aggregation helpers (by product / page /
  *     event / time bucket / x-y density bins / scroll-depth bands / funnel).
- *  4. Emit a DETERMINISTIC seed of 500–700 realistic events (each flagged
- *     `_seed: true`) so the dashboards render richly until the Apps Script read
- *     sheet is published. `fetchEvents()` transparently falls back to the seed
- *     when the sheet returns no rows.
  *
- * IMPORTANT: until the user shares the Telemetry sheet publicly the CSV export
- * returns an HTML page, which `fetchSheetRows` treats as "no rows" → the seed
- * is served. The moment the sheet is shared, real rows flow through the exact
- * same path with no code change.
+ * Data is REAL-only: `fetchEvents()` returns exactly what the sheet yields and
+ * NEVER fabricates rows. Until the Telemetry sheet is shared publicly the CSV
+ * export returns an HTML page, which `fetchSheetRows` treats as "no rows" → an
+ * empty result (`isEmpty: true`) that the UI renders as a clean empty state.
+ * The moment the sheet is shared, real rows flow through the exact same path.
  */
 import { fetchSheetRows } from "@/lib/sheets";
 import type { AppConfig } from "@/lib/config";
@@ -55,8 +52,6 @@ export interface TelemetryEvent {
   productId: string;
   metadata: Record<string, unknown>;
   userAgent: string;
-  /** True only for locally generated seed rows. Never set on real data. */
-  _seed?: boolean;
   /** Escape hatch for unexpected columns. */
   [k: string]: unknown;
 }
@@ -68,20 +63,13 @@ export interface FetchOptions {
   limit?: number;
   /** Network timeout for the bridge call (ms). Default 12000. */
   timeoutMs?: number;
-  /**
-   * Seed fallback behaviour when production returns 0 rows:
-   *  - "auto"  (default) → serve deterministic seed
-   *  - "never" → return [] (surface a real Empty state)
-   *  - "only"  → skip the network entirely, return seed (dev/offline)
-   */
-  seed?: "auto" | "never" | "only";
 }
 
 export interface FetchResult {
   events: TelemetryEvent[];
-  /** True when the returned events are the local deterministic seed. */
-  seeded: boolean;
-  /** Rows the backend actually returned (0 today — read endpoint pending). */
+  /** True when there is no real telemetry (sheet not shared / empty) → empty state. */
+  isEmpty: boolean;
+  /** Rows the backend actually returned (0 when the read endpoint is pending). */
   liveCount: number;
   /** Non-fatal fetch error message, if any (UI can surface it). */
   error?: string;
@@ -157,7 +145,6 @@ export function normalizeEvent(raw: unknown): TelemetryEvent {
     productId: toStr(pick(row, "product_id", "productId")),
     metadata: parseMeta(pick(row, "metadata", "metadata_json", "metadataJson", "meta")),
     userAgent: toStr(pick(row, "user_agent", "userAgent", "ua")),
-    _seed: row._seed === true ? true : undefined,
   };
 }
 
@@ -174,15 +161,11 @@ function toIso(v: Date | string | number | undefined): string | undefined {
 }
 
 /**
- * Fetch + normalize live telemetry, with deterministic seed fallback.
- * Never throws — network/parse failures collapse into `{ error, seeded }`.
+ * Fetch + normalize live telemetry. REAL data only — never fabricates rows.
+ * Never throws — network/parse failures collapse into `{ error, isEmpty }`.
  */
 export async function fetchEvents(cfg: AppConfig, opts: FetchOptions = {}): Promise<FetchResult> {
-  const { since, limit = 5000, timeoutMs = 12000, seed = "auto" } = opts;
-
-  if (seed === "only") {
-    return { events: generateSeedEvents(), seeded: true, liveCount: 0 };
-  }
+  const { since, limit = 5000, timeoutMs = 12000 } = opts;
 
   const sinceIso = toIso(since);
 
@@ -196,20 +179,13 @@ export async function fetchEvents(cfg: AppConfig, opts: FetchOptions = {}): Prom
     error = e instanceof Error ? e.message : String(e);
   }
 
-  if (live.length > 0) {
-    // Apply `since` client-side too, in case the backend ignores it.
-    const floor = sinceIso ? Date.parse(sinceIso) : 0;
-    const events = floor ? live.filter((e) => e.ts >= floor) : live;
-    return { events, seeded: false, liveCount: live.length, error };
-  }
-
-  if (seed === "never") {
-    return { events: [], seeded: false, liveCount: 0, error };
-  }
-  return { events: generateSeedEvents(), seeded: true, liveCount: 0, error };
+  // Apply `since` client-side too, in case the backend ignores it.
+  const floor = sinceIso ? Date.parse(sinceIso) : 0;
+  const events = floor ? live.filter((e) => e.ts >= floor) : live;
+  return { events, isEmpty: events.length === 0, liveCount: live.length, error };
 }
 
-/* Convenience: plain array (seeded fallback), for callers that don't need meta. */
+/* Convenience: plain array, for callers that don't need the metadata. */
 export async function fetchTelemetryEvents(
   cfg: AppConfig,
   opts: FetchOptions = {},
@@ -754,244 +730,4 @@ export function outagesByService(outages: OutageEvent[]): Bucket[] {
   return [...map.entries()]
     .map(([key, count]) => ({ key, label: key, count }))
     .sort((a, b) => b.count - a.count);
-}
-
-/* ────────────────────────────────────────────────────────────────────────── *
- *  Deterministic seed generator
- * ────────────────────────────────────────────────────────────────────────── */
-
-/** mulberry32 — tiny deterministic PRNG. Same seed → identical stream. */
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const SEED_STORE = "DSM";
-const SEED_PAGES = [
-  { path: "/", weight: 40 },
-  { path: "/products", weight: 22 },
-  { path: "/pricing", weight: 12 },
-  { path: "/ai-lab", weight: 8 },
-  { path: "/products/dsm", weight: 6, product: "dsm" },
-  { path: "/products/virtual-sizing", weight: 5, product: "virtual-sizing" },
-  { path: "/products/virtual-try-on", weight: 4, product: "virtual-try-on" },
-  { path: "/products/pointblank", weight: 3, product: "pointblank" },
-];
-const SEED_PRODUCTS = [
-  "dsm",
-  "virtual-sizing",
-  "virtual-try-on",
-  "pointblank",
-  "vpo",
-  "techrealm",
-];
-const SEED_ELEMENTS = [
-  { id: "cta-get-quote", text: "Get My Quote", x: 0.5, y: 0.32 },
-  { id: "nav-products", text: "Products", x: 0.28, y: 0.04 },
-  { id: "nav-pricing", text: "Pricing", x: 0.4, y: 0.04 },
-  { id: "product-card", text: "View product", x: 0.33, y: 0.55 },
-  { id: "add-to-cart-btn", text: "Add to cart", x: 0.72, y: 0.48 },
-  { id: "checkout-btn", text: "Checkout", x: 0.8, y: 0.62 },
-  { id: "concierge-fab", text: "Chat", x: 0.94, y: 0.92 },
-  { id: "compare-btn", text: "Compare & Recommend", x: 0.62, y: 0.7 },
-  { id: "footer-callback", text: "Book a call", x: 0.5, y: 0.96 },
-];
-const SEED_OUTAGE_SERVICES = [
-  { service: "codex-proxy", feature: "sales-concierge", error: "timeout after 2500ms" },
-  { service: "simli", feature: "talking-advisor", error: "startAudioToVideoSession 500" },
-  { service: "vps", feature: "smart-search", error: "ECONNREFUSED localhost:5051" },
-];
-const SEED_UAS = [
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/126 Safari/537.36",
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36",
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E Safari/604.1",
-];
-const SEED_VIEWPORTS = [
-  { vw: 1440, vh: 900 },
-  { vw: 1920, vh: 1080 },
-  { vw: 390, vh: 844 },
-];
-
-const weightedPick = <T extends { weight: number }>(rnd: () => number, items: T[]): T => {
-  const total = items.reduce((s, i) => s + i.weight, 0);
-  let r = rnd() * total;
-  for (const it of items) {
-    r -= it.weight;
-    if (r <= 0) return it;
-  }
-  return items[items.length - 1];
-};
-
-const jitter = (rnd: () => number, center: number, spread: number): number =>
-  Math.max(0, Math.min(1, center + (rnd() - 0.5) * spread));
-
-/**
- * Deterministic, realistic telemetry seed — a funnel-shaped stream of sessions
- * across the DSM site. Same `seed` always yields the same events. Every row is
- * flagged `_seed: true`. Target volume 500–700 events (tune via `opts.target`).
- */
-export function generateSeedEvents(
-  opts: { seed?: number; target?: number; days?: number; now?: number } = {},
-): TelemetryEvent[] {
-  const { seed = 1337, target = 600, days = 14, now = Date.UTC(2026, 6, 15, 12, 0, 0) } = opts;
-  const rnd = mulberry32(seed);
-  const out: TelemetryEvent[] = [];
-  const windowMs = days * 86_400_000;
-
-  let sessionSeq = 0;
-  let visitorSeq = 0;
-  const visitors: string[] = [];
-
-  const push = (
-    ts: number,
-    session: string,
-    anon: string,
-    ev: string,
-    type: string,
-    page: string,
-    extra: Partial<TelemetryEvent> = {},
-  ) => {
-    const iso = new Date(ts).toISOString();
-    const parsed = Date.parse(iso);
-    out.push({
-      timestamp: iso,
-      ts: parsed,
-      storeName: SEED_STORE,
-      sessionId: session,
-      anonymousId: anon,
-      userId: "",
-      event: ev,
-      eventType: type,
-      pageUrl: `https://dsm.example${page}`,
-      elementId: "",
-      elementText: "",
-      x: NaN,
-      y: NaN,
-      direction: "",
-      productId: "",
-      metadata: {},
-      userAgent: SEED_UAS[Math.floor(rnd() * SEED_UAS.length)],
-      _seed: true,
-      ...extra,
-    });
-  };
-
-  while (out.length < target) {
-    // Some visitors return (retention/cohort signal); ~25% reuse.
-    let anon: string;
-    if (visitors.length > 0 && rnd() < 0.25) {
-      anon = visitors[Math.floor(rnd() * visitors.length)];
-    } else {
-      anon = `anon_${(visitorSeq++).toString(36).padStart(4, "0")}`;
-      visitors.push(anon);
-    }
-    const session = `sess_${(sessionSeq++).toString(36).padStart(5, "0")}`;
-    const vp = SEED_VIEWPORTS[Math.floor(rnd() * SEED_VIEWPORTS.length)];
-
-    // Session start time somewhere in the window (weight recent days slightly).
-    const dayBias = Math.pow(rnd(), 0.7); // skew toward recent
-    let t = now - windowMs + dayBias * windowMs + rnd() * 3_600_000;
-
-    const landing = weightedPick(rnd, SEED_PAGES);
-    push(t, session, anon, "page_view", "pageview", landing.path, {
-      metadata: { referrer: rnd() < 0.5 ? "google" : "direct", vw: vp.vw, vh: vp.vh },
-    });
-
-    // Scroll behaviour on landing — bounded max depth per session.
-    const maxDepth = 10 + Math.floor(Math.pow(rnd(), 1.3) * 90);
-    for (let d = 10; d <= maxDepth; d += 10) {
-      t += 400 + rnd() * 5000;
-      push(t, session, anon, "scroll", "scroll", landing.path, {
-        direction: "down",
-        y: Math.round((d / 100) * (vp.vh * 6)),
-        metadata: { depth: d, vh: vp.vh, docHeight: vp.vh * 6 },
-      });
-    }
-
-    // A few clicks on hot elements.
-    const clickCount = 1 + Math.floor(rnd() * 3);
-    for (let c = 0; c < clickCount; c++) {
-      t += 500 + rnd() * 4000;
-      const el = SEED_ELEMENTS[Math.floor(rnd() * SEED_ELEMENTS.length)];
-      push(t, session, anon, "click", "click", landing.path, {
-        elementId: el.id,
-        elementText: el.text,
-        x: Math.round(jitter(rnd, el.x, 0.06) * vp.vw),
-        y: Math.round(jitter(rnd, el.y, 0.06) * vp.vh),
-        metadata: { vw: vp.vw, vh: vp.vh },
-      });
-    }
-
-    // Funnel progression with realistic decay.
-    if (rnd() < 0.55) {
-      const product = landing.product ?? SEED_PRODUCTS[Math.floor(rnd() * SEED_PRODUCTS.length)];
-      const ppath = `/products/${product}`;
-      t += 1000 + rnd() * 8000;
-      push(t, session, anon, "product_view", "pageview", ppath, {
-        productId: product,
-        metadata: { vw: vp.vw, vh: vp.vh },
-      });
-
-      // clicks on the product page too
-      if (rnd() < 0.6) {
-        t += 800 + rnd() * 4000;
-        const el = SEED_ELEMENTS.find((e) => e.id === "add-to-cart-btn")!;
-        push(t, session, anon, "click", "click", ppath, {
-          elementId: el.id,
-          elementText: el.text,
-          productId: product,
-          x: Math.round(jitter(rnd, el.x, 0.05) * vp.vw),
-          y: Math.round(jitter(rnd, el.y, 0.05) * vp.vh),
-          metadata: { vw: vp.vw, vh: vp.vh },
-        });
-      }
-
-      if (rnd() < 0.42) {
-        t += 1500 + rnd() * 6000;
-        push(t, session, anon, "add_to_cart", "action", ppath, {
-          productId: product,
-          metadata: { qty: 1 + Math.floor(rnd() * 3), price: 199 + Math.floor(rnd() * 800) },
-        });
-
-        if (rnd() < 0.55) {
-          t += 2000 + rnd() * 9000;
-          push(t, session, anon, "begin_checkout", "action", "/checkout", {
-            productId: product,
-            metadata: { vw: vp.vw, vh: vp.vh },
-          });
-
-          if (rnd() < 0.6) {
-            t += 3000 + rnd() * 12000;
-            push(t, session, anon, "order", "conversion", "/checkout", {
-              productId: product,
-              metadata: {
-                orderId: `ord_${Math.floor(rnd() * 1e6)}`,
-                value: 199 + Math.floor(rnd() * 1200),
-                currency: "USD",
-              },
-            });
-          }
-        }
-      }
-    }
-
-    // Occasional AI outage during the session (~7%).
-    if (rnd() < 0.07) {
-      const o = SEED_OUTAGE_SERVICES[Math.floor(rnd() * SEED_OUTAGE_SERVICES.length)];
-      t += 500 + rnd() * 3000;
-      push(t, session, anon, "ai_outage", "error", landing.path, {
-        metadata: { service: o.service, feature: o.feature, error: o.error },
-      });
-    }
-  }
-
-  // Stable chronological order.
-  out.sort((a, b) => a.ts - b.ts);
-  return out;
 }

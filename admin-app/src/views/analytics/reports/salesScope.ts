@@ -1,7 +1,7 @@
 /**
  * useSalesScope — one hook every Sales report shares.
  *
- * Fetches the stable Orders + Telemetry sheets (seed fallback) and slices the
+ * Fetches the stable Orders + Telemetry sheets (real data only) and slices the
  * orders into the GLOBAL current window (`cur`) and, when compare is on, the
  * previous window (`prev`) — so a report only has to describe how to reduce
  * them. Re-scopes automatically whenever the shared date-range/compare context
@@ -21,14 +21,14 @@ export interface SalesScope {
   prev: Order[];
   range: DateRangeState;
   currency: string;
-  seeded: boolean;
+  isEmpty: boolean;
   loading: boolean;
   liveCount: number;
   refresh: () => void;
 }
 
 export function useSalesScope(config: AppConfig): SalesScope {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const range = useDateRange();
 
   const cur = useMemo(() => orders.filter((o) => range.inRange(tsOf(o))), [orders, range]);
@@ -38,5 +38,5 @@ export function useSalesScope(config: AppConfig): SalesScope {
   );
   const currency = useMemo(() => currencyOf(orders), [orders]);
 
-  return { events, orders, cur, prev, range, currency, seeded, loading, liveCount, refresh };
+  return { events, orders, cur, prev, range, currency, isEmpty, loading, liveCount, refresh };
 }
