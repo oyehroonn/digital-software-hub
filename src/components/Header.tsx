@@ -1,4 +1,4 @@
-import { User, ShoppingBag, ChevronDown, ArrowRight, LayoutGrid, PenTool, Box, ShieldCheck, Monitor, Cpu, Crown } from "lucide-react";
+import { User, ShoppingBag, ChevronDown, ArrowRight, LayoutGrid, PenTool, Box, ShieldCheck, Monitor, Cpu, Crown, Megaphone, Wrench, Building2, Users, LifeBuoy, Info, Menu, X } from "lucide-react";
 import SearchBar from "./SearchBar";
 import ProductModelViewer from "./ProductModelViewer";
 import { Link, useNavigate } from "react-router-dom";
@@ -72,6 +72,113 @@ const categoryFeaturedModel: Record<string, { glb: string; title: string; desc: 
   },
 };
 
+/**
+ * A single entry inside a grouped nav dropdown. Exactly one of `to` (SPA route),
+ * `href` (external / mailto) or `onClick` (custom handler) drives navigation, so
+ * every existing route/handler is preserved when items are grouped.
+ */
+type DropdownItem = {
+  label: string;
+  desc: string;
+  icon: typeof LayoutGrid;
+  to?: string;
+  href?: string;
+  onClick?: () => void;
+};
+
+/**
+ * Compact hover dropdown used to group secondary nav links (Solutions, Company)
+ * so the top bar stays uncluttered. Mirrors the mega-menu's glass/crimson styling
+ * on a smaller panel. Opening is coordinated by the parent so only one is open.
+ */
+const NavDropdown = ({
+  label,
+  items,
+  isOpen,
+  onOpen,
+  onClose,
+  navTextColor,
+  isOverLightSection,
+}: {
+  label: string;
+  items: DropdownItem[];
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  navTextColor: string;
+  isOverLightSection: boolean;
+}) => {
+  const panelTheme = isOverLightSection
+    ? "bg-white/90 border-black/[0.08] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.25)]"
+    : "bg-[rgba(10,10,12,0.85)] border-white/[0.08] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]";
+  const itemHover = isOverLightSection ? "hover:bg-black/[0.04]" : "hover:bg-white/[0.05]";
+  const iconBox = isOverLightSection ? "bg-black/[0.05] text-[#555]" : "bg-white/[0.05] text-[#B1B2B3]";
+  const titleColor = isOverLightSection ? "text-[#1a1a1a]" : "text-[#FEFEFE]";
+  const descColor = isOverLightSection ? "text-[#666]/80" : "text-[#B1B2B3]/70";
+
+  return (
+    <div className="relative h-full flex items-center" onMouseEnter={onOpen} onMouseLeave={onClose}>
+      <button
+        className={`text-sm font-medium transition-colors duration-300 tracking-wide h-full flex items-center gap-1 ${isOpen ? "text-crimson" : navTextColor}`}
+      >
+        {label}
+        <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isOpen ? "rotate-180 opacity-100" : "opacity-50"}`} />
+      </button>
+
+      {/* pt-3 keeps an invisible hover bridge so the panel doesn't close in the gap */}
+      <div
+        className={`absolute top-full left-1/2 -translate-x-1/2 pt-3 transition-all duration-200 ${
+          isOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible pointer-events-none -translate-y-1"
+        }`}
+      >
+        <div className={`w-72 rounded-xl border backdrop-blur-lg p-2 ${panelTheme}`}>
+          {items.map((item) => {
+            const inner = (
+              <>
+                <span className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors duration-300 group-hover/di:text-crimson ${iconBox}`}>
+                  <item.icon className="w-4 h-4" strokeWidth={1.75} />
+                </span>
+                <span className="min-w-0">
+                  <span className={`block text-sm font-medium leading-tight transition-colors duration-300 group-hover/di:text-crimson ${titleColor}`}>{item.label}</span>
+                  <span className={`block text-xs leading-snug mt-0.5 ${descColor}`}>{item.desc}</span>
+                </span>
+              </>
+            );
+            const cls = `group/di flex items-start gap-3 p-2.5 rounded-lg transition-colors duration-300 ${itemHover}`;
+            if (item.to) {
+              return (
+                <Link key={item.label} to={item.to} onClick={onClose} className={cls}>
+                  {inner}
+                </Link>
+              );
+            }
+            if (item.href) {
+              return (
+                <a key={item.label} href={item.href} onClick={onClose} className={cls}>
+                  {inner}
+                </a>
+              );
+            }
+            return (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => {
+                  item.onClick?.();
+                  onClose();
+                }}
+                className={`w-full text-left ${cls}`}
+              >
+                {inner}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Header = () => {
   const { cartItemCount } = useApp();
   const { isMember } = useAccount();
@@ -81,7 +188,23 @@ const Header = () => {
   const [isOverLightSection, setIsOverLightSection] = useState(false);
   const [activeCategory, setActiveCategory] = useState("Productivity & Office");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<"solutions" | "company" | null>(null);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
+
+  const goReseller = () => (currentReseller() ? navigate("/reseller") : openResellerDialog());
+
+  // Secondary links grouped into two compact dropdowns to de-clutter the bar.
+  const solutionsItems: DropdownItem[] = [
+    { label: "DSM Marketing", desc: "Campaigns, branding & growth services", icon: Megaphone, to: "/marketing" },
+    { label: "DSM Services", desc: "Deployment, licensing & managed support", icon: Wrench, to: "/services" },
+  ];
+  const companyItems: DropdownItem[] = [
+    { label: "Enterprise", desc: "Volume licensing & procurement", icon: Building2, to: "/store" },
+    { label: "Resellers", desc: "Partner portal & wholesale pricing", icon: Users, onClick: goReseller },
+    { label: "Support", desc: "Talk to our team", icon: LifeBuoy, href: "mailto:support@digitalsoftwaremarkett.com" },
+    { label: "About", desc: "Who we are & what we do", icon: Info, to: "/services" },
+  ];
 
   useEffect(() => {
     const handleScroll = () => {
@@ -141,11 +264,11 @@ const Header = () => {
             <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-crimson transition-all duration-500 group-hover:w-full" />
           </Link>
 
-          {/* Desktop Menu */}
-          <nav className="hidden lg:flex items-center gap-8 h-full overflow-visible">
-            <div 
+          {/* Desktop Menu — grouped into 5 uncluttered top-level items */}
+          <nav className="hidden lg:flex items-center gap-7 xl:gap-8 h-full overflow-visible mx-6">
+            <div
               className="h-full flex items-center"
-              onMouseEnter={() => setIsMenuOpen(true)}
+              onMouseEnter={() => { setIsMenuOpen(true); setOpenDropdown(null); }}
               onMouseLeave={() => setIsMenuOpen(false)}
             >
               <button className={`text-sm font-medium transition-colors duration-300 tracking-wide h-full flex items-center gap-1 ${isMenuOpen ? 'text-crimson' : navTextColor}`}>
@@ -154,30 +277,40 @@ const Header = () => {
             </div>
 
             <Link to="/store" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Store</Link>
-            <Link to="/marketing" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>DSM Marketing</Link>
-            <Link to="/services" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>DSM Services</Link>
-            <button
-              type="button"
-              onClick={() => (currentReseller() ? navigate("/reseller") : openResellerDialog())}
-              className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}
-            >
-              Resellers
-            </button>
+
+            <NavDropdown
+              label="Solutions"
+              items={solutionsItems}
+              isOpen={openDropdown === "solutions"}
+              onOpen={() => { setOpenDropdown("solutions"); setIsMenuOpen(false); }}
+              onClose={() => setOpenDropdown((d) => (d === "solutions" ? null : d))}
+              navTextColor={navTextColor}
+              isOverLightSection={isOverLightSection}
+            />
+
+            {/* Standout crimson CTA — the key member pill */}
             <Link
               to="/exclusive"
-              className="group text-sm font-medium text-crimson hover:text-crimson-dark transition-colors duration-300 inline-flex items-center gap-1.5"
+              className="group text-sm font-medium text-crimson hover:text-crimson-dark transition-all duration-300 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-crimson/30 bg-crimson/[0.06] hover:bg-crimson/[0.12] hover:border-crimson/50"
             >
               <Crown className="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-110" strokeWidth={1.75} />
               Exclusive Members
             </Link>
-            <Link to="/store" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Enterprise</Link>
-            <a href="mailto:support@digitalsoftwaremarkett.com" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Support</a>
-            <Link to="/services" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>About</Link>
+
+            <NavDropdown
+              label="Company"
+              items={companyItems}
+              isOpen={openDropdown === "company"}
+              onOpen={() => { setOpenDropdown("company"); setIsMenuOpen(false); }}
+              onClose={() => setOpenDropdown((d) => (d === "company" ? null : d))}
+              navTextColor={navTextColor}
+              isOverLightSection={isOverLightSection}
+            />
           </nav>
 
           {/* Search & Icons */}
-          <div className="flex items-center gap-4">
-            <div className="hidden md:block w-64">
+          <div className="flex items-center gap-3 md:gap-4 shrink-0">
+            <div className="hidden md:block w-52 lg:w-56 xl:w-64">
               <SearchBar darkText={isOverLightSection} />
             </div>
             <button
@@ -199,9 +332,74 @@ const Header = () => {
                 </span>
               )}
             </Link>
+
+            {/* Mobile hamburger — nav collapses below lg */}
+            <button
+              type="button"
+              aria-label={isMobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMobileOpen}
+              onClick={() => setIsMobileOpen((v) => !v)}
+              className={`lg:hidden transition-colors duration-300 ${iconColor}`}
+            >
+              {isMobileOpen ? <X className="w-6 h-6" strokeWidth={1.5} /> : <Menu className="w-6 h-6" strokeWidth={1.5} />}
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Mobile menu — same grouping as desktop, revealed below lg */}
+      <div
+        className={`lg:hidden fixed inset-x-0 top-[132px] bottom-0 z-40 transition-all duration-300 ${
+          isMobileOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"
+        }`}
+      >
+        <div
+          className={`absolute inset-0 backdrop-blur-lg ${isOverLightSection ? "bg-[rgba(255,255,255,0.92)]" : "bg-[rgba(6,7,8,0.92)]"}`}
+          onClick={() => setIsMobileOpen(false)}
+        />
+        <nav className="relative max-w-[640px] mx-auto px-6 py-8 overflow-auto max-h-full flex flex-col gap-6">
+          <div className="md:hidden">
+            <SearchBar darkText={isOverLightSection} />
+          </div>
+
+          <Link to="/store" onClick={() => setIsMobileOpen(false)} className={`text-lg font-medium ${isOverLightSection ? "text-[#1a1a1a]" : "text-[#FEFEFE]"}`}>Store</Link>
+
+          <Link
+            to="/exclusive"
+            onClick={() => setIsMobileOpen(false)}
+            className="inline-flex items-center gap-2 text-lg font-medium text-crimson px-4 py-2 rounded-full border border-crimson/30 bg-crimson/[0.08] w-fit"
+          >
+            <Crown className="w-4 h-4" strokeWidth={1.75} /> Exclusive Members
+          </Link>
+
+          {[
+            { title: "Solutions", items: solutionsItems },
+            { title: "Company", items: companyItems },
+          ].map((group) => (
+            <div key={group.title}>
+              <span className={`text-[10px] font-semibold uppercase tracking-[0.14em] mb-3 block ${isOverLightSection ? "text-[#666]/60" : "text-[#B1B2B3]/60"}`}>{group.title}</span>
+              <div className="flex flex-col gap-1">
+                {group.items.map((item) => {
+                  const label = (
+                    <span className="flex items-center gap-3">
+                      <item.icon className={`w-4 h-4 ${isOverLightSection ? "text-[#555]" : "text-[#B1B2B3]"}`} strokeWidth={1.75} />
+                      <span className={`text-base font-medium ${isOverLightSection ? "text-[#1a1a1a]" : "text-[#FEFEFE]"}`}>{item.label}</span>
+                    </span>
+                  );
+                  const cls = "py-2";
+                  if (item.to) return <Link key={item.label} to={item.to} onClick={() => setIsMobileOpen(false)} className={cls}>{label}</Link>;
+                  if (item.href) return <a key={item.label} href={item.href} onClick={() => setIsMobileOpen(false)} className={cls}>{label}</a>;
+                  return (
+                    <button key={item.label} type="button" onClick={() => { item.onClick?.(); setIsMobileOpen(false); }} className={`text-left ${cls}`}>
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+      </div>
       
       {/* Mega Menu - SEPARATE element, matches header blur behavior (top-[132px] = 36px announcement + 96px header) */}
       <div 
