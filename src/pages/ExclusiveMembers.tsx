@@ -36,6 +36,7 @@ import {
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import GrainOverlay from '@/components/GrainOverlay';
+import MemberOrderingAvatar from '@/components/ai/MemberOrderingAvatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -481,8 +482,13 @@ function SignedInPanel({
         </Button>
       </div>
 
+      {/* Members-only AI ordering concierge — the animated orb + activation. */}
+      <div style={reveal(5)} className="mx-auto mt-12 max-w-2xl text-left">
+        <MemberOrderingAvatar variant="hero" showGuestTeaser={false} />
+      </div>
+
       {/* Perks reminder */}
-      <ul className="mx-auto mt-12 grid max-w-xl gap-3 text-left sm:grid-cols-2">
+      <ul className="mx-auto mt-8 grid max-w-xl gap-3 text-left sm:grid-cols-2">
         {BENEFITS.map((b, i) => (
           <li
             key={b.title}

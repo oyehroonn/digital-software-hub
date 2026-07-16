@@ -4,6 +4,7 @@ import AnnouncementBar from "@/components/AnnouncementBar";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductModelViewer from "@/components/ProductModelViewer";
+import MemberOrderingAvatar from "@/components/ai/MemberOrderingAvatar";
 import { useApp } from "@/contexts/AppContext";
 
 const formatAED = (value: number) =>
@@ -40,6 +41,9 @@ export default function Cart() {
             Continue Shopping
           </Link>
         </div>
+
+        {/* Members-only AI ordering concierge (subtle sign-in teaser for guests). */}
+        <MemberOrderingAvatar variant="cart" className="mb-10" />
 
         {items.length === 0 ? (
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-12 text-center">

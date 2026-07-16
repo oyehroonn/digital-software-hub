@@ -144,11 +144,11 @@ const Footer = () => {
           <div>
             <h4 className="text-[#FEFEFE] text-sm font-semibold uppercase tracking-[0.14em] mb-6">Support</h4>
             <ul className="space-y-3 text-sm">
-              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Help Center</a></li>
-              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Activation Guides</a></li>
-              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Order Status</a></li>
-              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Refund Policy</a></li>
-              <li><a href="mailto:support@digitalsoftwaremarkett.com" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Contact Concierge</a></li>
+              <li><a href="/support" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Help Center</a></li>
+              <li><a href="/support#faq-activation" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Activation Guides</a></li>
+              <li><a href="/account" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Order Status</a></li>
+              <li><a href="/support#faq-refunds" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Refund Policy</a></li>
+              <li><a href="/support" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Contact Support</a></li>
             </ul>
           </div>
 

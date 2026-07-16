@@ -18,20 +18,24 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Bot,
   CheckCircle,
   ExternalLink,
+  FileText,
   GitCompareArrows,
   Search,
   Send,
+  ShoppingCart,
   Sparkles,
   X,
+  Zap,
 } from 'lucide-react';
 import type { Product } from '@/lib/api';
 import { getProductById } from '@/lib/api';
 import { VPS_BASE } from '@/lib/health';
-import { reportAiOutage } from '@/lib/stable/analytics';
+import { reportAiOutage, track } from '@/lib/stable/analytics';
 import {
   displayPrice,
   isOutOfStock,
@@ -40,7 +44,9 @@ import {
   stockLabel,
   type ProductLike,
 } from '@/lib/product';
+import { useApp } from '@/contexts/AppContext';
 import { useCompare } from '@/contexts/CompareContext';
+import { useToast } from '@/hooks/use-toast';
 import ProductModelViewer from './ProductModelViewer';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -157,6 +163,20 @@ function buildSystemPrompt(p: ProductLike): string {
   );
 }
 
+/**
+ * True when the product has no concrete price the shopper can pay online —
+ * "Contact for pricing" style items. These get a "Request a quote" CTA instead
+ * of Add to Cart / Buy Now (adding a price-less item to the cart would checkout
+ * at AED 0). Any digit in the price or the "from" price counts as a real price,
+ * so "from AED 1,200" is buyable.
+ */
+function needsQuote(p: ProductLike): boolean {
+  const raw = (p.price ?? '').toString();
+  const from = p.priceFrom ?? p.fromPrice;
+  const hasNumber = /\d/.test(raw) || (from != null && /\d/.test(String(from)));
+  return !hasNumber;
+}
+
 // ── External-assistant deep links ─────────────────────────────────────────────
 function deepLinks(p: ProductLike) {
   const prompt = `Describe this software product and who it's for: ${p.name} — ${shortBlurb(p)}`;
@@ -170,6 +190,9 @@ function deepLinks(p: ProductLike) {
 
 export default function ProductDetailModal({ product, onClose }: ProductDetailModalProps) {
   const { toggleCompare, isComparing, atCapacity } = useCompare();
+  const { addToCart } = useApp();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const modalRef = useFocusTrap(true);
 
   // Start with what the card handed us; enrich from /products/{id} (full
@@ -187,6 +210,68 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
   const links = deepLinks(detail);
   const image = productImage(detail);
   const outOfStock = isOutOfStock(detail);
+  const quoteOnly = needsQuote(detail);
+
+  // ── Purchase actions ────────────────────────────────────────────────────────
+  const pushToCart = useCallback(() => {
+    addToCart({
+      id: detail.id,
+      name: detail.name,
+      price: detail.price,
+      category: detail.category,
+      brand: detail.brand,
+      licenseType: detail.licenseType,
+      link: detail.link,
+    });
+    // Fire-and-forget analytics for the funnel.
+    track({
+      event: 'add_to_cart',
+      eventType: 'ecommerce',
+      productId: detail.id,
+      elementText: detail.name,
+      metadata: {
+        source: 'product-detail-modal',
+        price: displayPrice(detail),
+        category: detail.category,
+        brand: detail.brand,
+      },
+    });
+  }, [addToCart, detail]);
+
+  const handleAddToCart = useCallback(() => {
+    pushToCart();
+    toast({
+      title: 'Added to cart',
+      description: `${detail.name} is in your cart.`,
+    });
+  }, [pushToCart, toast, detail.name]);
+
+  const handleBuyNow = useCallback(() => {
+    pushToCart();
+    track({
+      event: 'buy_now',
+      eventType: 'ecommerce',
+      productId: detail.id,
+      elementText: detail.name,
+      metadata: { source: 'product-detail-modal' },
+    });
+    onClose();
+    navigate('/checkout');
+  }, [pushToCart, navigate, onClose, detail.id, detail.name]);
+
+  const handleRequestQuote = useCallback(() => {
+    track({
+      event: 'request_quote',
+      eventType: 'ecommerce',
+      productId: detail.id,
+      elementText: detail.name,
+      metadata: { source: 'product-detail-modal' },
+    });
+    toast({
+      title: 'Quote requested',
+      description: `A DSM specialist will follow up with pricing for ${detail.name}.`,
+    });
+  }, [toast, detail.id, detail.name]);
 
   // Escape to close + lock body scroll while open.
   useEffect(() => {
@@ -371,6 +456,37 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
                     {stockLabel(detail)}
                   </span>
                 </div>
+
+                {/* ── Purchase CTAs ──────────────────────────────────────── */}
+                {quoteOnly ? (
+                  <Button
+                    onClick={handleRequestQuote}
+                    className="group h-14 w-full rounded-xl bg-gradient-to-r from-gold to-gold/80 text-base font-semibold text-[#0A0A0A] shadow-[0_8px_30px_-8px_rgba(212,175,55,0.6)] transition-all hover:shadow-[0_12px_40px_-8px_rgba(212,175,55,0.8)] hover:brightness-110"
+                  >
+                    <FileText className="mr-2 h-5 w-5" />
+                    Request a quote
+                  </Button>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Button
+                      onClick={handleBuyNow}
+                      disabled={outOfStock}
+                      className="group h-14 w-full rounded-xl bg-gradient-to-r from-crimson to-crimson-dark text-base font-semibold text-[#FEFEFE] shadow-[0_8px_30px_-8px_rgba(220,38,38,0.7)] transition-all hover:brightness-110 hover:shadow-[0_12px_40px_-8px_rgba(220,38,38,0.9)] disabled:opacity-40 disabled:shadow-none"
+                    >
+                      <Zap className="mr-2 h-5 w-5 transition-transform group-hover:scale-110" />
+                      {outOfStock ? 'Out of stock' : 'Buy Now'}
+                    </Button>
+                    <Button
+                      onClick={handleAddToCart}
+                      disabled={outOfStock}
+                      variant="outline"
+                      className="h-14 w-full rounded-xl border-crimson/40 bg-crimson/5 text-base font-semibold text-[#FEFEFE] transition-all hover:border-crimson hover:bg-crimson/15 disabled:opacity-40"
+                    >
+                      <ShoppingCart className="mr-2 h-5 w-5" />
+                      Add to Cart
+                    </Button>
+                  </div>
+                )}
 
                 {/* Full description */}
                 <div className="space-y-2">

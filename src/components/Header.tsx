@@ -202,7 +202,7 @@ const Header = () => {
   const companyItems: DropdownItem[] = [
     { label: "Enterprise", desc: "Volume licensing & procurement", icon: Building2, to: "/store" },
     { label: "Resellers", desc: "Partner portal & wholesale pricing", icon: Users, onClick: goReseller },
-    { label: "Support", desc: "Talk to our team", icon: LifeBuoy, href: "mailto:support@digitalsoftwaremarkett.com" },
+    { label: "Support", desc: "Help center, FAQs & contact", icon: LifeBuoy, to: "/support" },
     { label: "About", desc: "Who we are & what we do", icon: Info, to: "/services" },
   ];
 
