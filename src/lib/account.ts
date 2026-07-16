@@ -281,17 +281,19 @@ export async function signUp(
       anonymousId: getAnonymousId(),
     };
     try {
-      void fetch(ANALYTICS_URL, {
+      // AWAIT the account write (not fire-and-forget): the caller navigates to
+      // the account page right after sign-up, which would otherwise abort the
+      // in-flight request and lose the account. no-cors → opaque response, but
+      // awaiting still guarantees the POST completed before we move on.
+      await fetch(ANALYTICS_URL, {
         method: 'POST',
         mode: 'no-cors',
         keepalive: true,
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload),
-      }).catch(() => {
-        /* fire-and-forget */
       });
     } catch {
-      /* never block sign-up on the network */
+      /* network down — the session still opens optimistically below */
     }
   }
   track({ event: 'member_signup', eventType: 'custom', metadata: { email: clean } });
