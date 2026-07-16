@@ -530,12 +530,23 @@ function OrderingTextConcierge() {
   return (
     <div className="mx-auto grid w-full max-w-4xl gap-6 md:grid-cols-[minmax(0,300px)_1fr]">
       <div className="flex flex-col">
-        <div className="relative flex aspect-[3/4] w-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-crimson/[0.12] to-[#0b0c0e] p-6 text-center">
-          <div className="ord-orb-mini mb-4 h-24 w-24 rounded-full" aria-hidden />
-          <p className="text-sm font-semibold text-[#FEFEFE]">Your ordering concierge</p>
-          <p className="mt-1 text-xs text-[#B1B2B3]">
-            Chat below — I'll find your genuine licenses at member price and add them to your cart.
-          </p>
+        <div className="relative flex aspect-[3/4] w-full flex-col items-center justify-end overflow-hidden rounded-2xl border border-white/10 bg-[#0b0c0e] text-center">
+          {/* Real concierge portrait instead of the old resting sphere — reads as
+              an intentional support person, not a stuck loader. The live Simli
+              talking face replaces this when that (unstable) service is up. */}
+          <img
+            src="/images/concierge-agent.jpg"
+            alt="Your DSM ordering concierge"
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ objectPosition: 'center 22%' }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c0e] via-[#0b0c0e]/45 to-transparent" />
+          <div className="relative z-10 p-5">
+            <p className="text-sm font-semibold text-[#FEFEFE]">Your ordering concierge</p>
+            <p className="mt-1 text-xs text-[#B1B2B3]">
+              Chat below — I'll find your genuine licenses at member price and add them to your cart.
+            </p>
+          </div>
         </div>
         <div className="mt-3 text-center text-[11px] text-[#B1B2B3]/60">
           Live talking mode is resting — text ordering works exactly the same.
