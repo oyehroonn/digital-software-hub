@@ -55,13 +55,17 @@ export interface TelemetryEvent {
 }
 
 export async function fetchOrders(cfg: AppConfig, limit = 2000): Promise<Order[]> {
-  const rows = await fetchSheetRows(cfg, cfg.orders_sheet_id, { timeoutMs: 10000 });
+  // Generous timeout: the Apps Script read follows a 302 → googleusercontent
+  // redirect and serialises up to `limit` rows, which can take 10-20s.
+  const rows = await fetchSheetRows(cfg, cfg.orders_sheet_id, { timeoutMs: 25000 });
   const mapped = rows.map((r) => normalizeOrder(r as unknown as Order));
   return limit && mapped.length > limit ? mapped.slice(-limit) : mapped;
 }
 
 export async function fetchTelemetry(cfg: AppConfig, limit = 2000): Promise<TelemetryEvent[]> {
-  const rows = await fetchSheetRows(cfg, cfg.telemetry_sheet_id, { timeoutMs: 12000 });
+  // Telemetry is the big read (~2KB/row) — the 2000-row window is ~4MB and the
+  // Apps Script + redirect can take ~10-15s, so allow 30s before falling back.
+  const rows = await fetchSheetRows(cfg, cfg.telemetry_sheet_id, { timeoutMs: 30000 });
   const mapped = rows.map((r) => normalizeEvent(r as unknown as TelemetryEvent));
   return limit && mapped.length > limit ? mapped.slice(-limit) : mapped;
 }

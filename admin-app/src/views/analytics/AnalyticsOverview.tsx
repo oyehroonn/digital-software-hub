@@ -566,7 +566,7 @@ export function AnalyticsOverview({ config }: { config: AppConfig }) {
       <AnalyticsHeader
         icon={<LayoutDashboard className="h-4 w-4 text-primary" />}
         title="Analytics Overview"
-        subtitle="Traffic, engagement and revenue at a glance — sessions, conversions and money from the stable Telemetry & Orders sheets. Falls back to seed data until the read endpoint is live."
+        subtitle="Traffic, engagement and revenue at a glance — sessions, conversions and money, live from the stable Telemetry & Orders sheets."
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}

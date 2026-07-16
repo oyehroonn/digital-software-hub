@@ -37,7 +37,7 @@ export function sheetProxyUrl(vpsBase: string, sheetId: string): string {
  * publicly. Returns "" when the id isn't one of the two known sheets or the
  * Apps Script url/secret isn't configured. `newest last`, capped at `limit`.
  */
-export function appsScriptReadUrl(cfg: AppConfig, sheetId: string, limit = 5000): string {
+export function appsScriptReadUrl(cfg: AppConfig, sheetId: string, limit = 2000): string {
   if (!cfg.ecommerce_url || !cfg.ecommerce_secret || !sheetId) return "";
   let action = "";
   if (sheetId === cfg.telemetry_sheet_id) action = "telemetry";
