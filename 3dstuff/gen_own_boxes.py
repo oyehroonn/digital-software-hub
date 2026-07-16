@@ -241,43 +241,13 @@ def make_cover(name, tagline, glyph, atop, abot, features=None):
     return img
 
 
-# ── texture application (UV-preserving, from batch_process.py) ────────────
+# ── texture application ───────────────────────────────────────────────────
+# Delegate to batch_process's fixed box builder so DSM-original boxes get the
+# exact same correct geometry/UVs (cover upright on front+back, clean solid
+# sides, real box depth) instead of the old all-faces-garbled box.glb wrap.
 def apply_texture(glb_path, texture_img, output_path):
-    import trimesh
-    from scipy import ndimage
-    scene = trimesh.load(str(glb_path))
-    texture_img.load()
-    if texture_img.mode == 'RGBA':
-        arr = np.array(texture_img)
-        rgb = arr[:, :, :3].copy(); alpha = arr[:, :, 3]
-        transparent = alpha <= 128
-        if transparent.any() and (~transparent).any():
-            idx = ndimage.distance_transform_edt(
-                transparent, return_distances=False, return_indices=True)
-            for c in range(3):
-                ch = rgb[:, :, c]
-                ch[transparent] = ch[idx[0][transparent], idx[1][transparent]]
-                rgb[:, :, c] = ch
-        texture_img = Image.fromarray(rgb, 'RGB')
-    elif texture_img.mode != 'RGB':
-        texture_img = texture_img.convert('RGB')
-    mx = max(texture_img.width, texture_img.height)
-    p2 = max(512, min(2048, 2 ** ((mx - 1).bit_length())))
-    final = texture_img.resize((p2, p2), Image.Resampling.LANCZOS)
-    final.save(os.path.join(os.path.dirname(output_path), 'texture.png'))
-    if hasattr(scene, 'geometry'):
-        for _n, mesh in scene.geometry.items():
-            if not hasattr(mesh, 'visual'):
-                continue
-            try:
-                mesh.visual.material = trimesh.visual.material.PBRMaterial(
-                    baseColorTexture=final, metallicFactor=0.0, roughnessFactor=1.0)
-            except Exception:
-                try:
-                    mesh.visual.material = trimesh.visual.material.SimpleMaterial(image=final)
-                except Exception:
-                    pass
-    scene.export(str(output_path))
+    from batch_process import apply_texture as _build_box
+    _build_box(glb_path, texture_img, output_path)
 
 
 def main():

@@ -124,12 +124,30 @@ def build_row_image_map(xlsx_path):
     return row_to_image
 
 
-def apply_texture(glb_path, texture_img: Image.Image, output_path):
-    """Apply a (already-opened) texture image to a GLB, preserving original
-    UVs. Same known-good logic as process_product.py."""
-    scene = trimesh.load(str(glb_path))
+# ── Box geometry (real software-box proportions, NOT a flat slab) ─────────
+# Front face is portrait (W x H); D is a healthy depth so the box never reads
+# as a paper-thin slab after the viewer normalises its size.
+BOX_W = 1.5   # x  (cover width)
+BOX_H = 2.1   # y  (cover height)
+BOX_D = 0.5   # z  (spine depth)
 
+# trimesh's glTF exporter flips V on write, and three.js' GLTFLoader samples
+# with v=0 at the image BOTTOM. Verified with a marker render: the cover must
+# be authored with bottom vertices at v=0 so it appears upright (not flipped).
+FLIP_V = True
+
+
+def _prep_cover(texture_img: Image.Image) -> Image.Image:
+    """EXIF-correct, de-alpha and return an RGB cover image."""
     texture_img.load()
+
+    # Palette / grey-with-alpha images: promote to RGBA first so the alpha
+    # fill below runs (a plain .convert('RGB') would bake transparent pixels to
+    # a stray palette colour — often black — around the product).
+    if texture_img.mode in ('P', 'LA', 'PA') or (
+        texture_img.mode == 'L' and 'transparency' in texture_img.info
+    ):
+        texture_img = texture_img.convert('RGBA')
 
     # EXIF orientation
     try:
@@ -161,32 +179,102 @@ def apply_texture(glb_path, texture_img: Image.Image, output_path):
         texture_img = Image.fromarray(rgb, 'RGB')
     elif texture_img.mode != 'RGB':
         texture_img = texture_img.convert('RGB')
+    return texture_img
 
-    # Resize to power-of-2, clamped to [512, 2048]
-    mx = max(texture_img.width, texture_img.height)
-    p2 = 2 ** ((mx - 1).bit_length())
-    p2 = max(512, min(2048, p2))
-    final = texture_img.resize((p2, p2), Image.Resampling.LANCZOS)
 
-    # Save texture next to the model for debugging
-    final.save(os.path.join(os.path.dirname(output_path), 'texture.png'))
+def _edge_color(img: Image.Image):
+    """Median colour of the cover's border → used for the spine/sides and the
+    letterbox so the whole box reads as one cohesive object."""
+    a = np.asarray(img)
+    if a.ndim != 3:
+        return (238, 240, 244)
+    b = max(2, min(a.shape[0], a.shape[1]) // 40)
+    strip = np.concatenate([
+        a[:b].reshape(-1, 3), a[-b:].reshape(-1, 3),
+        a[:, :b].reshape(-1, 3), a[:, -b:].reshape(-1, 3),
+    ])
+    return tuple(int(x) for x in np.median(strip, axis=0))
 
-    # Apply to mesh, keep original UVs
-    if hasattr(scene, 'geometry'):
-        for _name, mesh in scene.geometry.items():
-            if not hasattr(mesh, 'visual'):
-                continue
-            try:
-                mesh.visual.material = trimesh.visual.material.PBRMaterial(
-                    baseColorTexture=final, metallicFactor=0.0, roughnessFactor=1.0,
-                )
-            except Exception:
-                try:
-                    mesh.visual.material = trimesh.visual.material.SimpleMaterial(image=final)
-                except Exception:
-                    pass
 
-    scene.export(str(output_path))
+def _build_atlas(cover: Image.Image, side_color, size: int = 2048):
+    """Composite a single texture atlas:
+        left column  (u 0..cover_u) = the product cover, aspect-fit + letterboxed
+        right column (u cover_u..1) = a flat panel of `side_color`
+    Returns (atlas_image, cover_u)."""
+    atlas = Image.new('RGB', (size, size), side_color)
+    cover_w = int(round(size * (BOX_W / BOX_H)))   # front-face aspect region
+    region = Image.new('RGB', (cover_w, size), side_color)
+    cw, ch = cover.size
+    scale = min(cover_w / cw, size / ch)
+    nw, nh = max(1, int(round(cw * scale))), max(1, int(round(ch * scale)))
+    resized = cover.resize((nw, nh), Image.Resampling.LANCZOS)
+    region.paste(resized, ((cover_w - nw) // 2, (size - nh) // 2))
+    atlas.paste(region, (0, 0))
+    return atlas, cover_w / size
+
+
+def apply_texture(glb_path, texture_img: Image.Image, output_path):
+    """Build a fresh, correctly-UV'd software box and texture it with the
+    product cover.
+
+    The base `box.glb` ships a *packed* UV unwrap: every one of the 6 faces is
+    mapped to a different (and differently-rotated) sub-rectangle of the 0..1
+    texture. Painting the whole cover across that atlas — as the old code did —
+    made each face sample a different rotated/mirrored slice, so back/side
+    faces showed reversed gibberish. We therefore ignore box.glb's UVs and
+    author our own geometry: the cover goes on the FRONT and BACK faces
+    upright and un-mirrored; the spine/top/bottom get a flat brand colour
+    sampled from the cover's edge. `glb_path` is kept for signature compat.
+    """
+    cover = _prep_cover(texture_img)
+    side = _edge_color(cover)
+    atlas, cu = _build_atlas(cover, side)
+    atlas.save(os.path.join(os.path.dirname(output_path), 'texture.png'))
+
+    hx, hy, hz = BOX_W / 2.0, BOX_H / 2.0, BOX_D / 2.0
+
+    V, F, UV = [], [], []
+
+    def add_face(quad, uvs):
+        # quad given CCW as seen from OUTSIDE → outward normals, front-facing.
+        i = len(V)
+        V.extend(quad)
+        UV.extend(uvs)
+        F.append([i, i + 1, i + 2])
+        F.append([i, i + 2, i + 3])
+
+    # Cover UVs for [BL, BR, TR, TL] with glTF top-left origin.
+    v_bottom, v_top = (0.0, 1.0) if FLIP_V else (1.0, 0.0)
+    cover_uv = [(0.0, v_bottom), (cu, v_bottom), (cu, v_top), (0.0, v_top)]
+    # A single point inside the flat side panel → uniform colour, no distortion.
+    sp = (cu + (1.0 - cu) / 2.0, 0.5)
+    side_uv = [sp, sp, sp, sp]
+
+    # FRONT (+Z): cover, upright.  Quad order BL, BR, TR, TL.
+    add_face([(-hx, -hy,  hz), ( hx, -hy,  hz), ( hx,  hy,  hz), (-hx,  hy,  hz)], cover_uv)
+    # BACK (-Z): cover, upright & un-mirrored when viewed from behind.
+    add_face([( hx, -hy, -hz), (-hx, -hy, -hz), (-hx,  hy, -hz), ( hx,  hy, -hz)], cover_uv)
+    # RIGHT (+X): flat side panel.
+    add_face([( hx, -hy,  hz), ( hx, -hy, -hz), ( hx,  hy, -hz), ( hx,  hy,  hz)], side_uv)
+    # LEFT (-X): flat side panel.
+    add_face([(-hx, -hy, -hz), (-hx, -hy,  hz), (-hx,  hy,  hz), (-hx,  hy, -hz)], side_uv)
+    # TOP (+Y): flat side panel.
+    add_face([(-hx,  hy,  hz), ( hx,  hy,  hz), ( hx,  hy, -hz), (-hx,  hy, -hz)], side_uv)
+    # BOTTOM (-Y): flat side panel.
+    add_face([(-hx, -hy, -hz), ( hx, -hy, -hz), ( hx, -hy,  hz), (-hx, -hy,  hz)], side_uv)
+
+    mesh = trimesh.Trimesh(
+        vertices=np.array(V, dtype=np.float64),
+        faces=np.array(F, dtype=np.int64),
+        process=False,
+    )
+    material = trimesh.visual.material.PBRMaterial(
+        baseColorTexture=atlas, metallicFactor=0.0, roughnessFactor=0.85,
+    )
+    mesh.visual = trimesh.visual.TextureVisuals(
+        uv=np.array(UV, dtype=np.float64), material=material,
+    )
+    mesh.export(str(output_path))
 
 
 # ── Main ─────────────────────────────────────────────────────────────────
