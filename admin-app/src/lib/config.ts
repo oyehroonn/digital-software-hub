@@ -25,7 +25,7 @@ export interface AppConfig {
 
 export const DEFAULT_CONFIG: AppConfig = {
   ecommerce_url:
-    "https://script.google.com/macros/s/AKfycbwn05r3WVqMpV4Tftn4n1qEs7I10cu3Z8S306jMXaXXCClxizt2EfOUSKa9cTha6pPD/exec",
+    "https://script.google.com/macros/s/AKfycbyZC2curJl_y6vE1p-z8WK0RPQEYReawrM8fB0oW2RyXjUhgZIs88Cc3Ct-Q5Hhrl7J/exec",
   // Read/write secret for the ecommerce Apps Script (orders + telemetry). Gates
   // the GET ?action=telemetry|orders read endpoints so the admin can pull the
   // private sheets without publishing them. Internal admin tool → baked here;

@@ -10,7 +10,7 @@
 // The Apps Script exec URL is public (not a secret). Overridable via env.
 const TELEMETRY_URL =
   import.meta.env.VITE_ECOMMERCE_API ||
-  'https://script.google.com/macros/s/AKfycbwn05r3WVqMpV4Tftn4n1qEs7I10cu3Z8S306jMXaXXCClxizt2EfOUSKa9cTha6pPD/exec';
+  'https://script.google.com/macros/s/AKfycbyZC2curJl_y6vE1p-z8WK0RPQEYReawrM8fB0oW2RyXjUhgZIs88Cc3Ct-Q5Hhrl7J/exec';
 
 const STORE_NAME = import.meta.env.VITE_STORE_NAME || 'DSM';
 

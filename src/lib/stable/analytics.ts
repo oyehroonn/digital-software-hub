@@ -23,7 +23,7 @@ import { enqueue, registerProcessor } from '../offlineQueue';
 // for staging via a gitignored .env.local.
 export const ANALYTICS_URL: string =
   (import.meta.env.VITE_ECOMMERCE_APPS_SCRIPT_URL as string | undefined) ??
-  'https://script.google.com/macros/s/AKfycbwn05r3WVqMpV4Tftn4n1qEs7I10cu3Z8S306jMXaXXCClxizt2EfOUSKa9cTha6pPD/exec';
+  'https://script.google.com/macros/s/AKfycbyZC2curJl_y6vE1p-z8WK0RPQEYReawrM8fB0oW2RyXjUhgZIs88Cc3Ct-Q5Hhrl7J/exec';
 
 export const STORE_NAME: string =
   (import.meta.env.VITE_STORE_NAME as string | undefined) ?? 'DSM';
