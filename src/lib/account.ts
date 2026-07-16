@@ -249,6 +249,89 @@ function recordMember(account: Account): void {
   }
 }
 
+// ── Email + password (simple accounts via the ecommerce Apps Script) ──────────
+//
+// A plain-store login: the Apps Script keeps an "Accounts" tab (email + a
+// low-value password) and answers `GET ?action=login&email=&password=`. Not a
+// security boundary — it just lets returning buyers keep a named account.
+
+/**
+ * Create an account (email + password) and open a session. Optimistic: the
+ * create is a fire-and-forget POST (the Apps Script never overwrites an existing
+ * password, so this can't hijack an existing account). Throws only on invalid
+ * input.
+ */
+export async function signUp(
+  email: string,
+  password: string,
+  opts: { displayName?: string } = {},
+): Promise<Account> {
+  const clean = normalizeEmail(email);
+  if (!password || password.length < 4) {
+    throw new Error('Please choose a password of at least 4 characters.');
+  }
+  if (typeof fetch !== 'undefined') {
+    const payload = {
+      type: 'account_create',
+      storeName: STORE_NAME,
+      email: clean,
+      password,
+      displayName: opts.displayName,
+      sessionId: getSessionId(),
+      anonymousId: getAnonymousId(),
+    };
+    try {
+      void fetch(ANALYTICS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        keepalive: true,
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+      }).catch(() => {
+        /* fire-and-forget */
+      });
+    } catch {
+      /* never block sign-up on the network */
+    }
+  }
+  track({ event: 'member_signup', eventType: 'custom', metadata: { email: clean } });
+  return signIn(clean, { displayName: opts.displayName });
+}
+
+/**
+ * Sign in by checking email + password against the Apps Script. Opens a session
+ * on success. Throws a friendly message on a wrong password / unknown email /
+ * unreachable server.
+ */
+export async function signInWithPassword(
+  email: string,
+  password: string,
+): Promise<Account> {
+  const clean = normalizeEmail(email);
+  const qs = new URLSearchParams({ action: 'login', email: clean, password });
+  const url = `${ANALYTICS_URL}?${qs.toString()}`;
+
+  let data: { ok?: boolean; error?: string; account?: { displayName?: string; verified?: boolean } } | null =
+    null;
+  try {
+    const res = await fetch(url);
+    if (res.ok) data = await res.json();
+  } catch {
+    throw new Error('Could not reach the server. Please check your connection and try again.');
+  }
+
+  if (!data || !data.ok) {
+    if (data && data.error === 'no_account') {
+      throw new Error('No account found for that email — create one first.');
+    }
+    throw new Error('Wrong email or password.');
+  }
+  return signIn(clean, {
+    displayName: data.account?.displayName,
+    verified: Boolean(data.account?.verified),
+  });
+}
+
 // ── Magic-code flow (optional, free, passwordless) ────────────────────────────
 
 interface PendingCode {

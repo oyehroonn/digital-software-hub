@@ -36,6 +36,8 @@ import {
   requestLoginCode,
   setInsiderOptIn,
   signIn,
+  signInWithPassword,
+  signUp,
   verifyLoginCode,
   MEMBER_DISCOUNT_PCT,
 } from '@/lib/account';
@@ -69,6 +71,8 @@ export default function AccountDialog({
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [code, setCode] = useState('');
   const [insider, setInsider] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -80,6 +84,7 @@ export default function AccountDialog({
     if (open) {
       setStep('email');
       setCode('');
+      setPassword('');
       setError('');
       setNotice('');
       setBusy(false);
@@ -119,6 +124,39 @@ export default function AccountDialog({
     }
     finish(false);
   }, [email, finish]);
+
+  // Primary action. Password is OPTIONAL: leave it blank for instant email-only
+  // sign-in; set one to create / sign into a password-protected account.
+  const onContinue = useCallback(async () => {
+    setError('');
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!password.trim()) {
+      finish(false); // no password → passwordless quick sign-in
+      return;
+    }
+    setBusy(true);
+    try {
+      if (mode === 'signup') {
+        await signUp(email, password, { displayName: name.trim() || undefined });
+        finish(false);
+      } else {
+        await signInWithPassword(email, password);
+        finish(true); // password-verified
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Sign-in failed. Please try again.';
+      setError(
+        mode === 'signin' && /no account/i.test(msg)
+          ? 'No account for that email yet — switch to “Create account” below.'
+          : msg,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, [email, password, mode, name, finish]);
 
   const onRequestCode = useCallback(async () => {
     setError('');
@@ -178,7 +216,7 @@ export default function AccountDialog({
           </DialogTitle>
           <DialogDescription className="text-[#B1B2B3]">
             {step === 'email'
-              ? 'Sign in or create your free account with just an email — no password.'
+              ? 'Sign in or create your free account — email only, or add a password.'
               : 'Enter the 6-digit code we just sent to confirm it’s you.'}
           </DialogDescription>
         </DialogHeader>
@@ -219,12 +257,40 @@ export default function AccountDialog({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && onQuickSignIn()}
+                  onKeyDown={(e) => e.key === 'Enter' && onContinue()}
                   placeholder="you@company.com"
                   autoComplete="email"
                   autoFocus
                   className="mt-1.5 bg-white/[0.03] border-white/10 text-[#FEFEFE] placeholder:text-[#B1B2B3]/50"
                 />
+              </div>
+              <div>
+                <Label htmlFor="acct-password" className="text-xs text-[#B1B2B3]">
+                  Password{' '}
+                  <span className="text-[#B1B2B3]/50">(optional — leave blank for quick email sign-in)</span>
+                </Label>
+                <Input
+                  id="acct-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && onContinue()}
+                  placeholder={mode === 'signup' ? 'Choose a password' : 'Your password'}
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  className="mt-1.5 bg-white/[0.03] border-white/10 text-[#FEFEFE] placeholder:text-[#B1B2B3]/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode((m) => (m === 'signin' ? 'signup' : 'signin'));
+                    setError('');
+                  }}
+                  className="mt-1.5 text-[11px] text-crimson hover:underline"
+                >
+                  {mode === 'signin'
+                    ? 'New here? Create an account'
+                    : 'Already have an account? Sign in'}
+                </button>
               </div>
 
               <label className="flex cursor-pointer items-start gap-2.5 pt-0.5">
@@ -244,11 +310,25 @@ export default function AccountDialog({
 
             <div className="flex flex-col gap-2 pt-1">
               <Button
-                onClick={onQuickSignIn}
+                onClick={onContinue}
                 disabled={busy}
                 className="w-full bg-crimson text-[#FEFEFE] hover:bg-crimson-dark"
               >
-                Continue with email <ArrowRight className="ml-1.5 h-4 w-4" />
+                {busy ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {mode === 'signup' ? 'Creating account…' : 'Signing in…'}
+                  </>
+                ) : (
+                  <>
+                    {password.trim()
+                      ? mode === 'signup'
+                        ? 'Create account'
+                        : 'Sign in'
+                      : 'Continue with email'}{' '}
+                    <ArrowRight className="ml-1.5 h-4 w-4" />
+                  </>
+                )}
               </Button>
               <Button
                 variant="ghost"
