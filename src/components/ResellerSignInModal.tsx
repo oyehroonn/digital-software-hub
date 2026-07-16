@@ -43,6 +43,7 @@ import { Label } from '@/components/ui/label';
 import { isValidEmail } from '@/lib/account';
 import { registerReseller, resellerSignIn, RESELLER_TIERS } from '@/lib/reseller';
 import { track } from '@/lib/stable/analytics';
+import { captureLead } from '@/lib/captureLead';
 
 export interface ResellerSignInModalProps {
   open: boolean;
@@ -123,6 +124,20 @@ export default function ResellerSignInModal({
         taxId: taxId.trim() || undefined,
         estAnnualUnits: Number.isFinite(parsedUnits) ? parsedUnits : undefined,
       });
+      captureLead({
+        email: profile.email,
+        source: 'reseller',
+        name: contactName.trim() || undefined,
+        phone: phone.trim() || undefined,
+        company: company.trim() || undefined,
+        productName: 'Reseller registration',
+        notes: 'Registered for the DSM B2B reseller program.',
+        metadata: {
+          country: country.trim() || undefined,
+          taxId: taxId.trim() || undefined,
+          estAnnualUnits: Number.isFinite(parsedUnits) ? parsedUnits : undefined,
+        },
+      });
       succeed(profile.email);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not complete registration.');
@@ -141,6 +156,12 @@ export default function ResellerSignInModal({
     try {
       const profile = resellerSignIn(email);
       if (profile) {
+        captureLead({
+          email: profile.email,
+          source: 'reseller',
+          productName: 'Reseller sign-in',
+          notes: 'Returning DSM reseller partner signed in.',
+        });
         succeed(profile.email);
       } else {
         // No stored reseller profile on this device — guide them to register.

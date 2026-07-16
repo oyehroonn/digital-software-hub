@@ -95,15 +95,15 @@ export default function AccountPrompt({ onSignIn }: { onSignIn: () => void }) {
           <div className="mb-2 inline-flex items-center gap-1.5 text-crimson">
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
             <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">
-              Free membership
+              Exclusive membership
             </span>
           </div>
           <h3 className="font-serif text-lg leading-snug text-[#FEFEFE]">
-            Save {MEMBER_DISCOUNT_PCT}% & track every license
+            Become an Exclusive Member & save {MEMBER_DISCOUNT_PCT}%
           </h3>
           <p className="mt-1.5 text-xs leading-relaxed text-[#B1B2B3]">
-            Create a free DSM account to unlock member pricing, one dashboard for all your
-            licenses and renewals, and insider launch alerts.
+            Join free to unlock exclusive member pricing, your own membership card, one dashboard
+            for every license and renewal, and insider launch alerts.
           </p>
           <div className="mt-4 flex items-center gap-2">
             <button
@@ -113,7 +113,7 @@ export default function AccountPrompt({ onSignIn }: { onSignIn: () => void }) {
               }}
               className="btn-magnetic rounded-sm bg-crimson px-4 py-2 text-xs font-medium text-[#FEFEFE] transition-colors hover:bg-crimson-dark"
             >
-              Create free account
+              Become a member
             </button>
             <button
               onClick={dismiss}

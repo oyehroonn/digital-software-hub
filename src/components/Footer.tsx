@@ -1,4 +1,76 @@
-import { Instagram, Twitter, Linkedin, Youtube } from "lucide-react";
+import { useState } from "react";
+import { Instagram, Twitter, Linkedin, Youtube, ArrowRight, Check } from "lucide-react";
+import { captureLead } from "@/lib/captureLead";
+import { track } from "@/lib/stable/analytics";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Footer newsletter signup. Every email entered here is captured as a lead
+ * (source: "newsletter") into the Ecommerce Apps Script so it appears in the
+ * admin Customers view, in addition to the local subscribe confirmation.
+ */
+const NewsletterSignup = () => {
+  const [email, setEmail] = useState("");
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = email.trim();
+    if (!EMAIL_RE.test(value)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setError("");
+    // Fire-and-forget lead capture into the admin Customers view.
+    captureLead({
+      email: value,
+      source: "newsletter",
+      productName: "Newsletter signup",
+      notes: "Subscribed to DSM updates from the footer.",
+    });
+    track({ event: "newsletter_signup", eventType: "ecommerce", elementText: value });
+    setDone(true);
+    setEmail("");
+  };
+
+  if (done) {
+    return (
+      <div className="flex items-center gap-2 rounded-md border border-crimson/30 bg-crimson/[0.06] px-4 py-3 text-sm text-[#FEFEFE]">
+        <Check className="h-4 w-4 shrink-0 text-crimson" aria-hidden />
+        You&apos;re subscribed — watch your inbox for genuine-license deals & launches.
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex-1">
+        <label htmlFor="footer-newsletter" className="sr-only">
+          Email address
+        </label>
+        <input
+          id="footer-newsletter"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@company.com"
+          className="w-full rounded-md border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-[#FEFEFE] placeholder:text-[#B1B2B3]/50 focus:border-crimson/50 focus:outline-none focus:ring-1 focus:ring-crimson/40"
+        />
+      </div>
+      <button
+        type="submit"
+        className="inline-flex items-center justify-center gap-1.5 rounded-md bg-crimson px-5 py-2.5 text-sm font-medium text-[#FEFEFE] transition-colors hover:bg-crimson-dark"
+      >
+        Subscribe
+        <ArrowRight className="h-4 w-4" aria-hidden />
+      </button>
+    </form>
+  );
+};
 
 const Footer = () => {
   return (
@@ -89,6 +161,16 @@ const Footer = () => {
               <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Reseller Certificate</a></li>
             </ul>
           </div>
+        </div>
+
+        <div className="mb-12 grid grid-cols-1 gap-6 rounded-xl border border-white/[0.06] bg-white/[0.015] p-6 md:grid-cols-2 md:items-center md:p-8">
+          <div>
+            <h4 className="text-[#FEFEFE] text-lg font-semibold">Stay in the loop</h4>
+            <p className="mt-1.5 text-sm font-light text-[#B1B2B3]/80 max-w-sm">
+              Genuine-license deals, new launches and renewal reminders — straight to your inbox. No spam, unsubscribe anytime.
+            </p>
+          </div>
+          <NewsletterSignup />
         </div>
 
         <div className="border-t border-white/[0.04] pt-8 flex flex-col md:flex-row justify-between items-center gap-6">

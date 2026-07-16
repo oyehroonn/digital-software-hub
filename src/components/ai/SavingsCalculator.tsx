@@ -47,6 +47,7 @@ import { chat, LLMError, type ChatMessage } from '@/lib/llm';
 import { track } from '@/lib/stable/analytics';
 import { sendEmail, type SendEmailArgs } from '@/lib/stable/email';
 import { enqueue, registerProcessor } from '@/lib/offlineQueue';
+import { captureLead as captureLeadRecord } from '@/lib/captureLead';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -525,6 +526,24 @@ function captureLead(lead: LeadInput, result: SavingsResult): void {
 
   fireLeadEmail(buildSalesEmail(lead, result));
   fireLeadEmail(buildProspectEmail(lead, result));
+
+  // Also record the email as a lead/customer for the admin Customers view.
+  captureLeadRecord({
+    email: lead.email,
+    source: 'savings',
+    name: lead.name || undefined,
+    productName: 'Savings Calculator estimate',
+    notes: `Estimated ${result.savingsPercent}% saving (~${formatMoney(result.annualSavings)}/yr) vs ${
+      lead.vendor || 'current vendor'
+    }.`,
+    metadata: {
+      vendor: lead.vendor,
+      spendRaw: lead.spendRaw,
+      cadence: lead.cadence,
+      annualSpend: result.annualSpend,
+      annualSavings: result.annualSavings,
+    },
+  });
 }
 
 /**
@@ -566,6 +585,18 @@ function captureRawLead(lead: LeadInput, annualSpend: number, source: string): v
     .join('\n');
 
   fireLeadEmail({ to: SALES_INBOX, subject, body });
+
+  // Also record the email as a lead/customer for the admin Customers view.
+  captureLeadRecord({
+    email: lead.email,
+    source: 'savings',
+    name: lead.name || undefined,
+    productName: 'Savings Calculator lead',
+    notes: `Savings lead (${source}) — no AI estimate generated. Vendor: ${
+      lead.vendor || '(not given)'
+    }${annualSpend > 0 ? `, ~${formatMoney(annualSpend)}/yr spend` : ''}.`,
+    metadata: { source, vendor: lead.vendor, spendRaw: lead.spendRaw, cadence: lead.cadence, annualSpend },
+  });
 }
 
 // ── Shared card shell ─────────────────────────────────────────────────────────

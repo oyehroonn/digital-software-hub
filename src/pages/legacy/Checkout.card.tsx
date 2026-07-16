@@ -153,7 +153,7 @@ export default function Checkout() {
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <UsersRound className="w-4 h-4 text-azure" />
-                    <span className="text-sm font-medium text-[#FEFEFE]">DSM Member Checkout</span>
+                    <span className="text-sm font-medium text-[#FEFEFE]">Exclusive Member Checkout</span>
                   </div>
                   <p className="text-xs text-[#B1B2B3]/65">Save purchases, licenses, and invoices in profile.</p>
                 </button>

@@ -43,6 +43,7 @@ import {
   type SendEmailArgs,
 } from '@/lib/stable/email';
 import { enqueue, registerProcessor } from '@/lib/offlineQueue';
+import { captureLead } from '@/lib/captureLead';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -317,6 +318,18 @@ function bookCallback(
       start: startIso,
       callTitle: brief.callTitle,
     },
+  });
+
+  // Also capture the email as a lead/customer for the admin Customers view.
+  captureLead({
+    email: input.email,
+    source: 'callback',
+    name: input.name || undefined,
+    phone: input.phone || undefined,
+    company: input.company || undefined,
+    productName: 'Smart Callback booking',
+    notes: `Booked a ${CALL_DURATION_MIN}-min callback (${source}) for ${friendlyWhen(startIso)}. ${brief.summary}`,
+    metadata: { start: startIso, callTitle: brief.callTitle, intent: input.intent.trim() },
   });
 
   // Try to book now; on any failure (bridge down) queue for automatic retry.

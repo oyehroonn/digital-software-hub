@@ -34,6 +34,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useAccount } from '@/hooks/useAccount';
 import { useAccountDialog } from '@/components/account/AccountProvider';
+import MembershipCard from '@/components/account/MembershipCard';
 import {
   daysUntil,
   getLicenses,
@@ -127,6 +128,16 @@ export default function Account() {
     return { total: licenses.length, active, expiring };
   }, [licenses]);
 
+  // "Member since" = earliest purchase on record, else this session's sign-in.
+  const memberSince = useMemo(() => {
+    const earliest = licenses.reduce<string | undefined>((min, l) => {
+      if (!l.purchasedAt) return min;
+      if (!min || Date.parse(l.purchasedAt) < Date.parse(min)) return l.purchasedAt;
+      return min;
+    }, undefined);
+    return earliest ?? account?.signedInAt;
+  }, [licenses, account?.signedInAt]);
+
   const onToggleInsider = (next: boolean) => {
     setInsider(next);
     setInsiderOptIn(next, email);
@@ -164,7 +175,7 @@ export default function Account() {
           <div className="mb-3 inline-flex items-center gap-2 text-crimson">
             <Sparkles className="h-4 w-4" aria-hidden />
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
-              Free DSM Membership
+              Exclusive Membership · Free
             </span>
           </div>
           <h1 className="font-serif text-4xl text-[#FEFEFE]">Your member dashboard</h1>
@@ -194,7 +205,7 @@ export default function Account() {
         <div className="mb-10 flex flex-col gap-4 border-b border-white/[0.06] pb-8 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-crimson/20 bg-crimson/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-crimson">
-              <BadgeCheck className="h-3.5 w-3.5" /> DSM Member · {MEMBER_DISCOUNT_PCT}% off
+              <BadgeCheck className="h-3.5 w-3.5" /> Exclusive Member · {MEMBER_DISCOUNT_PCT}% off
             </div>
             <h1 className="font-serif text-3xl text-[#FEFEFE] md:text-4xl">
               Welcome{account?.displayName ? `, ${account.displayName}` : ' back'}
@@ -341,6 +352,20 @@ export default function Account() {
 
           {/* Perks sidebar */}
           <aside className="space-y-4">
+            {/* Exclusive Member card — press & hold to activate / flip */}
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+              <div className="mb-4 flex items-center gap-2 text-crimson">
+                <Sparkles className="h-4 w-4" />
+                <h3 className="text-sm font-semibold text-[#FEFEFE]">Your membership card</h3>
+              </div>
+              <MembershipCard
+                name={account?.displayName}
+                email={account?.email ?? ''}
+                memberSince={memberSince}
+                verified={account?.verified}
+              />
+            </div>
+
             <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
               <div className="mb-3 flex items-center gap-2 text-[#FEFEFE]">
                 <Bell className="h-4 w-4 text-crimson" />

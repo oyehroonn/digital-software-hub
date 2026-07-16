@@ -44,6 +44,7 @@ import { searchProducts, getTopProducts, type Product } from '@/lib/api';
 import { sendEmail } from '@/lib/stable/email';
 import { submitOrder, type OrderPayload } from '@/lib/stable/orders';
 import { sendTelemetry } from '@/lib/telemetry';
+import { captureLead } from '@/lib/captureLead';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -321,6 +322,14 @@ function InstantQuoteInner() {
       eventType: 'lead',
       elementText: to,
       metadata: { feature: 'quote-genie', items: quote.items.length },
+    });
+
+    // Also capture the email as a lead/customer for the admin Customers view.
+    captureLead({
+      email: to,
+      source: 'quote',
+      productName: 'Instant Quote request',
+      notes: quoteToText(quote, need),
     });
 
     // Bonus: if a local mail bridge is running (admin app), fire the formatted
@@ -667,6 +676,14 @@ function QuoteBetaSignup({ reason, prefillNeed = '', onRetry }: BetaSignupProps)
       eventType: 'lead',
       elementText: to,
       metadata: { feature: 'quote-genie', reason },
+    });
+
+    // Also capture the email as a lead/customer for the admin Customers view.
+    captureLead({
+      email: to,
+      source: 'quote',
+      productName: 'Instant Quote — early access',
+      notes: `Quote beta signup (${reason}). What they told us: ${need.trim() || '(not given)'}`,
     });
 
     try {

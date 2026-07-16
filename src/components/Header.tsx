@@ -1,4 +1,4 @@
-import { User, ShoppingBag, ChevronDown, ArrowRight, LayoutGrid, PenTool, Box, ShieldCheck, Monitor, Cpu } from "lucide-react";
+import { User, ShoppingBag, ChevronDown, ArrowRight, LayoutGrid, PenTool, Box, ShieldCheck, Monitor, Cpu, Crown } from "lucide-react";
 import SearchBar from "./SearchBar";
 import ProductModelViewer from "./ProductModelViewer";
 import { Link, useNavigate } from "react-router-dom";
@@ -162,6 +162,13 @@ const Header = () => {
             >
               Resellers
             </button>
+            <Link
+              to="/exclusive"
+              className="group text-sm font-medium text-crimson hover:text-crimson-dark transition-colors duration-300 inline-flex items-center gap-1.5"
+            >
+              <Crown className="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-110" strokeWidth={1.75} />
+              Exclusive Members
+            </Link>
             <a href="#" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Enterprise</a>
             <a href="#" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Support</a>
             <a href="#" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>About</a>

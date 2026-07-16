@@ -40,6 +40,7 @@ import {
   MEMBER_DISCOUNT_PCT,
 } from '@/lib/account';
 import { track } from '@/lib/stable/analytics';
+import { captureLead } from '@/lib/captureLead';
 
 export interface AccountDialogProps {
   open: boolean;
@@ -53,7 +54,7 @@ export interface AccountDialogProps {
 type Step = 'email' | 'code';
 
 const PERKS = [
-  { icon: Sparkles, text: `Standing ${MEMBER_DISCOUNT_PCT}% member price on every license` },
+  { icon: Sparkles, text: `Exclusive ${MEMBER_DISCOUNT_PCT}% member price on every license` },
   { icon: ShieldCheck, text: 'One dashboard for every license, renewal & expiry' },
   { icon: Mail, text: 'Insider alerts on new launches & renewal reminders' },
 ];
@@ -90,6 +91,14 @@ export default function AccountDialog({
     (verified: boolean) => {
       const acct = signIn(email, { displayName: name.trim() || undefined, verified });
       setInsiderOptIn(insider, acct.email);
+      captureLead({
+        email: acct.email,
+        source: 'account',
+        name: name.trim() || undefined,
+        productName: 'Member account signup',
+        notes: `Free DSM member account created / signed in.${insider ? ' Opted into insider alerts.' : ''}`,
+        metadata: { verified, insider },
+      });
       track({
         event: 'account_signed_in',
         eventType: 'custom',
@@ -137,6 +146,14 @@ export default function AccountDialog({
     try {
       verifyLoginCode(email, code);
       setInsiderOptIn(insider, email.trim().toLowerCase());
+      captureLead({
+        email: email.trim().toLowerCase(),
+        source: 'account',
+        name: name.trim() || undefined,
+        productName: 'Member account signup',
+        notes: `Free DSM member account verified by email code.${insider ? ' Opted into insider alerts.' : ''}`,
+        metadata: { verified: true, insider },
+      });
       track({ event: 'account_signed_in', eventType: 'custom', metadata: { verified: true, insider } });
       onSignedIn?.(email.trim().toLowerCase());
       onOpenChange(false);
@@ -153,11 +170,11 @@ export default function AccountDialog({
           <div className="mb-1 inline-flex items-center gap-2 text-crimson">
             <Sparkles className="h-4 w-4" aria-hidden />
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
-              Free DSM Account
+              Exclusive Member Access
             </span>
           </div>
           <DialogTitle className="font-serif text-2xl leading-tight text-[#FEFEFE]">
-            {step === 'email' ? 'Unlock your member dashboard' : 'Check your inbox'}
+            {step === 'email' ? 'Become an Exclusive Member' : 'Check your inbox'}
           </DialogTitle>
           <DialogDescription className="text-[#B1B2B3]">
             {step === 'email'

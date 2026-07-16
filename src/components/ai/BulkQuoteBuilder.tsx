@@ -57,6 +57,7 @@ import { track } from '@/lib/stable/analytics';
 import { sendEmail } from '@/lib/stable/email';
 import { submitOrder } from '@/lib/stable/orders';
 import { enqueue } from '@/lib/offlineQueue';
+import { captureLead } from '@/lib/captureLead';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -508,6 +509,19 @@ function BulkQuoteBuilderInner() {
       /* submitOrder already queues on failure; never block the buyer */
     });
 
+    // Also capture the email as a lead/customer for the admin Customers view.
+    captureLead({
+      email: contact.email,
+      source: 'quote',
+      name: contact.contactName || undefined,
+      company: contact.company || undefined,
+      productName: `Bulk quote — ${contact.company || 'team'}`,
+      notes: `Bulk Quote Builder ${ref}: ${lines.length} lines, ${totals.totalSeats} seats, total ${money(
+        totals.total,
+      )} (${totals.tier.label}).`,
+      metadata: { ref, seats: totals.totalSeats, total: totals.total, tier: totals.tier.label },
+    });
+
     // 2) Deliver the formatted HTML quote by email (best-effort via the bridge).
     try {
       await sendEmail({ to: contact.email, subject, body, html: true });
@@ -827,6 +841,17 @@ function BulkQuoteBetaSignup() {
       ].join('\n'),
     }).catch(() => {
       /* submitOrder already queues on failure */
+    });
+
+    // Also capture the email as a lead/customer for the admin Customers view.
+    captureLead({
+      email: email.trim(),
+      source: 'quote',
+      name: contactName.trim() || undefined,
+      company: company.trim() || undefined,
+      productName: `Bulk quote request — ${company.trim() || 'team'}`,
+      notes: `Bulk Quote Builder request ${ref} (AI builder offline — manual follow-up). ${team.trim()}`,
+      metadata: { ref },
     });
 
     setDone(true);
