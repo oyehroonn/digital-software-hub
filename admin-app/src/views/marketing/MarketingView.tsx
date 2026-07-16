@@ -34,29 +34,43 @@ const SUBTABS: { key: SubTab; label: string; icon: typeof Megaphone }[] = [
   { key: "sendlog", label: "Send log", icon: Mail },
 ];
 
-export function MarketingView({ config }: { config: AppConfig }) {
-  const [tab, setTab] = useState<SubTab>("campaigns");
+export function MarketingView({
+  config,
+  page,
+  onPageChange,
+}: {
+  config: AppConfig;
+  /** Controlled active page (shell owns the sub-nav). Omit to run standalone. */
+  page?: string;
+  onPageChange?: (k: string) => void;
+}) {
+  const [internal, setInternal] = useState<SubTab>("campaigns");
+  const controlled = page !== undefined;
+  const tab = (controlled ? page : internal) as SubTab;
+  const setTab = (k: SubTab) => (onPageChange ? onPageChange(k) : setInternal(k));
 
   return (
     <div className="flex flex-col gap-4">
-      <nav className="flex flex-wrap gap-1 border-b border-border pb-2">
-        {SUBTABS.map((t) => {
-          const Icon = t.icon;
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
-              )}
-            >
-              <Icon className="h-3.5 w-3.5" /> {t.label}
-            </button>
-          );
-        })}
-      </nav>
+      {!controlled && (
+        <nav className="flex flex-wrap gap-1 border-b border-border pb-2">
+          {SUBTABS.map((t) => {
+            const Icon = t.icon;
+            const active = tab === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" /> {t.label}
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
       {tab === "campaigns" && <CampaignsView config={config} />}
       {tab === "blast" && <BlastComposer config={config} />}

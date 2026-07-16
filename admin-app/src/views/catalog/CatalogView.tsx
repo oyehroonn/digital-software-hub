@@ -61,8 +61,22 @@ const TOOLS: { key: ToolKey; label: string; icon: React.ReactNode }[] = [
   { key: "bundles", label: "Bundles", icon: <Wand2 className="h-3.5 w-3.5" /> },
 ];
 
-export function CatalogView({ config, vpsUp = false }: { config: AppConfig; vpsUp?: boolean }) {
-  const [tool, setTool] = useState<ToolKey>("editor");
+export function CatalogView({
+  config,
+  vpsUp = false,
+  page,
+  onPageChange,
+}: {
+  config: AppConfig;
+  vpsUp?: boolean;
+  /** Controlled active tool (shell owns the sub-nav). Omit to run standalone. */
+  page?: string;
+  onPageChange?: (k: string) => void;
+}) {
+  const [internal, setInternal] = useState<ToolKey>("editor");
+  const controlled = page !== undefined;
+  const tool = (controlled ? page : internal) as ToolKey;
+  const setTool = (k: ToolKey) => (onPageChange ? onPageChange(k) : setInternal(k));
 
   // Shared catalog (loaded once).
   const [products, setProducts] = useState<CatProduct[]>([]);
@@ -100,22 +114,24 @@ export function CatalogView({ config, vpsUp = false }: { config: AppConfig; vpsU
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1 text-sm">
-        {TOOLS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTool(t.key)}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
-              tool === t.key
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {t.icon}
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {!controlled && (
+        <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1 text-sm">
+          {TOOLS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTool(t.key)}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
+                tool === t.key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.icon}
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!ready ? (
         <div className="py-16 text-center text-sm text-muted-foreground">Loading catalog…</div>

@@ -1,167 +1,39 @@
+/**
+ * App shell — the DSM admin information architecture.
+ *
+ * Layout:
+ *   • a compact, role-gated SIDEBAR of primary sections, organised under
+ *     collapsible groups (Main / Analyze / Commerce / Growth / System),
+ *   • a HEADER with the active-view breadcrumb (Section › Page), a ⌘K command
+ *     box, the role switcher and live backend health,
+ *   • a per-section SECONDARY NAV (Overview + the section's pages) so features
+ *     live under their section instead of one flat list,
+ *   • the section content — a Dashboard home, a generic section Overview hub, or
+ *     the section's active page (rendered by the hubs in controlled mode).
+ *
+ * The whole IA lives in src/nav/model.tsx; this file just wires state + chrome.
+ */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Boxes,
-  ClipboardList,
-  BarChart3,
-  Users,
-  Megaphone,
-  Sparkles,
-  HeartPulse,
-  ShieldCheck,
-  Settings2,
-  RefreshCw,
-  Newspaper,
-  FileText,
-  Search,
-  UserMinus,
-} from "lucide-react";
+import { ChevronDown, Command, RefreshCw, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { loadConfig, type AppConfig } from "@/lib/config";
 import { checkAll, type ServiceStatus } from "@/lib/health";
 import { pushQueue, subscribe } from "@/lib/offlineQueue";
-import { filterTabsByRole, useSession } from "@/lib/roles";
+import { useSession } from "@/lib/roles";
 import { StatusDot } from "@/components/StatusDot";
-
-// New feature-area hubs.
-import { AnalyticsHub } from "@/views/analytics";
-import { CatalogView } from "@/views/catalog/CatalogView";
-import OrdersFulfillment from "@/views/orders";
-import { CrmView } from "@/views/crm/CrmView";
-import { MarketingView } from "@/views/marketing/MarketingView";
+import { RoleSwitcher } from "@/views/ops";
 import {
-  DailySalesBriefing,
-  LeadSummaries,
-  BulkSeoGenerator,
-  ChurnPredictor,
-} from "@/views/ai";
-import { OpsHealthBoard, RolesView, RoleSwitcher } from "@/views/ops";
-import { SettingsView } from "@/views/SettingsView";
-
-type ViewProps = { config: AppConfig; vpsUp: boolean; onSavedConfig: (c: AppConfig) => void };
-
-interface NavTab {
-  key: string;
-  label: string;
-  icon: typeof Boxes;
-  render: (p: ViewProps) => JSX.Element;
-}
-
-interface NavGroup {
-  label: string;
-  tabs: NavTab[];
-}
-
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: "Analytics",
-    tabs: [
-      {
-        key: "analytics",
-        label: "Heatmaps & Funnels",
-        icon: BarChart3,
-        render: ({ config }) => <AnalyticsHub config={config} />,
-      },
-    ],
-  },
-  {
-    label: "Catalog",
-    tabs: [
-      {
-        key: "products",
-        label: "Products & Pricing",
-        icon: Boxes,
-        render: ({ config, vpsUp }) => <CatalogView config={config} vpsUp={vpsUp} />,
-      },
-    ],
-  },
-  {
-    label: "Orders",
-    tabs: [
-      {
-        key: "orders",
-        label: "Orders & Fulfillment",
-        icon: ClipboardList,
-        render: ({ config }) => <OrdersFulfillment config={config} />,
-      },
-    ],
-  },
-  {
-    label: "CRM",
-    tabs: [
-      {
-        key: "customers",
-        label: "Leads & Customers",
-        icon: Users,
-        render: ({ config }) => <CrmView config={config} />,
-      },
-    ],
-  },
-  {
-    label: "Marketing",
-    tabs: [
-      {
-        key: "marketing",
-        label: "Campaigns & Blasts",
-        icon: Megaphone,
-        render: ({ config }) => <MarketingView config={config} />,
-      },
-    ],
-  },
-  {
-    label: "AI",
-    tabs: [
-      {
-        key: "ai-briefing",
-        label: "Daily Briefing",
-        icon: Newspaper,
-        render: ({ config }) => <DailySalesBriefing config={config} />,
-      },
-      {
-        key: "ai-leads",
-        label: "Lead Summaries",
-        icon: FileText,
-        render: ({ config }) => <LeadSummaries config={config} />,
-      },
-      {
-        key: "ai-seo",
-        label: "SEO Generator",
-        icon: Search,
-        render: ({ config }) => <BulkSeoGenerator config={config} />,
-      },
-      {
-        key: "ai-churn",
-        label: "Churn Predictor",
-        icon: UserMinus,
-        render: ({ config }) => <ChurnPredictor config={config} />,
-      },
-    ],
-  },
-  {
-    label: "Ops",
-    tabs: [
-      {
-        key: "health",
-        label: "Health Board",
-        icon: HeartPulse,
-        render: ({ config }) => <OpsHealthBoard config={config} />,
-      },
-      {
-        key: "roles",
-        label: "Roles & Access",
-        icon: ShieldCheck,
-        render: ({ config }) => <RolesView config={config} />,
-      },
-      {
-        key: "settings",
-        label: "Settings",
-        icon: Settings2,
-        render: ({ config, onSavedConfig }) => (
-          <SettingsView config={config} onSaved={onSavedConfig} />
-        ),
-      },
-    ],
-  },
-];
+  SECTION_MAP,
+  SIDEBAR_GROUPS,
+  displayPages,
+  defaultPageOf,
+  sectionVisible,
+  visibleSections,
+  type NavCtx,
+} from "@/nav/model";
+import { SectionOverview } from "@/nav/SectionOverview";
+import { Breadcrumbs } from "@/nav/Breadcrumbs";
+import { CommandPalette } from "@/nav/CommandPalette";
 
 const HEALTH_INTERVAL_MS = 20000;
 
@@ -171,25 +43,52 @@ export default function App() {
   const [queueCount, setQueueCount] = useState(0);
   const { role } = useSession();
 
-  // Role-gated, flattened nav. Groups drop out entirely when they have no
-  // visible tabs for the active role.
-  const groups = useMemo<NavGroup[]>(
-    () =>
-      NAV_GROUPS.map((g) => ({ ...g, tabs: filterTabsByRole(g.tabs, role) })).filter(
-        (g) => g.tabs.length > 0,
-      ),
-    [role],
+  // Navigation state: active section + remembered page per section.
+  const [sectionKey, setSectionKey] = useState("dashboard");
+  const [pageBySection, setPageBySection] = useState<Record<string, string>>({});
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  const sections = useMemo(() => visibleSections(role), [role]);
+
+  // Resolve the active section, falling back if the role hides it.
+  const activeSection = useMemo(() => {
+    const s = SECTION_MAP[sectionKey];
+    if (s && sectionVisible(s, role)) return s;
+    return sections[0] ?? SECTION_MAP.dashboard;
+  }, [sectionKey, role, sections]);
+
+  const pages = useMemo(() => displayPages(activeSection, role), [activeSection, role]);
+
+  // Resolve the active page within the section, validating against role.
+  const activePage = useMemo(() => {
+    if (activeSection.singlePage) return "";
+    const stored = pageBySection[activeSection.key];
+    if (stored && pages.some((p) => p.key === stored)) return stored;
+    return defaultPageOf(activeSection, role);
+  }, [activeSection, pages, pageBySection, role]);
+
+  const goto = useCallback((secKey: string, pageKey?: string) => {
+    setSectionKey(secKey);
+    if (pageKey) setPageBySection((prev) => ({ ...prev, [secKey]: pageKey }));
+  }, []);
+
+  const setPage = useCallback(
+    (key: string) => setPageBySection((prev) => ({ ...prev, [activeSection.key]: key })),
+    [activeSection.key],
   );
 
-  const allTabs = useMemo(() => groups.flatMap((g) => g.tabs), [groups]);
-  const [tabKey, setTabKey] = useState<string>("analytics");
-
-  // Keep the active tab valid when the role change hides it.
+  // ⌘K / Ctrl-K opens the command palette.
   useEffect(() => {
-    if (allTabs.length && !allTabs.some((t) => t.key === tabKey)) {
-      setTabKey(allTabs[0].key);
-    }
-  }, [allTabs, tabKey]);
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     loadConfig().then(setConfig);
@@ -201,7 +100,6 @@ export default function App() {
     if (!config) return;
     const s = await checkAll(config);
     setStatuses(s);
-    // Auto-push queued edits the moment the VPS is reachable.
     const vps = s.find((x) => x.key === "vps");
     if (vps?.health === "up" && queueCount > 0) {
       await pushQueue(config);
@@ -219,25 +117,61 @@ export default function App() {
   const ecom = statuses.find((s) => s.key === "ecommerce");
   const vpsUp = vps?.health === "up";
 
-  const active = allTabs.find((t) => t.key === tabKey);
+  const ctx: NavCtx | null = config
+    ? {
+        config,
+        vpsUp,
+        statuses,
+        queueCount,
+        onSavedConfig: setConfig,
+        section: activeSection,
+        page: activePage,
+        setPage,
+        goto,
+      }
+    : null;
+
+  const pageLabel = activeSection.singlePage
+    ? null
+    : (pages.find((p) => p.key === activePage)?.label ?? null);
+
+  const renderContent = () => {
+    if (!ctx) return <div className="text-sm text-muted-foreground">Loading config…</div>;
+    if (activeSection.singlePage) return activeSection.render(ctx);
+    if (activePage === "overview" && !activeSection.customOverview) {
+      return <SectionOverview ctx={ctx} />;
+    }
+    return activeSection.render(ctx);
+  };
 
   return (
     <div className="flex h-full flex-col bg-background">
-      <header className="flex items-center justify-between border-b border-border px-4 py-2.5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-7 w-7 items-center justify-center rounded bg-primary text-sm font-bold text-primary-foreground">
+      {/* Header */}
+      <header className="flex items-center justify-between gap-4 border-b border-border px-4 py-2.5">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-primary text-sm font-bold text-primary-foreground">
             D
           </div>
-          <div>
-            <div className="text-sm font-semibold leading-none">DSM Admin</div>
-            <div className="text-[11px] text-muted-foreground">
-              Analytics · Catalog · Orders · CRM · Marketing · AI
-            </div>
-          </div>
+          <Breadcrumbs
+            section={activeSection}
+            pageLabel={pageLabel}
+            onSectionClick={() => goto(activeSection.key)}
+          />
         </div>
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <button
+            onClick={() => setPaletteOpen(true)}
+            className="hidden items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-accent sm:flex"
+            title="Search (⌘K)"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span>Search…</span>
+            <kbd className="ml-1 inline-flex items-center gap-0.5 rounded border border-border px-1 text-[10px]">
+              <Command className="h-2.5 w-2.5" />K
+            </kbd>
+          </button>
           <RoleSwitcher />
-          <span className="flex items-center gap-1.5">
+          <span className="hidden items-center gap-1.5 lg:flex">
             <StatusDot health={ecom?.health ?? "unknown"} /> Ecommerce
           </span>
           <span className="flex items-center gap-1.5">
@@ -257,50 +191,96 @@ export default function App() {
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <nav className="flex w-48 shrink-0 flex-col gap-2 overflow-y-auto border-r border-border p-2">
-          {groups.map((group) => (
-            <div key={group.label} className="flex flex-col gap-0.5">
-              <div className="px-3 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                {group.label}
+        {/* Sidebar — sections grouped into collapsible buckets */}
+        <nav className="flex w-52 shrink-0 flex-col gap-1 overflow-y-auto border-r border-border p-2">
+          {SIDEBAR_GROUPS.map((group) => {
+            const inGroup = sections.filter((s) => s.group === group);
+            if (inGroup.length === 0) return null;
+            const isCollapsed = collapsed.has(group);
+            return (
+              <div key={group} className="flex flex-col gap-0.5">
+                <button
+                  onClick={() =>
+                    setCollapsed((prev) => {
+                      const next = new Set(prev);
+                      next.has(group) ? next.delete(group) : next.add(group);
+                      return next;
+                    })
+                  }
+                  className="flex items-center gap-1 px-2 pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 hover:text-muted-foreground"
+                >
+                  <ChevronDown
+                    className={cn("h-3 w-3 transition-transform", isCollapsed && "-rotate-90")}
+                  />
+                  {group}
+                </button>
+                {!isCollapsed &&
+                  inGroup.map((s) => {
+                    const Icon = s.icon;
+                    const isActive = s.key === activeSection.key;
+                    const showQueue = s.key === "ops" && queueCount > 0;
+                    return (
+                      <button
+                        key={s.key}
+                        onClick={() => goto(s.key)}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors",
+                          isActive
+                            ? "bg-accent font-medium text-foreground"
+                            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{s.label}</span>
+                        {showQueue && (
+                          <span className="ml-auto rounded bg-warn/20 px-1.5 text-[10px] text-warn">
+                            {queueCount}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
               </div>
-              {group.tabs.map((t) => {
-                const Icon = t.icon;
-                const isActive = tabKey === t.key;
+            );
+          })}
+        </nav>
+
+        {/* Main column */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Secondary nav — the section's pages (Overview first) */}
+          {pages.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1 overflow-x-auto border-b border-border px-4 py-2">
+              {pages.map((p) => {
+                const Icon = p.icon;
+                const isActive = p.key === activePage;
+                const showQueue = activeSection.key === "ops" && p.key === "health" && queueCount > 0;
                 return (
                   <button
-                    key={t.key}
-                    onClick={() => setTabKey(t.key)}
+                    key={p.key}
+                    onClick={() => setPage(p.key)}
                     className={cn(
-                      "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors",
+                      "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
                       isActive
-                        ? "bg-accent font-medium text-foreground"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                        ? "bg-primary/15 text-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
                     )}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{t.label}</span>
-                    {t.key === "health" && queueCount > 0 && (
-                      <span className="ml-auto rounded bg-warn/20 px-1.5 text-[10px] text-warn">
-                        {queueCount}
-                      </span>
+                    <Icon className="h-3.5 w-3.5" />
+                    {p.label}
+                    {showQueue && (
+                      <span className="rounded bg-warn/20 px-1.5 text-[10px] text-warn">{queueCount}</span>
                     )}
                   </button>
                 );
               })}
             </div>
-          ))}
-        </nav>
-
-        <main className="min-w-0 flex-1 overflow-y-auto p-5">
-          {!config ? (
-            <div className="text-sm text-muted-foreground">Loading config…</div>
-          ) : active ? (
-            active.render({ config, vpsUp, onSavedConfig: setConfig })
-          ) : (
-            <div className="text-sm text-muted-foreground">No view available for this role.</div>
           )}
-        </main>
+
+          <main className="min-h-0 flex-1 overflow-y-auto p-5">{renderContent()}</main>
+        </div>
       </div>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onGo={goto} />
     </div>
   );
 }

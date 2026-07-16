@@ -56,45 +56,67 @@ const TABS: { key: TabKey; label: string; icon: typeof KanbanSquare }[] = [
   { key: "repeat", label: "Repeat buyers", icon: Repeat },
 ];
 
-export function OrdersFulfillment({ config }: { config: AppConfig }) {
-  const [tab, setTab] = useState<TabKey>("pipeline");
+export function OrdersFulfillment({
+  config,
+  page,
+  onPageChange,
+}: {
+  config: AppConfig;
+  /** Controlled active tab (shell owns the sub-nav). Omit to run standalone. */
+  page?: string;
+  onPageChange?: (k: string) => void;
+}) {
+  const [internal, setInternal] = useState<TabKey>("pipeline");
+  const controlled = page !== undefined;
+  const tab = (controlled ? page : internal) as TabKey;
+  const setTab = (k: TabKey) => (onPageChange ? onPageChange(k) : setInternal(k));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [oldWeb, setOldWeb] = useState(getOldWebBase());
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold">Orders &amp; Fulfillment</h1>
-          <p className="text-xs text-muted-foreground">
-            Pipeline, quotes, recovery, fulfillment and repeat-buyer growth — all from the Orders sheet.
-          </p>
+      {controlled ? (
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)} title="Old-web deep-link base URL">
+            <Link2 /> Old-web link
+          </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)} title="Old-web deep-link base URL">
-          <Link2 /> Old-web link
-        </Button>
-      </div>
+      ) : (
+        <>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-lg font-semibold">Orders &amp; Fulfillment</h1>
+              <p className="text-xs text-muted-foreground">
+                Pipeline, quotes, recovery, fulfillment and repeat-buyer growth — all from the Orders sheet.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)} title="Old-web deep-link base URL">
+              <Link2 /> Old-web link
+            </Button>
+          </div>
 
-      <div className="flex flex-wrap gap-1 border-b border-border">
-        {TABS.map((t) => {
-          const Icon = t.icon;
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={cn(
-                "inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm transition-colors",
-                active
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Icon className="h-4 w-4" /> {t.label}
-            </button>
-          );
-        })}
-      </div>
+          <div className="flex flex-wrap gap-1 border-b border-border">
+            {TABS.map((t) => {
+              const Icon = t.icon;
+              const active = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm transition-colors",
+                    active
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Icon className="h-4 w-4" /> {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       <div>
         {tab === "pipeline" && <PipelineBoard config={config} />}

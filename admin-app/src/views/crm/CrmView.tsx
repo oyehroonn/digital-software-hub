@@ -20,8 +20,20 @@ type CrmTab = "inbox" | "scoring" | "customers" | "licenses" | "segments" | "tas
  * CRM / Leads area entry point. Owns the single data load and routes between the
  * eight sub-tools. Drop this straight into the app's nav as one "CRM" tab.
  */
-export function CrmView({ config }: { config: AppConfig }) {
-  const [tab, setTab] = useState<CrmTab>("inbox");
+export function CrmView({
+  config,
+  page,
+  onPageChange,
+}: {
+  config: AppConfig;
+  /** Controlled active tab (shell owns the sub-nav). Omit to run standalone. */
+  page?: string;
+  onPageChange?: (k: string) => void;
+}) {
+  const [internal, setInternal] = useState<CrmTab>("inbox");
+  const controlled = page !== undefined;
+  const tab = (controlled ? page : internal) as CrmTab;
+  const setTab = (k: CrmTab) => (onPageChange ? onPageChange(k) : setInternal(k));
   const [focusEmail, setFocusEmail] = useState<string | null>(null);
   const [openTasks, setOpenTasks] = useState(0);
   const data = useCrmData(config);
@@ -47,23 +59,34 @@ export function CrmView({ config }: { config: AppConfig }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">CRM &amp; Leads</h1>
-          <p className="text-xs text-muted-foreground">
-            Unified inbox, scoring, customer 360, renewals, segments, tasks &amp; win-back — from the stable Orders
-            &amp; Telemetry sheets.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      {controlled ? (
+        <div className="flex items-center justify-end gap-2">
           {data.telemetrySeeded && <SeedBadge label="seed telemetry" />}
           <Button variant="outline" size="sm" onClick={data.refresh} disabled={data.loading}>
             <RefreshCw className={data.loading ? "animate-spin" : ""} /> Refresh
           </Button>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-lg font-semibold">CRM &amp; Leads</h1>
+              <p className="text-xs text-muted-foreground">
+                Unified inbox, scoring, customer 360, renewals, segments, tasks &amp; win-back — from the stable Orders
+                &amp; Telemetry sheets.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {data.telemetrySeeded && <SeedBadge label="seed telemetry" />}
+              <Button variant="outline" size="sm" onClick={data.refresh} disabled={data.loading}>
+                <RefreshCw className={data.loading ? "animate-spin" : ""} /> Refresh
+              </Button>
+            </div>
+          </div>
 
-      <SubTabs<CrmTab> tabs={tabs} active={tab} onChange={setTab} />
+          <SubTabs<CrmTab> tabs={tabs} active={tab} onChange={setTab} />
+        </>
+      )}
 
       {data.error ? (
         <Empty title="Couldn't load CRM data" hint={data.error} />

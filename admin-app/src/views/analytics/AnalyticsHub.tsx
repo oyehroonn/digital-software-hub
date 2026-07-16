@@ -19,7 +19,7 @@
  * the deterministic seed fallback, so the whole area works before the read
  * endpoint is deployed.
  */
-import { useState, type ComponentType } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import {
   Activity,
   BarChart3,
@@ -157,10 +157,100 @@ const GROUP_ORDER: Group[] = [
   "Audience",
 ];
 
-function AnalyticsHubInner({ config, initialTab }: { config: AppConfig; initialTab?: string }) {
+/**
+ * Maps a shell "category" page key onto an analytics group. The app shell drives
+ * the section's secondary nav with these keys; each one opens a pane that shows
+ * that group's tabs as a tertiary sub-nav (Overview has just the one page).
+ */
+const CATEGORY_GROUP: Record<string, Group> = {
+  overview: "Overview",
+  reports: "Reports",
+  customers: "Customers",
+  live: "Live & tools",
+  heatmaps: "Heatmaps",
+  conversion: "Conversion",
+  acquisition: "Acquisition",
+  audience: "Audience",
+};
+
+/**
+ * Controlled category pane — the shell owns the top-level category; this renders
+ * that group's tabs as a tertiary sub-nav plus the global date-range toolbar.
+ */
+function CategoryPane({ config, category }: { config: AppConfig; category: string }) {
+  const group = CATEGORY_GROUP[category] ?? "Overview";
+  const tabs = ANALYTICS_TABS.filter((t) => t.group === group);
+  const [sub, setSub] = useState(tabs[0]?.key);
+
+  // Reset the tertiary selection whenever the shell switches category.
+  useEffect(() => {
+    setSub(tabs[0]?.key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
+
+  const current = tabs.find((t) => t.key === sub) ?? tabs[0];
+  const Active = current.Component;
+
+  // Overview is a single rich page — no tertiary bar.
+  if (group === "Overview") {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-end">
+          <DateRangeControls className="shrink-0" />
+        </div>
+        <Active key={current.key} config={config} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3 border-b border-border pb-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {tabs.map((t) => {
+            const Icon = t.icon;
+            const on = t.key === current.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setSub(t.key)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
+                  on
+                    ? "border-primary/40 bg-primary/15 text-foreground"
+                    : "border-border bg-card text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+        <DateRangeControls className="shrink-0" />
+      </div>
+      <Active key={current.key} config={config} />
+    </div>
+  );
+}
+
+function AnalyticsHubInner({
+  config,
+  initialTab,
+  category,
+}: {
+  config: AppConfig;
+  initialTab?: string;
+  category?: string;
+}) {
   const [active, setActive] = useState(initialTab ?? ANALYTICS_TABS[0].key);
   const current = ANALYTICS_TABS.find((t) => t.key === active) ?? ANALYTICS_TABS[0];
   const Active = current.Component;
+
+  // Controlled by the shell: render just the selected category's pane.
+  if (category !== undefined) {
+    return <CategoryPane config={config} category={category} />;
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -222,13 +312,27 @@ function AnalyticsHubInner({ config, initialTab }: { config: AppConfig; initialT
   );
 }
 
-export function AnalyticsHub({ config, initialTab }: { config: AppConfig; initialTab?: string }) {
+export function AnalyticsHub({
+  config,
+  initialTab,
+  category,
+  onCategoryChange,
+}: {
+  config: AppConfig;
+  initialTab?: string;
+  /** Shell-controlled top-level category (Overview / Reports / …). */
+  category?: string;
+  onCategoryChange?: (k: string) => void;
+}) {
+  // onCategoryChange is accepted for shell symmetry; the category itself is owned
+  // by the shell's secondary nav, so nothing to wire here.
+  void onCategoryChange;
   // One provider pair for the whole area: the date-range spine drives every
   // report's window + deltas, and the drill-down host powers <DrillLink> rows.
   return (
     <DateRangeProvider>
       <DrillDownProvider config={config}>
-        <AnalyticsHubInner config={config} initialTab={initialTab} />
+        <AnalyticsHubInner config={config} initialTab={initialTab} category={category} />
       </DrillDownProvider>
     </DateRangeProvider>
   );
