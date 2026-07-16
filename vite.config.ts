@@ -1,6 +1,48 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
+
+/**
+ * simli-client@3.0.2 ships a case bug: dist/index.js does `require("./Client")`
+ * but the file on disk is `client.js`. macOS (case-insensitive) resolves it, but
+ * Cloudflare's Linux runner (case-sensitive) fails the build with
+ * `Could not resolve "./Client"`. This plugin resolves relative imports inside
+ * simli-client case-insensitively so the build works on both. It no-ops when the
+ * exact path already exists (macOS), so it only kicks in where needed (Linux).
+ */
+function simliClientCaseFix() {
+  return {
+    name: "simli-client-case-fix",
+    enforce: "pre" as const,
+    resolveId(source: string, importer?: string) {
+      if (!importer || !importer.replace(/\\/g, "/").includes("simli-client/dist/")) return null;
+      const clean = source.split("?")[0];
+      if (!clean.startsWith(".")) return null;
+      const target = path.resolve(path.dirname(importer.split("?")[0]), clean);
+      const dir = path.dirname(target);
+      const wantBase = path.basename(target);
+      try {
+        const files = fs.readdirSync(dir);
+        // Resolve against the REAL filenames (readdir returns actual case) so
+        // behaviour is identical on case-sensitive (Linux) and case-insensitive
+        // (macOS) filesystems: exact .js → case-insensitive .js → a subdir.
+        const hit =
+          files.find((f) => f === `${wantBase}.js`) ||
+          files.find((f) => f.toLowerCase() === `${wantBase.toLowerCase()}.js`) ||
+          files.find((f) => f === wantBase);
+        if (hit) {
+          const resolved = path.join(dir, hit);
+          if (fs.statSync(resolved).isDirectory()) return null; // let default resolve dir/index
+          return resolved;
+        }
+      } catch {
+        /* dir unreadable — fall through to default */
+      }
+      return null;
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -11,7 +53,7 @@ export default defineConfig({
       overlay: false,
     },
   },
-  plugins: [react()],
+  plugins: [simliClientCaseFix(), react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
