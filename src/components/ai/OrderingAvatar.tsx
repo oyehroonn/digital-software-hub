@@ -572,7 +572,11 @@ function OrderingAvatarStage() {
     if (a) a.muted = muted;
   }, [muted, state, videoRef, audioRef]);
 
-  if (state === 'failed') return <OrderingTextConcierge />;
+  // A failed OR immediately-stopped Simli session (the live-video service is
+  // unstable and often drops on connect) degrades to the fully-working text
+  // concierge — never a dead-end "Session ended · Start again" that just
+  // retriggers the same failing connection.
+  if (state === 'failed' || state === 'stopped') return <OrderingTextConcierge />;
 
   const connecting = state === 'connecting';
   const stopped = state === 'stopped';
