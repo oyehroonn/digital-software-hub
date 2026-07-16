@@ -1,4 +1,5 @@
 import { useState, lazy, Suspense } from "react";
+import { Link } from "react-router-dom";
 import { ArrowRight, ArrowDown, Check, Zap, Shield } from "lucide-react";
 import { useHeroReveal, useCursorGlow } from "@/hooks/useScrollAnimation";
 import MagnifyText from "./MagnifyText";
@@ -72,8 +73,8 @@ const Hero = () => {
 
         {/* CTAs */}
         <div className="hero-reveal flex items-center gap-6 justify-center">
-          <a
-            href="#"
+          <Link
+            to="/support"
             className="btn-magnetic px-10 py-4 bg-[hsl(0_0%_100%/0.06)] border border-[hsl(0_0%_100%/0.15)] backdrop-blur-md text-[#FEFEFE] text-xs font-semibold uppercase tracking-[0.18em] rounded-sm hover:bg-azure/[0.12] hover:border-azure/40 hover:text-azure hover:shadow-azure-glow text-center flex items-center justify-center gap-3 group transition-all duration-400"
             onMouseEnter={() => setMeshAccent("azure")}
             onMouseLeave={() => setMeshAccent("red")}
@@ -81,14 +82,14 @@ const Hero = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-crimson group-hover:bg-azure transition-colors duration-300" />
             Talk to a Specialist
             <ArrowRight className="w-3.5 h-3.5 opacity-50 transition-all group-hover:opacity-100 group-hover:translate-x-0.5" />
-          </a>
-          <a
-            href="#"
+          </Link>
+          <Link
+            to="/store"
             className="text-xs font-medium text-[#FEFEFE]/85 uppercase tracking-[0.14em] hover:text-crimson flex items-center gap-1.5 group transition-colors duration-300"
           >
             Shop Licenses
             <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
-          </a>
+          </Link>
         </div>
 
         {/* Trust indicators */}
