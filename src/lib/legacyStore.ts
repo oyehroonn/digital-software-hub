@@ -19,7 +19,7 @@
 /** Assumed base of the original DSM licensing storefront. Override in env. */
 export const OLD_WEB_BASE: string = (
   (import.meta.env.VITE_OLD_WEB_BASE as string | undefined) ??
-  'https://www.digitalsoftwaremarket.com'
+  'https://www.digitalsoftwaremarkett.com'
 ).replace(/\/$/, '');
 
 /** True when we're using the assumed (unconfirmed) base rather than an env one. */

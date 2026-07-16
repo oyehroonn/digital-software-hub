@@ -28,13 +28,15 @@
  * page here — the Wire step mounts <SavingsCalculator/> where it belongs.
  */
 
-import { useCallback, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import {
   ArrowRight,
+  Check,
   CheckCircle2,
   Loader2,
   Mail,
   PiggyBank,
+  Plus,
   ShieldCheck,
   Sparkles,
   TrendingDown,
@@ -87,6 +89,212 @@ const SALES_INBOX =
  * "80% off" claims, no zero. This is the guardrail that makes the math real.
  */
 const SAVINGS_BAND = { min: 12, max: 35 } as const;
+
+// ── Catalog brands (interactive "who do you buy from" picker) ─────────────────
+//
+// The vendor field is a multi-select of the brands we actually carry, fetched
+// from the live catalog filters endpoint. The VPS is unstable, so the fetch is
+// best-effort, cached process-wide, and falls back to a static brand list — the
+// picker always renders and the buyer is never blocked.
+
+/** Filters endpoint base. Overridable via env (staging / local). */
+const FILTERS_API_BASE =
+  (import.meta.env.VITE_API_BASE as string | undefined) || 'https://dsm-api.techrealm.ai';
+
+/** Fallback brands if the filters endpoint can't be reached. */
+const STATIC_BRANDS = ['Microsoft', 'Autodesk', 'Adobe', 'Chaos', 'SketchUp'] as const;
+
+/** Common non-brand answers appended after the real catalog brands. */
+const EXTRA_VENDOR_OPTIONS = ['Local reseller', 'Direct from vendor'] as const;
+
+interface FiltersResponse {
+  brands?: Array<{ name?: string; count?: number }>;
+}
+
+// Process-wide cache so multiple picker instances share one network round-trip.
+let brandsCache: string[] | null = null;
+let brandsInflight: Promise<string[]> | null = null;
+
+/** Fetch catalog brand names once; cache the result; fall back on any error. */
+function loadCatalogBrands(): Promise<string[]> {
+  if (brandsCache) return Promise.resolve(brandsCache);
+  if (brandsInflight) return brandsInflight;
+
+  brandsInflight = (async () => {
+    try {
+      const res = await fetch(`${FILTERS_API_BASE}/filters`);
+      if (!res.ok) throw new Error(`filters ${res.status}`);
+      const data = (await res.json()) as FiltersResponse;
+      const names = Array.isArray(data.brands)
+        ? data.brands.map((b) => String(b?.name ?? '').trim()).filter(Boolean)
+        : [];
+      // Drop a catch-all "Other" from the catalog — the picker renders its own.
+      const cleaned = names.filter((n) => n.toLowerCase() !== 'other');
+      brandsCache = cleaned.length ? cleaned : [...STATIC_BRANDS];
+    } catch {
+      brandsCache = [...STATIC_BRANDS];
+    }
+    return brandsCache;
+  })();
+
+  return brandsInflight;
+}
+
+/** Load catalog brands into state (cached; static fallback shown immediately). */
+function useCatalogBrands(): string[] {
+  const [brands, setBrands] = useState<string[]>(() => brandsCache ?? [...STATIC_BRANDS]);
+  useEffect(() => {
+    let alive = true;
+    loadCatalogBrands().then((b) => {
+      if (alive) setBrands(b);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return brands;
+}
+
+function splitVendor(value: string): string[] {
+  return value
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Interactive vendor picker. Renders the real catalog brands (plus a couple of
+ * common options) as multi-select crimson chips, with an "Other…" chip that
+ * reveals a free-text input. It is a CONTROLLED component: it derives its
+ * selection from `value` and emits the joined string (e.g. "Autodesk, Adobe")
+ * back through `onChange`, so it drops straight into the existing lead.vendor
+ * string that the AI quote logic, emails, and summary already consume.
+ */
+function VendorPicker({
+  value,
+  onChange,
+  disabled,
+  idPrefix,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  disabled?: boolean;
+  idPrefix: string;
+}) {
+  const catalogBrands = useCatalogBrands();
+  const options = useMemo(
+    () => [...catalogBrands, ...EXTRA_VENDOR_OPTIONS],
+    [catalogBrands],
+  );
+  const optionSet = useMemo(() => new Set(options), [options]);
+
+  // Derive selection + free-text "other" from the controlled value.
+  const tokens = useMemo(() => splitVendor(value), [value]);
+  const selected = useMemo(() => tokens.filter((t) => optionSet.has(t)), [tokens, optionSet]);
+  const otherText = useMemo(
+    () => tokens.filter((t) => !optionSet.has(t)).join(', '),
+    [tokens, optionSet],
+  );
+
+  const [otherOpen, setOtherOpen] = useState(otherText.length > 0);
+  useEffect(() => {
+    if (otherText.length > 0) setOtherOpen(true);
+  }, [otherText]);
+
+  const emit = useCallback(
+    (nextSelected: string[], nextOther: string) => {
+      const all = [...nextSelected, ...splitVendor(nextOther)];
+      onChange(all.join(', '));
+    },
+    [onChange],
+  );
+
+  const toggleBrand = useCallback(
+    (name: string) => {
+      const next = selected.includes(name)
+        ? selected.filter((s) => s !== name)
+        : [...selected, name];
+      // Keep chip order stable by ordering against the options list.
+      const ordered = options.filter((o) => next.includes(o));
+      emit(ordered, otherText);
+    },
+    [selected, options, otherText, emit],
+  );
+
+  const chipBase =
+    'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50';
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2">
+        {options.map((name) => {
+          const isSel = selected.includes(name);
+          return (
+            <button
+              key={name}
+              type="button"
+              disabled={disabled}
+              onClick={() => toggleBrand(name)}
+              aria-pressed={isSel}
+              className={cn(
+                chipBase,
+                isSel
+                  ? 'border-crimson bg-crimson text-crimson-foreground shadow-crimson-glow'
+                  : 'border-white/15 bg-white/[0.03] text-muted-foreground hover:border-crimson/50 hover:bg-crimson/[0.06] hover:text-foreground',
+              )}
+            >
+              {isSel ? (
+                <Check className="size-3.5" aria-hidden />
+              ) : (
+                <Plus className="size-3.5 opacity-60" aria-hidden />
+              )}
+              {name}
+            </button>
+          );
+        })}
+
+        {/* Other… — reveals a free-text input for anything not listed. */}
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setOtherOpen((v) => !v)}
+          aria-pressed={otherOpen}
+          aria-expanded={otherOpen}
+          className={cn(
+            chipBase,
+            otherOpen || otherText
+              ? 'border-crimson/60 bg-crimson/[0.10] text-foreground'
+              : 'border-dashed border-white/20 bg-transparent text-muted-foreground hover:border-crimson/50 hover:text-foreground',
+          )}
+        >
+          <Plus className="size-3.5 opacity-70" aria-hidden />
+          Other…
+        </button>
+      </div>
+
+      {otherOpen && (
+        <Input
+          id={`${idPrefix}-vendor-other`}
+          value={otherText}
+          disabled={disabled}
+          placeholder="Tell us who — e.g. a specific reseller or platform"
+          onChange={(e) => emit(selected, e.target.value)}
+          className="mt-2.5"
+          aria-label="Other vendor"
+        />
+      )}
+
+      {selected.length + (otherText ? 1 : 0) > 0 && (
+        <p className="mt-2.5 text-xs text-muted-foreground">
+          Buying from{' '}
+          <strong className="text-foreground">
+            {value.replace(/,\s*/g, ', ')}
+          </strong>
+        </p>
+      )}
+    </div>
+  );
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -585,14 +793,17 @@ function SavingsCalculatorInner({ className }: { className?: string }) {
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <Label htmlFor={`${fieldId}-vendor`}>Who do you buy from today?</Label>
-          <Input
-            id={`${fieldId}-vendor`}
-            placeholder="e.g. Autodesk, Adobe, Microsoft, a local reseller…"
-            value={lead.vendor}
-            onChange={(e) => update({ vendor: e.target.value })}
-            disabled={busy}
-            className="mt-1.5"
-          />
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Tap all that apply — pick more than one if you buy from several.
+          </p>
+          <div id={`${fieldId}-vendor`} className="mt-2.5">
+            <VendorPicker
+              value={lead.vendor}
+              onChange={(vendor) => update({ vendor })}
+              disabled={busy}
+              idPrefix={fieldId}
+            />
+          </div>
         </div>
 
         <div>
@@ -789,15 +1000,18 @@ function SavingsBetaSignup({ className }: { className?: string }) {
             className="mt-1.5"
           />
         </div>
-        <div>
+        <div className="sm:col-span-2">
           <Label htmlFor={`${fieldId}-vendor`}>Who do you buy from?</Label>
-          <Input
-            id={`${fieldId}-vendor`}
-            placeholder="e.g. Autodesk, Adobe…"
-            value={lead.vendor}
-            onChange={(e) => setLead((p) => ({ ...p, vendor: e.target.value }))}
-            className="mt-1.5"
-          />
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Tap all that apply.
+          </p>
+          <div id={`${fieldId}-vendor`} className="mt-2.5">
+            <VendorPicker
+              value={lead.vendor}
+              onChange={(vendor) => setLead((p) => ({ ...p, vendor }))}
+              idPrefix={fieldId}
+            />
+          </div>
         </div>
         <div>
           <Label htmlFor={`${fieldId}-spend`}>Current spend (optional)</Label>
