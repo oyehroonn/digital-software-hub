@@ -61,7 +61,7 @@ import {
 
 const FEATURE = 'license-advisor';
 const EMAIL_QUEUE_KIND = 'license_advice_email';
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5051';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://dsm-api.techrealm.ai';
 const SEARCH_TIMEOUT_MS = 6000;
 const MAX_CANDIDATES = 8;
 

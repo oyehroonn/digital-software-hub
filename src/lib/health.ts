@@ -26,7 +26,7 @@ export const DEFAULT_HEALTH_TIMEOUT_MS = 2500;
 
 /** VPS Flask base, e.g. http://localhost:5051 */
 export const VPS_BASE =
-  import.meta.env.VITE_API_BASE || 'http://localhost:5051';
+  import.meta.env.VITE_API_BASE || 'https://dsm-api.techrealm.ai';
 
 /**
  * Same-origin proxy for the OpenAI-compatible codex-proxy. The browser NEVER
