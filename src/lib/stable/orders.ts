@@ -96,7 +96,10 @@ async function postOrderNoCors(envelope: OrderEnvelope): Promise<void> {
     method: 'POST',
     mode: 'no-cors',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(envelope),
+    // Flatten the order fields to the top level: the Apps Script `appendOrder_`
+    // reads top-level keys (email / customerName / productName / price …). The
+    // nested `order` is retained for raw_json. Without this, orders land blank.
+    body: JSON.stringify({ ...envelope, ...envelope.order }),
     keepalive: true,
   });
 }

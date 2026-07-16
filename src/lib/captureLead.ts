@@ -157,7 +157,11 @@ export function captureLead(input: CaptureLeadInput): void {
       mode: 'no-cors',
       keepalive: true,
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(envelope),
+      // Send the order fields at the TOP LEVEL too (not only nested under
+      // `order`), because the Apps Script `appendOrder_` reads top-level keys
+      // (email / customerName / productName / price / notes). Without this the
+      // lead lands as a blank row. The nested `order` stays for raw_json.
+      body: JSON.stringify({ ...envelope, ...order }),
     }).catch(() => {
       /* fire-and-forget: swallow all network errors */
     });
