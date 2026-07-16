@@ -68,7 +68,6 @@ export interface CustomerAnalyticsProps {
   events: TelemetryEvent[];
   orders: Order[];
   config: AppConfig;
-  seeded?: boolean;
 }
 
 function findRecord(orders: Order[], email: string): CustomerRecord | undefined {
@@ -107,7 +106,7 @@ function cumulativeSpend(rec: CustomerRecord) {
 
 const DAY = 86_400_000;
 
-export function CustomerAnalytics({ email, name, events, orders, config, seeded }: CustomerAnalyticsProps) {
+export function CustomerAnalytics({ email, name, events, orders, config }: CustomerAnalyticsProps) {
   const range = useDateRange();
   const key = email.toLowerCase().trim();
   const compare = range.compareEnabled;
@@ -146,7 +145,6 @@ export function CustomerAnalytics({ email, name, events, orders, config, seeded 
       <div className="flex flex-col gap-4">
         <EmptyNote>
           No orders on record for <code className="rounded bg-muted px-1.5 py-0.5 text-foreground">{email}</code>.
-          {seeded ? " (Seed data — this customer may only exist in live telemetry.)" : ""}
         </EmptyNote>
       </div>
     );

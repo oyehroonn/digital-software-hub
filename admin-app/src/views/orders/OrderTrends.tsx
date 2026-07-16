@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty } from "@/components/Empty";
 import { fmtMoney } from "@/lib/utils";
-import { SectionHeader, SeedBadge, Stat } from "./parts";
+import { SectionHeader, Stat } from "./parts";
 import { useOrdersData, orderValue, orderCurrency } from "./ordersData";
 
 type Grain = "week" | "month";
@@ -74,7 +74,7 @@ function bucketize(orders: Order[], grain: Grain): Bucket[] {
 const AXIS = { fill: "#9aa0a6", fontSize: 11 };
 
 export function OrderTrends({ config }: { config: AppConfig }) {
-  const { orders, loading, seed, reload } = useOrdersData(config);
+  const { orders, loading, reload } = useOrdersData(config);
   const [grain, setGrain] = useState<Grain>("week");
   const currency = orders[0] ? orderCurrency(orders[0]) : "AUD";
 
@@ -113,7 +113,6 @@ export function OrderTrends({ config }: { config: AppConfig }) {
         subtitle="Revenue, order volume and average order value over time."
         right={
           <>
-            <SeedBadge show={seed} />
             <div className="inline-flex overflow-hidden rounded-md border border-border">
               {(["week", "month"] as Grain[]).map((g) => (
                 <button

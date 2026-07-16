@@ -76,7 +76,6 @@ export interface ProductAnalyticsProps {
   events: TelemetryEvent[];
   orders: Order[];
   config: AppConfig;
-  seeded?: boolean;
 }
 
 interface ProdMetrics {
@@ -223,7 +222,7 @@ function buildTimeline(events: TelemetryEvent[], orders: Order[], id: string) {
   return out;
 }
 
-export function ProductAnalytics({ productId, name, events, orders, config, seeded }: ProductAnalyticsProps) {
+export function ProductAnalytics({ productId, name, events, orders, config }: ProductAnalyticsProps) {
   const range = useDateRange();
   const scoped = useMemo(() => scopeToRange(events, orders, range), [events, orders, range]);
   const compare = range.compareEnabled;
@@ -383,7 +382,7 @@ export function ProductAnalytics({ productId, name, events, orders, config, seed
 
       {/* Click heatmap */}
       <Block title="Click heatmap" icon={<Flame className="h-4 w-4 text-down" />} desc="Where visitors click on this product's page.">
-        <ClickHeatmap events={productEvents} demo={seeded} />
+        <ClickHeatmap events={productEvents} />
       </Block>
 
       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">

@@ -21,7 +21,6 @@ import {
   TagsEditor,
   NotesPanel,
   AddTaskInline,
-  SeedBadge,
   useCrmStore,
 } from "./components";
 
@@ -29,11 +28,9 @@ const SOURCES: LeadSource[] = ["quote", "savings", "beta", "callback", "bulk-quo
 
 export function LeadInbox({
   leads,
-  seeded,
   onOpenCustomer,
 }: {
   leads: ScoredLead[];
-  seeded: boolean;
   onOpenCustomer?: (email: string) => void;
 }) {
   const [q, setQ] = useState("");
@@ -68,7 +65,7 @@ export function LeadInbox({
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Open leads" value={leads.length} hint={seeded ? "seed" : "live"} />
+        <StatCard label="Open leads" value={leads.length} />
         <StatCard label="Hot (A/B)" value={stats.hot} tone="ok" />
         <StatCard label="Untouched" value={stats.untouched} tone="warn" />
         <StatCard label="Avg score" value={stats.avg} hint="out of 100" />
@@ -93,7 +90,6 @@ export function LeadInbox({
           <option value="B">B and up</option>
           <option value="C">C and up</option>
         </Select>
-        {seeded && <SeedBadge label="seed leads" />}
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_380px]">

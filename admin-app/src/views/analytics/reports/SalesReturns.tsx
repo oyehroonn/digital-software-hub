@@ -21,6 +21,7 @@ import {
   GRID,
   KpiCard,
   PALETTE,
+  ReportEmpty,
   ReportHeader,
   TOOLTIP,
 } from "./reportKit";
@@ -28,7 +29,7 @@ import { DimTable } from "./salesTable";
 import { buildSalesSeries, groupDimension, isRefunded, productOf, scopeStart, summarize } from "./salesData";
 
 export function SalesReturns({ config }: { config: AppConfig }) {
-  const { cur, prev, range, currency, seeded, loading, liveCount, refresh } = useSalesScope(config);
+  const { cur, prev, range, currency, isEmpty, loading, liveCount, refresh } = useSalesScope(config);
 
   const tCur = useMemo(() => summarize(cur), [cur]);
   const tPrev = useMemo(() => summarize(prev), [prev]);
@@ -51,16 +52,19 @@ export function SalesReturns({ config }: { config: AppConfig }) {
   const hasRefunds = tCur.refundedOrders > 0 || tCur.refunds > 0;
 
   return (
-    <ReportHeader
-      icon={<Undo2 className="h-5 w-5 text-primary" />}
-      title="Returns & refunds"
-      subtitle="What's coming back — refunded value over the selected range, the refund rate, and the products most returned, each with its change vs the previous period."
-      seeded={seeded}
-      loading={loading}
-      liveCount={liveCount}
-      onRefresh={refresh}
-    >
-      <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
+      <ReportHeader
+        icon={<Undo2 className="h-5 w-5 text-primary" />}
+        title="Returns & refunds"
+        subtitle="What's coming back — refunded value over the selected range, the refund rate, and the products most returned, each with its change vs the previous period."
+        loading={loading}
+        liveCount={liveCount}
+        onRefresh={refresh}
+      />
+      {isEmpty ? (
+        <ReportEmpty icon={<Undo2 className="h-7 w-7" />} />
+      ) : (
+        <>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <KpiCard label="Refunded value" value={money(tCur.refunds)} icon={<Wallet className="h-3.5 w-3.5" />} color={PALETTE.rose} delta={deltaOf(tCur.refunds, tPrev.refunds)} higherIsBetter={false} spark={series.map((s) => s.refunds)} />
           <KpiCard label="Refunded orders" value={fmtNum(tCur.refundedOrders)} icon={<RotateCcw className="h-3.5 w-3.5" />} color={PALETTE.amber} delta={deltaOf(tCur.refundedOrders, tPrev.refundedOrders)} higherIsBetter={false} />
@@ -93,7 +97,8 @@ export function SalesReturns({ config }: { config: AppConfig }) {
             <DimTable rows={byProduct} labelHeader="Product" currency={currency} valueKey="refunds" valueHeader="Refunded" showDelta={false} />
           )}
         </ChartCard>
-      </div>
-    </ReportHeader>
+        </>
+      )}
+    </div>
   );
 }

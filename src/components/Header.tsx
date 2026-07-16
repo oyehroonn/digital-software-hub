@@ -7,6 +7,7 @@ import { useApp } from "@/contexts/AppContext";
 import { useAccount } from "@/hooks/useAccount";
 import { useAccountDialog } from "@/components/account/AccountProvider";
 import { useResellerDialog } from "@/components/reseller/ResellerProvider";
+import { currentReseller } from "@/lib/reseller";
 
 const categories = [
   "Operating Systems",
@@ -157,7 +158,7 @@ const Header = () => {
             <Link to="/services" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>DSM Services</Link>
             <button
               type="button"
-              onClick={() => openResellerDialog()}
+              onClick={() => (currentReseller() ? navigate("/reseller") : openResellerDialog())}
               className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}
             >
               Resellers
@@ -169,9 +170,9 @@ const Header = () => {
               <Crown className="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-110" strokeWidth={1.75} />
               Exclusive Members
             </Link>
-            <a href="#" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Enterprise</a>
-            <a href="#" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Support</a>
-            <a href="#" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>About</a>
+            <Link to="/store" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Enterprise</Link>
+            <a href="mailto:support@digitalsoftwaremarkett.com" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>Support</a>
+            <Link to="/services" className={`text-sm font-medium transition-colors duration-300 ${navTextColor}`}>About</Link>
           </nav>
 
           {/* Search & Icons */}
@@ -249,7 +250,7 @@ const Header = () => {
               <span className={`text-[10px] font-semibold uppercase tracking-[0.14em] mb-6 block ${isOverLightSection ? 'text-[#666]/60' : 'text-[#B1B2B3]/60'}`}>Official Partner Showroom</span>
               <div className="grid grid-cols-2 gap-4">
                 {categoryBrands[activeCategory]?.map((brand) => (
-                  <a key={brand.name} href="#" className={`p-4 rounded-md hover:border-crimson/20 transition-all duration-300 group/brand ${
+                  <Link key={brand.name} to="/store" className={`p-4 rounded-md hover:border-crimson/20 transition-all duration-300 group/brand ${
                     isOverLightSection 
                       ? 'bg-black/[0.03] border border-black/[0.06] hover:bg-black/[0.06]'
                       : 'bg-white/[0.03] border border-white/[0.04] hover:bg-white/[0.06]'
@@ -259,7 +260,7 @@ const Header = () => {
                       <span className={`text-sm font-medium ${isOverLightSection ? 'text-[#1a1a1a]' : 'text-[#FEFEFE]'}`}>{brand.name}</span>
                     </div>
                     <p className={`text-xs ${isOverLightSection ? 'text-[#666]/70' : 'text-[#B1B2B3]/70'}`}>{brand.desc}</p>
-                  </a>
+                  </Link>
                 ))}
               </div>
             </div>

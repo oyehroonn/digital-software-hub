@@ -42,6 +42,7 @@ import {
   SERIES_COLORS,
   KpiCard,
   ChartCard,
+  ReportEmpty,
   ReportHeader,
   CompareLegend,
   Delta,
@@ -89,7 +90,7 @@ function totalsFor(orders: Order[]): Totals {
 }
 
 export function SalesReport({ config }: { config: AppConfig }) {
-  const { orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const range = useDateRange();
 
   const model = useMemo(() => {
@@ -176,12 +177,15 @@ export function SalesReport({ config }: { config: AppConfig }) {
         icon={<TrendingUp className="h-4 w-4 text-primary" />}
         title="Sales performance"
         subtitle="Revenue, orders, average order value and top products for the selected range — each measured against the previous period."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
+      {isEmpty ? (
+        <ReportEmpty icon={<TrendingUp className="h-7 w-7" />} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <KpiCard
           label="Revenue"
@@ -354,6 +358,8 @@ export function SalesReport({ config }: { config: AppConfig }) {
           )}
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 }

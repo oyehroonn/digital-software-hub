@@ -10,10 +10,9 @@
  *      license history. Grouped by email these become CUSTOMERS, and each order
  *      line becomes a LICENSE with a derived term + expiry.
  *
- * Everything here is PURE and defensive: naming drift never throws, and when the
- * telemetry read endpoint hasn't shipped yet (so no live captures exist) a
- * deterministic seed of leads is synthesised from the seed telemetry stream so
- * every CRM view renders richly today. Seed rows are flagged `_seed: true`.
+ * Everything here is PURE and defensive: naming drift never throws. Data is
+ * REAL-only — leads are derived from live telemetry captures; when none exist
+ * the CRM views render a clean empty state (never fabricated leads).
  */
 import type { TelemetryEvent } from "@/analytics/telemetryClient";
 import type { Order } from "@/lib/ecommerce";
@@ -595,108 +594,6 @@ export function buildWinBack(customers: Customer[], dormantDays = 120, now = Dat
     });
   }
   return out.sort((a, b) => b.priority - a.priority);
-}
-
-/* ────────────────────────────────────────────────────────────────────────── *
- *  Deterministic seed leads (until the telemetry read endpoint ships)
- * ────────────────────────────────────────────────────────────────────────── */
-
-const SEED_NAMES = [
-  "Beth Hurigan", "Selma Christoffey", "Marcus Delgado", "Priya Nair", "Tomasz Wójcik",
-  "Amara Okonkwo", "Diego Fuentes", "Hana Ishikawa", "Liam O'Brien", "Fatima Al-Rashid",
-  "Noah Bergström", "Yuki Tanaka", "Grace Mwangi", "Ethan Caldwell", "Sofia Rossi",
-  "Omar Haddad", "Chloe Dubois", "Rajesh Menon", "Isabella Santos", "Kwame Asante",
-];
-const SEED_COMPANIES = [
-  "Aljabr Financial", "Original Argo", "Meridian Studios", "Northwind Retail", "Vertex Labs",
-  "Pinnacle Aged Care", "Coastline Fashion", "Blueprint Architects", "Cedar & Co", "Helix Dynamics",
-  "", "", "Orbit Media", "Summit Legal", "",
-];
-const SEED_INTENTS = [
-  "Need pricing for a 12-seat design team, migrating off a competitor next quarter.",
-  "Comparing editions — mostly interested in virtual sizing for our ecommerce store.",
-  "Current spend is about $1,400/mo, want to see if we can cut that.",
-  "Looking to book a call to walk through the enterprise features.",
-  "Evaluating for a pilot, ~5 users to start then scale.",
-  "Renewal coming up, want to add try-on before we commit.",
-  "",
-  "Just exploring, saw the ROI calculator and wanted a number.",
-];
-const SEED_PRODUCTS = ["dsm", "virtual-sizing", "virtual-try-on", "pointblank", "vpo", "techrealm"];
-const SEED_SOURCES: LeadSource[] = ["quote", "savings", "beta", "callback", "bulk-quote", "upgrade", "contact"];
-
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/**
- * Synthesize a realistic lead inbox, wired to the seed telemetry stream where
- * possible: leads borrow anonymousIds from visitors who reached deep funnel
- * stages, so lead scoring lights up with real behaviour joins. Deterministic —
- * same events in, same leads out. Every row is flagged `_seed: true`.
- */
-export function generateSeedLeads(events: TelemetryEvent[], count = 16): Lead[] {
-  const rnd = mulberry32(20260715);
-
-  // Prefer visitors who showed intent (product view+) so scores are meaningful.
-  const engaged = new Set<string>();
-  for (const e of events) {
-    const n = String(e.event ?? "").toLowerCase();
-    if (/product_?view|add_?to_?cart|begin_?checkout|^order$/.test(n) && e.anonymousId) {
-      engaged.add(String(e.anonymousId));
-    }
-  }
-  const anonPool = [...engaged];
-  const sessionByAnon = new Map<string, string>();
-  for (const e of events) {
-    if (e.anonymousId && e.sessionId && !sessionByAnon.has(String(e.anonymousId))) {
-      sessionByAnon.set(String(e.anonymousId), String(e.sessionId));
-    }
-  }
-
-  const now = Date.parse(events[events.length - 1]?.timestamp ?? "") || Date.now();
-  const leads: Lead[] = [];
-  for (let i = 0; i < count; i++) {
-    const name = SEED_NAMES[i % SEED_NAMES.length];
-    const source = SEED_SOURCES[Math.floor(rnd() * SEED_SOURCES.length)];
-    const company = SEED_COMPANIES[i % SEED_COMPANIES.length];
-    const first = name.split(" ")[0].toLowerCase().replace(/[^a-z]/g, "");
-    const dom = company ? company.toLowerCase().replace(/[^a-z]/g, "").slice(0, 12) + ".com" : ["gmail.com", "outlook.com", "proton.me"][i % 3];
-    const email = `${first}.${name.split(" ")[1]?.[0]?.toLowerCase() ?? "x"}@${dom}`;
-    const anon = anonPool.length ? anonPool[Math.floor(rnd() * anonPool.length)] : `anon_seed_${i}`;
-    const ts = now - Math.floor(rnd() * 20) * 86_400_000 - Math.floor(rnd() * 86_400_000);
-    const teamSize = source === "bulk-quote" ? 8 + Math.floor(rnd() * 40) : rnd() < 0.4 ? 1 + Math.floor(rnd() * 6) : undefined;
-    leads.push({
-      id: `${source}:${email}`,
-      capturedAt: new Date(ts).toISOString(),
-      ts,
-      source,
-      name,
-      email,
-      phone: rnd() < 0.6 ? `+1 555 0${100 + i}` : "",
-      company,
-      intent: SEED_INTENTS[Math.floor(rnd() * SEED_INTENTS.length)],
-      productInterest: SEED_PRODUCTS[Math.floor(rnd() * SEED_PRODUCTS.length)],
-      budget: rnd() < 0.45 ? [500, 1500, 4000, 9000, 20000][Math.floor(rnd() * 5)] : undefined,
-      teamSize,
-      currentSpend: source === "savings" ? 400 + Math.floor(rnd() * 3000) : undefined,
-      estSavings: source === "savings" ? 100 + Math.floor(rnd() * 1500) : undefined,
-      sessionId: sessionByAnon.get(anon) ?? "",
-      anonymousId: anon,
-      pageUrl: "https://dsm.example/",
-      captures: 1 + (rnd() < 0.25 ? 1 : 0),
-      metadata: {},
-      _seed: true,
-    });
-  }
-  return leads.sort((a, b) => b.ts - a.ts);
 }
 
 /* ────────────────────────────────────────────────────────────────────────── *

@@ -4,11 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Empty } from "@/components/Empty";
 import { contactKey, type Grade, type ScoredLead } from "@/lib/crm";
-import { ScoreBadge, ScoreMeter, SourceBadge, StatCard, StatusBadge, SeedBadge, useCrmStore } from "./components";
+import { ScoreBadge, ScoreMeter, SourceBadge, StatCard, StatusBadge, useCrmStore } from "./components";
 
 const GRADES: Grade[] = ["A", "B", "C", "D"];
 
-export function LeadScoring({ leads, seeded }: { leads: ScoredLead[]; seeded: boolean }) {
+export function LeadScoring({ leads }: { leads: ScoredLead[] }) {
   const crm = useCrmStore();
 
   const dist = useMemo(() => {
@@ -29,7 +29,6 @@ export function LeadScoring({ leads, seeded }: { leads: ScoredLead[]; seeded: bo
           Every lead is scored 0–100 from <strong>form intent</strong> (source, contact completeness, budget, team
           size) and <strong>on-site behaviour</strong> (product views, cart, checkout, recency) joined from telemetry.
         </p>
-        {seeded && <SeedBadge label="seed leads" />}
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

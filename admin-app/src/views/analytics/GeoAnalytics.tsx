@@ -32,7 +32,7 @@ import { Globe2, MapPin, Building2, Users, ShoppingBag, DollarSign } from "lucid
 import type { AppConfig } from "@/lib/config";
 import { buildGeo, flagEmoji, project, type CountryStat, type GeoAgg } from "@/lib/geo";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader, StatTile, MeterBar } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty, StatTile, MeterBar } from "./shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -175,7 +175,7 @@ function WorldBubbleMap({
 
 /* ================================ main view ================================ */
 export function GeoAnalytics({ config }: { config: AppConfig }) {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const [metric, setMetric] = useState<Metric>("visitors");
   const [selected, setSelected] = useState<string | null>(null);
   const [days, setDays] = useState(30);
@@ -224,7 +224,6 @@ export function GeoAnalytics({ config }: { config: AppConfig }) {
         icon={<Globe2 className="h-4 w-4 text-primary" />}
         title="Geo & location analytics"
         subtitle="Where your audience is — visitors, events, orders and revenue by country, city and region. Regions come from telemetry geo when present, otherwise from the Orders sheet."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
@@ -249,6 +248,10 @@ export function GeoAnalytics({ config }: { config: AppConfig }) {
         }
       />
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<Globe2 className="h-7 w-7" />} />
+      ) : (
+        <>
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <StatTile label="Countries" value={fmtNum(geo.totals.countries)} tone="primary" />
@@ -585,6 +588,8 @@ export function GeoAnalytics({ config }: { config: AppConfig }) {
               </CardContent>
             </Card>
           </div>
+        </>
+      )}
         </>
       )}
     </div>

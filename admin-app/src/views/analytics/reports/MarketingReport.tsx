@@ -59,6 +59,7 @@ import {
   SERIES_COLORS,
   KpiCard,
   ChartCard,
+  ReportEmpty,
   ReportHeader,
   CompareLegend,
   Delta,
@@ -140,7 +141,7 @@ function referrerTable(events: TelemetryEvent[]): RefRow[] {
 }
 
 export function MarketingReport({ config }: { config: AppConfig }) {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const range = useDateRange();
 
   const model = useMemo(() => {
@@ -262,13 +263,14 @@ export function MarketingReport({ config }: { config: AppConfig }) {
         icon={<Megaphone className="h-5 w-5 text-primary" />}
         title="Marketing"
         subtitle="Sales attributed to marketing channels, sessions & conversions by UTM source / medium / campaign, conversion rate per campaign, and the top first-touch referrers — for the selected range, vs the previous period."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
-      {empty ? (
+      {isEmpty ? (
+        <ReportEmpty icon={<Megaphone className="h-7 w-7" />} />
+      ) : empty ? (
         <Empty
           icon={<Megaphone className="h-8 w-8" />}
           title="No marketing telemetry in this range"

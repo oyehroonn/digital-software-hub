@@ -1,5 +1,5 @@
 /**
- * Single loader for the whole CRM area. Pulls telemetry (with seed fallback) and
+ * Single loader for the whole CRM area. Pulls telemetry (real data only) and
  * orders once, then derives every downstream view's data (leads, scored leads,
  * behaviour index, customers, licences, renewal pipeline, win-back). CrmView
  * owns this and passes slices down so sub-views never refetch.
@@ -10,7 +10,6 @@ import { fetchEvents, type TelemetryEvent } from "@/analytics/telemetryClient";
 import { fetchOrders, type Order } from "@/lib/ecommerce";
 import {
   deriveLeads,
-  generateSeedLeads,
   buildBehaviorIndex,
   scoreLeads,
   buildCustomers,
@@ -27,10 +26,8 @@ import {
 export interface CrmData {
   loading: boolean;
   error: string | null;
-  /** True when leads came from the deterministic seed (read endpoint pending). */
-  leadsSeeded: boolean;
-  /** True when telemetry itself was seeded. */
-  telemetrySeeded: boolean;
+  /** True when there is no real telemetry/orders yet → render empty states. */
+  isEmpty: boolean;
   events: TelemetryEvent[];
   orders: Order[];
   behaviorIndex: Map<string, Behavior>;
@@ -45,8 +42,6 @@ export interface CrmData {
 export function useCrmData(config: AppConfig): CrmData {
   const [events, setEvents] = useState<TelemetryEvent[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [telemetrySeeded, setTelemetrySeeded] = useState(false);
-  const [leadsSeeded, setLeadsSeeded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,14 +50,15 @@ export function useCrmData(config: AppConfig): CrmData {
     setError(null);
     try {
       const [ev, ords] = await Promise.all([
-        fetchEvents(config, { seed: "auto" }),
+        fetchEvents(config),
         fetchOrders(config).catch(() => [] as Order[]),
       ]);
       setEvents(ev.events);
-      setTelemetrySeeded(ev.seeded);
       setOrders(ords);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+      setEvents([]);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -74,16 +70,11 @@ export function useCrmData(config: AppConfig): CrmData {
 
   const behaviorIndex = useMemo(() => buildBehaviorIndex(events), [events]);
 
-  const leads = useMemo(() => {
-    let raw = deriveLeads(events);
-    if (raw.length === 0) {
-      raw = generateSeedLeads(events);
-      setLeadsSeeded(true);
-    } else {
-      setLeadsSeeded(false);
-    }
-    return scoreLeads(raw, behaviorIndex);
-  }, [events, behaviorIndex]);
+  // Real leads only — derived from telemetry. Never fabricated.
+  const leads = useMemo(
+    () => scoreLeads(deriveLeads(events), behaviorIndex),
+    [events, behaviorIndex],
+  );
 
   const customers = useMemo(() => buildCustomers(orders), [orders]);
   const licenses = useMemo(() => buildLicenses(orders), [orders]);
@@ -93,8 +84,7 @@ export function useCrmData(config: AppConfig): CrmData {
   return {
     loading,
     error,
-    leadsSeeded,
-    telemetrySeeded,
+    isEmpty: events.length === 0 && orders.length === 0,
     events,
     orders,
     behaviorIndex,

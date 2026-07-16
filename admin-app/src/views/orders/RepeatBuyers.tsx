@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Empty } from "@/components/Empty";
 import { fmtMoney } from "@/lib/utils";
-import { SectionHeader, SeedBadge, Stat, ToastHost, useToasts, fmtDate } from "./parts";
+import { SectionHeader, Stat, ToastHost, useToasts, fmtDate } from "./parts";
 import { useOrdersData, groupByCustomer, orderValue, orderCurrency, type CustomerGroup } from "./ordersData";
 import { sendDraft } from "./orderEmail";
 
@@ -20,7 +20,7 @@ function daysBetween(a?: number, b?: number): number | null {
 }
 
 export function RepeatBuyers({ config }: { config: AppConfig }) {
-  const { orders, loading, seed, reload } = useOrdersData(config);
+  const { orders, loading, reload } = useOrdersData(config);
   const { toasts, push } = useToasts();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [sending, setSending] = useState<string | null>(null);
@@ -70,7 +70,6 @@ export function RepeatBuyers({ config }: { config: AppConfig }) {
         subtitle="Customers who bought more than once — your warmest renewal and upsell targets."
         right={
           <>
-            <SeedBadge show={seed} />
             <Button variant="outline" size="sm" onClick={reload} disabled={loading}>
               <RefreshCw className={loading ? "animate-spin" : ""} /> Refresh
             </Button>

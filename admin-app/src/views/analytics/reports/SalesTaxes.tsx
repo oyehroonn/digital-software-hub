@@ -20,6 +20,7 @@ import {
   GRID,
   KpiCard,
   PALETTE,
+  ReportEmpty,
   ReportHeader,
   TOOLTIP,
 } from "./reportKit";
@@ -27,7 +28,7 @@ import { DimTable } from "./salesTable";
 import { buildSalesSeries, countryOf, groupDimension, scopeStart, summarize, taxOf } from "./salesData";
 
 export function SalesTaxes({ config }: { config: AppConfig }) {
-  const { cur, prev, range, currency, seeded, loading, liveCount, refresh } = useSalesScope(config);
+  const { cur, prev, range, currency, isEmpty, loading, liveCount, refresh } = useSalesScope(config);
 
   const tCur = useMemo(() => summarize(cur), [cur]);
   const tPrev = useMemo(() => summarize(prev), [prev]);
@@ -49,16 +50,19 @@ export function SalesTaxes({ config }: { config: AppConfig }) {
   const hasTax = tCur.tax > 0;
 
   return (
-    <ReportHeader
-      icon={<Landmark className="h-5 w-5 text-primary" />}
-      title="Taxes"
-      subtitle="Tax collected across the selected range and by destination — with the effective tax rate against net sales. Lights up automatically when the Orders sheet carries a tax column."
-      seeded={seeded}
-      loading={loading}
-      liveCount={liveCount}
-      onRefresh={refresh}
-    >
-      <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
+      <ReportHeader
+        icon={<Landmark className="h-5 w-5 text-primary" />}
+        title="Taxes"
+        subtitle="Tax collected across the selected range and by destination — with the effective tax rate against net sales. Lights up automatically when the Orders sheet carries a tax column."
+        loading={loading}
+        liveCount={liveCount}
+        onRefresh={refresh}
+      />
+      {isEmpty ? (
+        <ReportEmpty icon={<Landmark className="h-7 w-7" />} />
+      ) : (
+        <>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <KpiCard label="Tax collected" value={money(tCur.tax)} icon={<Landmark className="h-3.5 w-3.5" />} color={PALETTE.violet} delta={deltaOf(tCur.tax, tPrev.tax)} spark={series.map((s) => s.tax)} />
           <KpiCard label="Effective tax rate" value={fmtPct(effRate)} icon={<Percent className="h-3.5 w-3.5" />} color={PALETTE.amber} sub="tax ÷ net sales" />
@@ -91,7 +95,8 @@ export function SalesTaxes({ config }: { config: AppConfig }) {
             <DimTable rows={byRegion} labelHeader="Country" currency={currency} valueKey="tax" valueHeader="Tax" showDelta={false} />
           )}
         </ChartCard>
-      </div>
-    </ReportHeader>
+        </>
+      )}
+    </div>
   );
 }

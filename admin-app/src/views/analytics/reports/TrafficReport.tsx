@@ -51,6 +51,7 @@ import {
   SERIES_COLORS,
   KpiCard,
   ChartCard,
+  ReportEmpty,
   ReportHeader,
   CompareLegend,
   buildBuckets,
@@ -133,7 +134,7 @@ function fmtDuration(s: number): string {
 }
 
 export function TrafficReport({ config }: { config: AppConfig }) {
-  const { events, seeded, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
+  const { events, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
   const range = useDateRange();
 
   const model = useMemo(() => {
@@ -228,12 +229,15 @@ export function TrafficReport({ config }: { config: AppConfig }) {
         icon={<Users className="h-4 w-4 text-primary" />}
         title="Traffic & engagement"
         subtitle="Sessions, visitors, pageviews and engagement for the selected range — each measured against the previous period."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
+      {isEmpty ? (
+        <ReportEmpty icon={<Users className="h-7 w-7" />} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
         <KpiCard
           label="Sessions"
@@ -399,6 +403,8 @@ export function TrafficReport({ config }: { config: AppConfig }) {
           <Empty icon={<MousePointerClick className="h-8 w-8" />} title="No events to chart" />
         )}
       </ChartCard>
+        </>
+      )}
     </div>
   );
 }

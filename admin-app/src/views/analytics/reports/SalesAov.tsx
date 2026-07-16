@@ -29,13 +29,14 @@ import {
   GRID,
   KpiCard,
   PALETTE,
+  ReportEmpty,
   ReportHeader,
   TOOLTIP,
 } from "./reportKit";
 import { buildSalesSeries, scopeStart, summarize } from "./salesData";
 
 export function SalesAov({ config }: { config: AppConfig }) {
-  const { cur, prev, range, currency, seeded, loading, liveCount, refresh } = useSalesScope(config);
+  const { cur, prev, range, currency, isEmpty, loading, liveCount, refresh } = useSalesScope(config);
 
   const tCur = useMemo(() => summarize(cur), [cur]);
   const tPrev = useMemo(() => summarize(prev), [prev]);
@@ -58,16 +59,19 @@ export function SalesAov({ config }: { config: AppConfig }) {
   const hasData = cur.length > 0;
 
   return (
-    <ReportHeader
-      icon={<TrendingUp className="h-5 w-5 text-primary" />}
-      title="Average order value over time"
-      subtitle="How much each order is worth over the selected range — AOV and units-per-order, with the previous period overlaid for comparison."
-      seeded={seeded}
-      loading={loading}
-      liveCount={liveCount}
-      onRefresh={refresh}
-    >
-      <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
+      <ReportHeader
+        icon={<TrendingUp className="h-5 w-5 text-primary" />}
+        title="Average order value over time"
+        subtitle="How much each order is worth over the selected range — AOV and units-per-order, with the previous period overlaid for comparison."
+        loading={loading}
+        liveCount={liveCount}
+        onRefresh={refresh}
+      />
+      {isEmpty ? (
+        <ReportEmpty icon={<TrendingUp className="h-7 w-7" />} />
+      ) : (
+        <>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <KpiCard
             label="Avg order value"
@@ -160,7 +164,8 @@ export function SalesAov({ config }: { config: AppConfig }) {
             </Table>
           )}
         </ChartCard>
-      </div>
-    </ReportHeader>
+        </>
+      )}
+    </div>
   );
 }

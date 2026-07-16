@@ -71,6 +71,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty } from "@/components/Empty";
 import { useAnalyticsData } from "./useAnalyticsData";
+import { AnalyticsEmpty } from "./shell";
 import { parseUA } from "./deviceTech";
 import {
   metaOf,
@@ -523,7 +524,7 @@ function SectionLabel({ icon, children }: { icon: React.ReactNode; children: Rea
 /* main component                                                              */
 /* -------------------------------------------------------------------------- */
 export function QueryBuilder({ config }: { config: AppConfig }) {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const dr = useDateRange();
 
   // Query spec.
@@ -731,7 +732,6 @@ export function QueryBuilder({ config }: { config: AppConfig }) {
         icon={<SlidersHorizontal className="h-4 w-4 text-primary" />}
         title="Custom report builder"
         subtitle="Compose any metric by any dimension over the selected range, filter it, and save it to your report library. Metrics from the stable Telemetry & Orders sheets; falls back to seed data until the read endpoint is live."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
@@ -862,6 +862,10 @@ export function QueryBuilder({ config }: { config: AppConfig }) {
         </CardContent>
       </Card>
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<SlidersHorizontal className="h-7 w-7" />} />
+      ) : (
+        <>
       {/* KPI row — selected metrics, whole-window totals with vs-previous deltas */}
       {metrics.length > 0 && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
@@ -996,6 +1000,8 @@ export function QueryBuilder({ config }: { config: AppConfig }) {
           )}
         </CardContent>
       </Card>
+        </>
+      )}
 
       {/* Saved report library */}
       <Card>

@@ -29,6 +29,7 @@ import {
   GRID,
   KpiCard,
   PALETTE,
+  ReportEmpty,
   ReportHeader,
   SERIES_COLORS,
   TOOLTIP,
@@ -69,7 +70,7 @@ export function DimensionReport({
   extraCols,
   emptyHint,
 }: DimensionReportProps) {
-  const { cur, prev, range, currency, seeded, loading, liveCount, refresh } = useSalesScope(config);
+  const { cur, prev, range, currency, isEmpty, loading, liveCount, refresh } = useSalesScope(config);
 
   const rows = useMemo(
     () => groupDimension(cur, range.compareEnabled ? prev : null, keyFn, labelFn ?? keyFn, filter),
@@ -96,16 +97,19 @@ export function DimensionReport({
   }, [rows, chart, topN]);
 
   return (
-    <ReportHeader
-      icon={icon}
-      title={title}
-      subtitle={subtitle}
-      seeded={seeded}
-      loading={loading}
-      liveCount={liveCount}
-      onRefresh={refresh}
-    >
-      <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
+      <ReportHeader
+        icon={icon}
+        title={title}
+        subtitle={subtitle}
+        loading={loading}
+        liveCount={liveCount}
+        onRefresh={refresh}
+      />
+      {isEmpty ? (
+        <ReportEmpty icon={icon} />
+      ) : (
+        <>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <KpiCard
             label="Net sales"
@@ -151,8 +155,9 @@ export function DimensionReport({
             <DimTable rows={rows} labelHeader={labelHeader} currency={currency} extraCols={extraCols} />
           )}
         </ChartCard>
-      </div>
-    </ReportHeader>
+        </>
+      )}
+    </div>
   );
 }
 

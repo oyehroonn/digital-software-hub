@@ -53,7 +53,7 @@ import {
   type UtmParams,
 } from "@/lib/utm";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader, StatTile } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty, StatTile } from "./shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -408,7 +408,7 @@ function SortHeader({
 }
 
 function CampaignTracking({ config }: { config: AppConfig }) {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const data = useMemo(() => buildCampaigns(events, orders), [events, orders]);
   const [sort, setSort] = useState<SortKey>("sessions");
   const [dir, setDir] = useState<"asc" | "desc">("desc");
@@ -453,12 +453,15 @@ function CampaignTracking({ config }: { config: AppConfig }) {
         icon={<Megaphone className="h-4 w-4 text-primary" />}
         title="Campaign tracking"
         subtitle="First-touch UTM attribution — utm_* parsed from the landing page_url query and event metadata, joined to the Orders sheet by session & email. Which campaigns bring traffic AND revenue, not just clicks."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<Megaphone className="h-7 w-7" />} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <StatTile label="Sessions" value={data.sessions.toLocaleString("en-US")} />
         <StatTile
@@ -766,6 +769,8 @@ function CampaignTracking({ config }: { config: AppConfig }) {
               </Table>
             </CardContent>
           </Card>
+        </>
+      )}
         </>
       )}
     </div>

@@ -44,6 +44,7 @@ import {
   PALETTE,
   KpiCard,
   ChartCard,
+  ReportEmpty,
   ReportHeader,
   fmtPct,
   deltaOf,
@@ -76,7 +77,7 @@ function LegendChip({ color, label }: { color: string; label: string }) {
 }
 
 export function CustomersOverview({ config }: { config: AppConfig }) {
-  const { orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const r = useDateRange();
 
   const win = useMemo(() => ({ start: r.start, end: r.end }), [r.start, r.end]);
@@ -120,13 +121,14 @@ export function CustomersOverview({ config }: { config: AppConfig }) {
         icon={<Users className="h-4 w-4 text-primary" />}
         title="Customers — Overview"
         subtitle="First-time vs returning, customers over time, returning rate, one-time vs repeat, location, avg orders and predicted LTV — grouped by email from the Orders sheet."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
-      {cur.customers === 0 ? (
+      {isEmpty ? (
+        <ReportEmpty icon={<Users className="h-7 w-7" />} />
+      ) : cur.customers === 0 ? (
         <Empty
           icon={<Users className="h-8 w-8" />}
           title="No customers in this range"

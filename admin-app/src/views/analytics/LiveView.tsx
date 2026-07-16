@@ -7,7 +7,7 @@
  * visitors-by-location strip built from the last ~5 minutes of telemetry.
  *
  * Data comes from the STABLE Telemetry + Orders sheets via `useAnalyticsData`
- * (deterministic-seed fallback so it lights up before the read endpoint is
+ * (real data only — honest zero/empty states before the read endpoint is
  * deployed). It re-fetches every ~15s and re-derives against a 1s ticking clock
  * so "active in the last 5 min" and "12s ago" stay honest without a manual
  * refresh. Unlike the report pages this view is fixed to "now" — it does not
@@ -107,7 +107,7 @@ function LiveDelta({ cur, prev }: { cur: number; prev: number }) {
 }
 
 export function LiveView({ config }: { config: AppConfig }) {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, loading, liveCount, refresh } = useAnalyticsData(config);
   const [now, setNow] = useState(() => Date.now());
 
   // Tick the clock every 1s; re-fetch telemetry + orders every 15s.
@@ -261,12 +261,7 @@ export function LiveView({ config }: { config: AppConfig }) {
                 <Badge variant="ok" className="gap-1">
                   <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-ok" /> LIVE
                 </Badge>
-                {seeded && (
-                  <Badge variant="warn" title="Read endpoint returned no rows — showing the deterministic seed.">
-                    seed data
-                  </Badge>
-                )}
-                {seeded === false && liveCount > 0 && <Badge variant="ok">live · {liveCount.toLocaleString("en-US")}</Badge>}
+                {liveCount > 0 && <Badge variant="ok">live · {liveCount.toLocaleString("en-US")}</Badge>}
               </div>
               <p className="text-xs text-muted-foreground">
                 Real-time activity across the store · refreshes every 15s{loading ? " · syncing…" : ""}

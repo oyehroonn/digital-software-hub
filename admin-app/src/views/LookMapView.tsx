@@ -55,7 +55,7 @@ export function LookMapView({ config }: { config: AppConfig }) {
       {error ? (
         <Empty title="Couldn't load telemetry" hint={error} />
       ) : (
-        <LookMap events={events} demo />
+        <LookMap events={events} />
       )}
     </div>
   );

@@ -21,6 +21,7 @@ import {
   GRID,
   KpiCard,
   PALETTE,
+  ReportEmpty,
   ReportHeader,
   TOOLTIP,
 } from "./reportKit";
@@ -28,7 +29,7 @@ import { DimTable } from "./salesTable";
 import { buildSalesSeries, discountCodeOf, discountOf, groupDimension, scopeStart, summarize } from "./salesData";
 
 export function SalesByDiscount({ config }: { config: AppConfig }) {
-  const { cur, prev, range, currency, seeded, loading, liveCount, refresh } = useSalesScope(config);
+  const { cur, prev, range, currency, isEmpty, loading, liveCount, refresh } = useSalesScope(config);
 
   const tCur = useMemo(() => summarize(cur), [cur]);
   const tPrev = useMemo(() => summarize(prev), [prev]);
@@ -57,16 +58,19 @@ export function SalesByDiscount({ config }: { config: AppConfig }) {
   const hasDiscounts = tCur.discounts > 0 || tCur.discountedOrders > 0;
 
   return (
-    <ReportHeader
-      icon={<TicketPercent className="h-5 w-5 text-primary" />}
-      title="Sales by discount"
-      subtitle="What discounts cost and return — discount spend over the selected range and per code, with the discount rate against gross sales. Lights up automatically when the Orders sheet carries a discount column or code."
-      seeded={seeded}
-      loading={loading}
-      liveCount={liveCount}
-      onRefresh={refresh}
-    >
-      <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
+      <ReportHeader
+        icon={<TicketPercent className="h-5 w-5 text-primary" />}
+        title="Sales by discount"
+        subtitle="What discounts cost and return — discount spend over the selected range and per code, with the discount rate against gross sales. Lights up automatically when the Orders sheet carries a discount column or code."
+        loading={loading}
+        liveCount={liveCount}
+        onRefresh={refresh}
+      />
+      {isEmpty ? (
+        <ReportEmpty icon={<TicketPercent className="h-7 w-7" />} />
+      ) : (
+        <>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <KpiCard label="Discount spend" value={money(tCur.discounts)} icon={<Wallet className="h-3.5 w-3.5" />} color={PALETTE.rose} delta={deltaOf(tCur.discounts, tPrev.discounts)} higherIsBetter={false} spark={series.map((s) => s.discounts)} />
           <KpiCard label="Discounted orders" value={fmtNum(tCur.discountedOrders)} icon={<BadgePercent className="h-3.5 w-3.5" />} color={PALETTE.amber} delta={deltaOf(tCur.discountedOrders, tPrev.discountedOrders)} />
@@ -99,7 +103,8 @@ export function SalesByDiscount({ config }: { config: AppConfig }) {
             <DimTable rows={byCode} labelHeader="Discount code" currency={currency} valueKey="discounts" valueHeader="Discount" showDelta={false} />
           )}
         </ChartCard>
-      </div>
-    </ReportHeader>
+        </>
+      )}
+    </div>
   );
 }

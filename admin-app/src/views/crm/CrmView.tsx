@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Empty } from "@/components/Empty";
 import { openTaskCount, subscribe as subscribeCrm } from "@/lib/crmStore";
 import { useCrmData } from "./useCrmData";
-import { SubTabs, SeedBadge } from "./components";
+import { SubTabs } from "./components";
 import { LeadInbox } from "./LeadInbox";
 import { LeadScoring } from "./LeadScoring";
 import { Customer360 } from "./Customer360";
@@ -61,7 +61,6 @@ export function CrmView({
     <div className="flex flex-col gap-4">
       {controlled ? (
         <div className="flex items-center justify-end gap-2">
-          {data.telemetrySeeded && <SeedBadge label="seed telemetry" />}
           <Button variant="outline" size="sm" onClick={data.refresh} disabled={data.loading}>
             <RefreshCw className={data.loading ? "animate-spin" : ""} /> Refresh
           </Button>
@@ -77,7 +76,6 @@ export function CrmView({
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {data.telemetrySeeded && <SeedBadge label="seed telemetry" />}
               <Button variant="outline" size="sm" onClick={data.refresh} disabled={data.loading}>
                 <RefreshCw className={data.loading ? "animate-spin" : ""} /> Refresh
               </Button>
@@ -91,9 +89,9 @@ export function CrmView({
       {data.error ? (
         <Empty title="Couldn't load CRM data" hint={data.error} />
       ) : tab === "inbox" ? (
-        <LeadInbox leads={data.leads} seeded={data.leadsSeeded} onOpenCustomer={openCustomer} />
+        <LeadInbox leads={data.leads} onOpenCustomer={openCustomer} />
       ) : tab === "scoring" ? (
-        <LeadScoring leads={data.leads} seeded={data.leadsSeeded} />
+        <LeadScoring leads={data.leads} />
       ) : tab === "customers" ? (
         <Customer360 config={config} customers={data.customers} leads={data.leads} focusEmail={focusEmail} />
       ) : tab === "licenses" ? (

@@ -11,7 +11,7 @@ import type { Order } from "@/lib/ecommerce";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { fmtMoney } from "@/lib/utils";
-import { SectionHeader, SeedBadge, ToastHost, useToasts } from "./parts";
+import { SectionHeader, ToastHost, useToasts } from "./parts";
 import { QuoteComposer } from "./QuoteComposer";
 import { copyToClipboard } from "./orderEmail";
 import {
@@ -38,7 +38,7 @@ const TONE: Record<string, string> = {
 };
 
 export function PipelineBoard({ config }: { config: AppConfig }) {
-  const { orders, loading, seed, reload } = useOrdersData(config);
+  const { orders, loading, reload } = useOrdersData(config);
   const overlay = useOverlay();
   const { toasts, push } = useToasts();
   const [dragKey, setDragKey] = useState<string | null>(null);
@@ -68,7 +68,6 @@ export function PipelineBoard({ config }: { config: AppConfig }) {
         subtitle="Drag deals across stages. Stage changes are saved locally; the Orders sheet stays the source of truth."
         right={
           <>
-            <SeedBadge show={seed} />
             <Button variant="outline" size="sm" onClick={reload} disabled={loading}>
               <RefreshCw className={loading ? "animate-spin" : ""} /> Refresh
             </Button>

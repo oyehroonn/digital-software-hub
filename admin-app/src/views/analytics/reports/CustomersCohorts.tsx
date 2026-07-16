@@ -28,7 +28,7 @@ import type { AppConfig } from "@/lib/config";
 import { Empty } from "@/components/Empty";
 import { useAnalyticsData } from "../useAnalyticsData";
 import { useDateRange } from "./dateRange";
-import { AXIS, GRID, TOOLTIP, PALETTE, KpiCard, ChartCard, ReportHeader } from "./reportKit";
+import { AXIS, GRID, TOOLTIP, PALETTE, KpiCard, ChartCard, ReportEmpty, ReportHeader } from "./reportKit";
 import { buildIndex, cohortRetention } from "./customerMetrics";
 
 const RETAIN_HUE = PALETTE.ok; // green — sequential magnitude
@@ -44,7 +44,7 @@ function cellStyle(v: number | null): { background: string; color: string } {
 }
 
 export function CustomersCohorts({ config }: { config: AppConfig }) {
-  const { orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const r = useDateRange();
 
   const win = useMemo(() => ({ start: r.start, end: r.end }), [r.start, r.end]);
@@ -68,13 +68,14 @@ export function CustomersCohorts({ config }: { config: AppConfig }) {
         icon={<Grid3x3 className="h-4 w-4 text-primary" />}
         title="Customers — Cohort retention"
         subtitle="Each row is the month customers were acquired (first order); each column is months since. Cells show the share of that cohort who ordered again. Blank cells haven't happened yet as of the selected range end."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
-      {grid.rows.length === 0 ? (
+      {isEmpty ? (
+        <ReportEmpty icon={<Grid3x3 className="h-7 w-7" />} />
+      ) : grid.rows.length === 0 ? (
         <Empty
           icon={<Grid3x3 className="h-8 w-8" />}
           title="Not enough history for cohorts"

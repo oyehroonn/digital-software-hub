@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Empty } from "@/components/Empty";
 import { fmtMoney, timeAgo } from "@/lib/utils";
-import { SectionHeader, SeedBadge, Stat, ToastHost, useToasts } from "./parts";
+import { SectionHeader, Stat, ToastHost, useToasts } from "./parts";
 import { useTelemetryData } from "./ordersData";
 import { recoveryTemplate, sendDraft, copyToClipboard } from "./orderEmail";
 
@@ -87,7 +87,7 @@ function deriveCarts(events: TelemetryEvent[]): Cart[] {
 }
 
 export function AbandonedCarts({ config }: { config: AppConfig }) {
-  const { events, loading, seed, reload } = useTelemetryData(config);
+  const { events, loading, reload } = useTelemetryData(config);
   const { toasts, push } = useToasts();
   const [sending, setSending] = useState<string | null>(null);
   const carts = useMemo(() => deriveCarts(events), [events]);
@@ -124,7 +124,6 @@ export function AbandonedCarts({ config }: { config: AppConfig }) {
         subtitle="Sessions that started a cart or checkout but never purchased. Win them back with a recovery email."
         right={
           <>
-            <SeedBadge show={seed} />
             <Button variant="outline" size="sm" onClick={copyList} disabled={!recoverable.length}>
               <Copy /> Copy emails
             </Button>

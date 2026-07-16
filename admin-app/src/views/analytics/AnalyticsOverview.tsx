@@ -50,7 +50,7 @@ import type { AppConfig } from "@/lib/config";
 import type { Order, TelemetryEvent } from "@/lib/ecommerce";
 import { buildLeaderboard, type LeaderRow } from "@/lib/leaderboard";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader, MeterBar } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty, MeterBar } from "./shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Empty } from "@/components/Empty";
@@ -492,7 +492,7 @@ const WINDOWS: { key: number; label: string }[] = [
 const pctStr = (v: number) => `${v.toFixed(1)}%`;
 
 export function AnalyticsOverview({ config }: { config: AppConfig }) {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const [win, setWin] = useState(14);
 
   const scoped = useMemo(() => windowSlice(events, orders, win), [events, orders, win]);
@@ -567,7 +567,6 @@ export function AnalyticsOverview({ config }: { config: AppConfig }) {
         icon={<LayoutDashboard className="h-4 w-4 text-primary" />}
         title="Analytics Overview"
         subtitle="Traffic, engagement and revenue at a glance — sessions, conversions and money from the stable Telemetry & Orders sheets. Falls back to seed data until the read endpoint is live."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
@@ -591,6 +590,10 @@ export function AnalyticsOverview({ config }: { config: AppConfig }) {
         }
       />
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<LayoutDashboard className="h-7 w-7" />} />
+      ) : (
+        <>
       <LiveStrip events={scoped.events} />
 
       {/* KPI tiles */}
@@ -780,6 +783,8 @@ export function AnalyticsOverview({ config }: { config: AppConfig }) {
           </CardContent>
         </Card>
       </div>
+        </>
+      )}
     </div>
   );
 }

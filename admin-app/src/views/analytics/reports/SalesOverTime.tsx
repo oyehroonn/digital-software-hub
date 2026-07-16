@@ -33,13 +33,14 @@ import {
   GRID,
   KpiCard,
   PALETTE,
+  ReportEmpty,
   ReportHeader,
   TOOLTIP,
 } from "./reportKit";
 import { buildSalesSeries, currencyOf, scopeStart, summarize, tsOf } from "./salesData";
 
 export function SalesOverTime({ config }: { config: AppConfig }) {
-  const { orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const range = useDateRange();
 
   const cur = useMemo(() => orders.filter((o) => range.inRange(tsOf(o))), [orders, range]);
@@ -63,15 +64,18 @@ export function SalesOverTime({ config }: { config: AppConfig }) {
   const hasData = cur.length > 0;
 
   return (
-    <ReportHeader
-      icon={<CalendarClock className="h-5 w-5 text-primary" />}
-      title="Sales over time"
-      subtitle="Net sales, orders, units and average order value across the selected range — the previous period is overlaid for comparison. Reads the stable Orders sheet with a deterministic-seed fallback."
-      seeded={seeded}
-      loading={loading}
-      liveCount={liveCount}
-      onRefresh={refresh}
-    >
+    <div className="flex flex-col gap-4">
+      <ReportHeader
+        icon={<CalendarClock className="h-5 w-5 text-primary" />}
+        title="Sales over time"
+        subtitle="Net sales, orders, units and average order value across the selected range — the previous period is overlaid for comparison. Reads the stable Orders sheet."
+        loading={loading}
+        liveCount={liveCount}
+        onRefresh={refresh}
+      />
+      {isEmpty ? (
+        <ReportEmpty icon={<CalendarClock className="h-7 w-7" />} />
+      ) : (
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <KpiCard
@@ -212,6 +216,7 @@ export function SalesOverTime({ config }: { config: AppConfig }) {
           )}
         </ChartCard>
       </div>
-    </ReportHeader>
+      )}
+    </div>
   );
 }

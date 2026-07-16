@@ -9,7 +9,7 @@ import { LogOut, TrendingDown } from "lucide-react";
 import type { AppConfig } from "@/lib/config";
 import { buildDropOff } from "@/lib/dropoff";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader, StatTile, MeterBar } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty, StatTile, MeterBar } from "./shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,7 @@ import { Empty } from "@/components/Empty";
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 export function DropOffIndexView({ config }: { config: AppConfig }) {
-  const { events, seeded, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
+  const { events, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
   const d = useMemo(() => buildDropOff(events), [events]);
   const worstAbandon = d.abandonment.reduce((m, s) => (s.abandonRate > m ? s.abandonRate : m), 0);
 
@@ -28,12 +28,15 @@ export function DropOffIndexView({ config }: { config: AppConfig }) {
         icon={<LogOut className="h-4 w-4 text-down" />}
         title="Session drop-off index"
         subtitle="Where sessions exit and where the funnel leaks. Exit pages are scored by volume, exit rate and how few of those sessions bought — the worst leaks rise to the top."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<LogOut className="h-7 w-7" />} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Sessions" value={d.sessions.toLocaleString("en-US")} />
         <StatTile label="Bounce rate" value={pct(d.bounceRate)} tone={d.bounceRate > 0.5 ? "down" : "warn"} sub="1-page sessions" />
@@ -114,6 +117,8 @@ export function DropOffIndexView({ config }: { config: AppConfig }) {
             </CardContent>
           </Card>
         </div>
+      )}
+        </>
       )}
     </div>
   );

@@ -133,32 +133,32 @@ const Footer = () => {
           <div>
             <h4 className="text-[#FEFEFE] text-sm font-semibold uppercase tracking-[0.14em] mb-6">Shop</h4>
             <ul className="space-y-3 text-sm">
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Microsoft Office</a></li>
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Windows Systems</a></li>
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Adobe Creative Cloud</a></li>
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Antivirus & Security</a></li>
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Server Solutions</a></li>
+              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Microsoft Office</a></li>
+              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Windows Systems</a></li>
+              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Adobe Creative Cloud</a></li>
+              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Antivirus & Security</a></li>
+              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Server Solutions</a></li>
             </ul>
           </div>
 
           <div>
             <h4 className="text-[#FEFEFE] text-sm font-semibold uppercase tracking-[0.14em] mb-6">Support</h4>
             <ul className="space-y-3 text-sm">
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Help Center</a></li>
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Activation Guides</a></li>
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Order Status</a></li>
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Refund Policy</a></li>
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Contact Concierge</a></li>
+              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Help Center</a></li>
+              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Activation Guides</a></li>
+              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Order Status</a></li>
+              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Refund Policy</a></li>
+              <li><a href="mailto:support@digitalsoftwaremarkett.com" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Contact Concierge</a></li>
             </ul>
           </div>
 
           <div>
             <h4 className="text-[#FEFEFE] text-sm font-semibold uppercase tracking-[0.14em] mb-6">Legal</h4>
             <ul className="space-y-3 text-sm">
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Terms of Service</a></li>
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Privacy Policy</a></li>
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Cookie Policy</a></li>
-              <li><a href="#" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Reseller Certificate</a></li>
+              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Terms of Service</a></li>
+              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Privacy Policy</a></li>
+              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Cookie Policy</a></li>
+              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Reseller Certificate</a></li>
             </ul>
           </div>
         </div>

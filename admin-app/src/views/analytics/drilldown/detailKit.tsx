@@ -10,7 +10,6 @@
  */
 import { useId, useMemo, type ReactNode } from "react";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { cn, fmtMoney } from "@/lib/utils";
 import type { Order, TelemetryEvent } from "@/lib/ecommerce";
 import { evName, evType, metaOf, metaPick, pagePath, productOf, sessionOf, str, timeOf } from "@/lib/telemetryFields";
@@ -304,12 +303,4 @@ export function useDailyAxis<T>(
 
 export function EmptyNote({ children }: { children: ReactNode }) {
   return <div className="py-10 text-center text-sm text-muted-foreground">{children}</div>;
-}
-
-export function seededBadge(seeded?: boolean) {
-  return seeded ? (
-    <Badge variant="warn" className="text-[10px]">
-      seed
-    </Badge>
-  ) : null;
 }

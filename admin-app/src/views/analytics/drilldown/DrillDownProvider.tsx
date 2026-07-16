@@ -65,11 +65,10 @@ export function DrillDownProvider({ config, children }: { config: AppConfig; chi
       events,
       orders,
       config,
-      seeded,
       loading,
       refresh,
     }),
-    [open, replace, back, close, stack, isOpen, events, orders, config, seeded, loading, refresh],
+    [open, replace, back, close, stack, isOpen, events, orders, config, loading, refresh],
   );
 
   return (
@@ -81,7 +80,7 @@ export function DrillDownProvider({ config, children }: { config: AppConfig; chi
 }
 
 function renderTarget(t: DrillTarget, api: DrillDownApi): ReactNode {
-  const shared = { events: api.events, orders: api.orders, config: api.config as AppConfig, seeded: api.seeded };
+  const shared = { events: api.events, orders: api.orders, config: api.config as AppConfig };
   switch (t.kind) {
     case "product":
       return <ProductAnalytics productId={t.id} name={t.name} {...shared} />;
@@ -95,7 +94,7 @@ function renderTarget(t: DrillTarget, api: DrillDownApi): ReactNode {
 }
 
 function SlideOver({ api }: { api: DrillDownApi }) {
-  const { stack, isOpen, back, close, seeded, loading, refresh } = api;
+  const { stack, isOpen, back, close, loading, refresh } = api;
   const top = stack[stack.length - 1];
 
   // Slide-in animation: mount, then flip `shown` on the next frame.
@@ -162,11 +161,6 @@ function SlideOver({ api }: { api: DrillDownApi }) {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{meta.label}</span>
-              {seeded && (
-                <Badge variant="warn" className="gap-1 text-[10px]">
-                  <Database className="h-3 w-3" /> seed
-                </Badge>
-              )}
             </div>
             <h2 className="truncate text-base font-semibold text-foreground" title={targetTitle(top)}>
               {targetTitle(top)}

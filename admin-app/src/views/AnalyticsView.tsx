@@ -138,7 +138,7 @@ export function AnalyticsView({ config }: { config: AppConfig }) {
               Per-page click density from telemetry — hover a hotspot for counts & the top element.
             </p>
           </div>
-          <ClickHeatmap events={events} demo />
+          <ClickHeatmap events={events} />
         </div>
       )}
 

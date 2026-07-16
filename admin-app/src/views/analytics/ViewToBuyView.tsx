@@ -42,7 +42,7 @@ function Spark({ data }: { data: number[] }) {
 }
 
 export function ViewToBuyView({ config }: { config: AppConfig }) {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const [sort, setSort] = useState<LeaderSort>("revenue");
   const lb = useMemo(() => buildLeaderboard(events, orders, sort), [events, orders, sort]);
 
@@ -52,7 +52,6 @@ export function ViewToBuyView({ config }: { config: AppConfig }) {
         icon={<Trophy className="h-4 w-4 text-warn" />}
         title="View → Buy leaderboard"
         subtitle="Which products convert attention into orders. View→Buy is orders ÷ product views — the truest measure of a product page's sales performance."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
@@ -72,6 +71,10 @@ export function ViewToBuyView({ config }: { config: AppConfig }) {
         }
       />
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<Trophy className="h-7 w-7" />} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Products" value={lb.rows.length.toLocaleString("en-US")} />
         <StatTile label="Total views" value={lb.totals.views.toLocaleString("en-US")} />
@@ -175,6 +178,8 @@ export function ViewToBuyView({ config }: { config: AppConfig }) {
           )}
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 }

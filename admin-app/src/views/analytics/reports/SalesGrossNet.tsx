@@ -34,13 +34,14 @@ import {
   GRID,
   KpiCard,
   PALETTE,
+  ReportEmpty,
   ReportHeader,
   TOOLTIP,
 } from "./reportKit";
 import { buildSalesSeries, scopeStart, summarize } from "./salesData";
 
 export function SalesGrossNet({ config }: { config: AppConfig }) {
-  const { cur, prev, range, currency, seeded, loading, liveCount, refresh } = useSalesScope(config);
+  const { cur, prev, range, currency, isEmpty, loading, liveCount, refresh } = useSalesScope(config);
 
   const tCur = useMemo(() => summarize(cur), [cur]);
   const tPrev = useMemo(() => summarize(prev), [prev]);
@@ -64,16 +65,19 @@ export function SalesGrossNet({ config }: { config: AppConfig }) {
   const hasData = cur.length > 0;
 
   return (
-    <ReportHeader
-      icon={<Scale className="h-5 w-5 text-primary" />}
-      title="Gross → net reconciliation"
-      subtitle="How gross sales become net — gross minus discounts and refunds, across the selected range. Every figure shows its change vs the previous period; tax is reported separately."
-      seeded={seeded}
-      loading={loading}
-      liveCount={liveCount}
-      onRefresh={refresh}
-    >
-      <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
+      <ReportHeader
+        icon={<Scale className="h-5 w-5 text-primary" />}
+        title="Gross → net reconciliation"
+        subtitle="How gross sales become net — gross minus discounts and refunds, across the selected range. Every figure shows its change vs the previous period; tax is reported separately."
+        loading={loading}
+        liveCount={liveCount}
+        onRefresh={refresh}
+      />
+      {isEmpty ? (
+        <ReportEmpty icon={<Scale className="h-7 w-7" />} />
+      ) : (
+        <>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <KpiCard label="Gross sales" value={money(tCur.gross)} icon={<Coins className="h-3.5 w-3.5" />} color={PALETTE.primary} delta={deltaOf(tCur.gross, tPrev.gross)} spark={series.map((s) => s.gross)} />
           <KpiCard label="Discounts" value={`-${money(tCur.discounts)}`} icon={<TicketPercent className="h-3.5 w-3.5" />} color={PALETTE.rose} delta={deltaOf(tCur.discounts, tPrev.discounts)} higherIsBetter={false} spark={series.map((s) => s.discounts)} />
@@ -167,7 +171,8 @@ export function SalesGrossNet({ config }: { config: AppConfig }) {
             </Table>
           )}
         </ChartCard>
-      </div>
-    </ReportHeader>
+        </>
+      )}
+    </div>
   );
 }

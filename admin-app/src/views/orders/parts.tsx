@@ -6,7 +6,6 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 
 export function Stat({
   label,
@@ -23,15 +22,6 @@ export function Stat({
       <div className="text-xl font-semibold tabular-nums">{value}</div>
       {sub && <div className="text-[11px] text-muted-foreground">{sub}</div>}
     </div>
-  );
-}
-
-export function SeedBadge({ show }: { show: boolean }) {
-  if (!show) return null;
-  return (
-    <Badge variant="warn" title="No live rows from the read endpoint yet — showing seed data.">
-      Seed data
-    </Badge>
   );
 }
 

@@ -4,9 +4,9 @@
  * A single nav entry that hosts the whole sales/fulfillment workflow as sub-tabs:
  *   Pipeline · Quote desk · Abandoned carts · Trends · Fulfillment · Refunds · Repeat buyers
  *
- * All sub-views read the STABLE Orders/Telemetry sheets (with a deterministic
- * seed fallback) and keep admin-side workflow state in a local overlay, so the
- * sheet stays the read-only source of truth.
+ * All sub-views read the STABLE Orders/Telemetry sheets (REAL data only — a
+ * clean empty state when the sheet has no rows) and keep admin-side workflow
+ * state in a local overlay, so the sheet stays the read-only source of truth.
  *
  * The integration step can wire either this hub (recommended, one nav entry) or
  * any individual sub-view — all are exported below.

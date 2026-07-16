@@ -8,7 +8,7 @@ import { Search, SearchX } from "lucide-react";
 import type { AppConfig } from "@/lib/config";
 import { buildSearchStats } from "@/lib/searchQueries";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader, StatTile, MeterBar } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty, StatTile, MeterBar } from "./shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,7 @@ import { Empty } from "@/components/Empty";
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 export function SearchQueriesView({ config }: { config: AppConfig }) {
-  const { events, seeded, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
+  const { events, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
   const s = useMemo(() => buildSearchStats(events), [events]);
   const maxTop = s.top[0]?.searches ?? 1;
   const maxZero = s.zero[0]?.zeroResults ?? 1;
@@ -28,12 +28,15 @@ export function SearchQueriesView({ config }: { config: AppConfig }) {
         icon={<Search className="h-4 w-4 text-primary" />}
         title="Search queries"
         subtitle="What visitors type into on-site search. Zero-result queries are unmet demand — each one is a product to add, a synonym to map, or a page to write."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<Search className="h-7 w-7" />} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Total searches" value={s.total.toLocaleString("en-US")} />
         <StatTile label="Distinct queries" value={s.distinct.toLocaleString("en-US")} />
@@ -137,6 +140,8 @@ export function SearchQueriesView({ config }: { config: AppConfig }) {
             </CardContent>
           </Card>
         </div>
+      )}
+        </>
       )}
     </div>
   );

@@ -53,6 +53,7 @@ import {
   SERIES_COLORS,
   KpiCard,
   ChartCard,
+  ReportEmpty,
   ReportHeader,
   CompareLegend,
   Delta,
@@ -125,7 +126,7 @@ function aggregate(orders: Order[], real: boolean): FinTotals {
 }
 
 export function FinancesReport({ config }: { config: AppConfig }) {
-  const { orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const range = useDateRange();
 
   const model = useMemo(() => {
@@ -253,12 +254,15 @@ export function FinancesReport({ config }: { config: AppConfig }) {
         icon={<Banknote className="h-5 w-5 text-primary" />}
         title="Finances"
         subtitle="Gross sales, discounts, returns, net sales, taxes and gross margin for the selected range, with a P&L bridge and vs-previous-period deltas."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
+      {isEmpty ? (
+        <ReportEmpty icon={<Banknote className="h-7 w-7" />} />
+      ) : (
+        <>
       {!m.real && !empty && (
         <div className="flex items-start gap-2 rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-[11px] text-muted-foreground">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warn" />
@@ -526,6 +530,8 @@ export function FinancesReport({ config }: { config: AppConfig }) {
               </Table>
             </div>
           </ChartCard>
+        </>
+      )}
         </>
       )}
     </div>

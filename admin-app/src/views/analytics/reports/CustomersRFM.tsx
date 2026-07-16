@@ -33,7 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Empty } from "@/components/Empty";
 import { useAnalyticsData } from "../useAnalyticsData";
 import { useDateRange } from "./dateRange";
-import { AXIS, GRID, TOOLTIP, KpiCard, ChartCard, ReportHeader, Delta, deltaOf } from "./reportKit";
+import { AXIS, GRID, TOOLTIP, KpiCard, ChartCard, ReportEmpty, ReportHeader, Delta, deltaOf } from "./reportKit";
 import {
   rfmAnalysis,
   RFM_SEGMENTS,
@@ -62,7 +62,7 @@ const SEGMENT_HINT: Record<RfmSegment, string> = {
 const LOWER_IS_BETTER = new Set<RfmSegment>(["At risk", "Churned"]);
 
 export function CustomersRFM({ config }: { config: AppConfig }) {
-  const { orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const r = useDateRange();
 
   const win = useMemo(() => ({ start: r.start, end: r.end }), [r.start, r.end]);
@@ -100,13 +100,14 @@ export function CustomersRFM({ config }: { config: AppConfig }) {
         icon={<Boxes className="h-4 w-4 text-primary" />}
         title="Customers — RFM segments"
         subtitle="Recency / Frequency / Monetary quintiles map every customer into a segment as-of the range end — so you can reward Champions, win back At-risk, and onboard New buyers."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
-      {rfm.total === 0 ? (
+      {isEmpty ? (
+        <ReportEmpty icon={<Boxes className="h-7 w-7" />} />
+      ) : rfm.total === 0 ? (
         <Empty
           icon={<Boxes className="h-8 w-8" />}
           title="No customers to segment"

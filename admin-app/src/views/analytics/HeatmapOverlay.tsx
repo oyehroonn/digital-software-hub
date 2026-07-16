@@ -37,7 +37,7 @@ import { extractScrollDepth } from "@/lib/scrollmap";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader, StatTile } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty, StatTile } from "./shell";
 import {
   clamp01,
   drawHeatmap,
@@ -323,7 +323,7 @@ function scrollColor(t: number): [number, number, number] {
 type LayerKey = "click" | "move" | "scroll";
 
 export function HeatmapOverlay({ config }: { config: AppConfig }) {
-  const { events, seeded, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
+  const { events, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
 
   // Derive every layer once per dataset.
   const clicksBySlug = useMemo(() => buildPoints(events, isClick, () => 1), [events]);
@@ -451,7 +451,6 @@ export function HeatmapOverlay({ config }: { config: AppConfig }) {
         icon={<Flame className="h-4 w-4 text-primary" />}
         title="Heatmap overlay"
         subtitle="A full-page screenshot of the live site with click density, attention and scroll-reach painted on top — Clarity-style. Coordinates are normalized to a fraction of the page so hotspots register on the real layout."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
@@ -462,6 +461,10 @@ export function HeatmapOverlay({ config }: { config: AppConfig }) {
         }
       />
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<Flame className="h-7 w-7" />} />
+      ) : (
+        <>
       {/* Page selector — one tab per screenshot slot */}
       <div className="flex flex-wrap items-center gap-2">
         {pageStats.map(({ def, clicks: c, sessions }) => {
@@ -699,6 +702,8 @@ export function HeatmapOverlay({ config }: { config: AppConfig }) {
           )}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

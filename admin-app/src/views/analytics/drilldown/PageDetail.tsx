@@ -68,7 +68,6 @@ export interface PageAnalyticsProps {
   events: TelemetryEvent[];
   orders: Order[];
   config: AppConfig;
-  seeded?: boolean;
 }
 
 function normPath(url: string): string {
@@ -222,7 +221,7 @@ function topElements(events: TelemetryEvent[], wantPath: string) {
   return [...m.values()].sort((a, b) => b.count - a.count).slice(0, 8);
 }
 
-export function PageAnalytics({ url, title, events, orders, config, seeded }: PageAnalyticsProps) {
+export function PageAnalytics({ url, title, events, orders, config }: PageAnalyticsProps) {
   const range = useDateRange();
   const wantPath = useMemo(() => normPath(url), [url]);
   const scoped = useMemo(() => scopeToRange(events, orders, range), [events, orders, range]);
@@ -322,7 +321,7 @@ export function PageAnalytics({ url, title, events, orders, config, seeded }: Pa
       </div>
 
       <Block title="Click heatmap" icon={<Flame className="h-4 w-4 text-down" />} desc={`Click density on ${wantPath}.`}>
-        <ClickHeatmap events={pageEvents} demo={seeded} />
+        <ClickHeatmap events={pageEvents} />
       </Block>
 
       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">

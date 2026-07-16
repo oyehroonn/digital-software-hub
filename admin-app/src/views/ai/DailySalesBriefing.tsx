@@ -166,7 +166,6 @@ function computeSignals(orders: Order[], events: TelemetryEvent[]): Signals {
 export function DailySalesBriefing({ config }: { config: AppConfig }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [events, setEvents] = useState<TelemetryEvent[]>([]);
-  const [seeded, setSeeded] = useState(false);
   const [dataErr, setDataErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -186,7 +185,6 @@ export function DailySalesBriefing({ config }: { config: AppConfig }) {
       ]);
       setOrders(ords);
       setEvents(ev.events);
-      setSeeded(ev.seeded);
     } catch (e) {
       setDataErr(e instanceof Error ? e.message : String(e));
     } finally {
@@ -256,8 +254,7 @@ export function DailySalesBriefing({ config }: { config: AppConfig }) {
             <LlmBadge status={llm} />
           </div>
           <p className="text-xs text-muted-foreground">
-            What to act on today — from live orders + telemetry.{" "}
-            {seeded && <span className="text-warn">Showing seeded telemetry (read endpoint pending).</span>}
+            What to act on today — from live orders + telemetry.
           </p>
         </div>
         <div className="flex items-center gap-2">

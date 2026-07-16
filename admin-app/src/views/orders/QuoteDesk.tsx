@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Empty } from "@/components/Empty";
 import { fmtMoney, timeAgo } from "@/lib/utils";
-import { SectionHeader, SeedBadge, ToastHost, useToasts } from "./parts";
+import { SectionHeader, ToastHost, useToasts } from "./parts";
 import { QuoteComposer } from "./QuoteComposer";
 import { copyToClipboard } from "./orderEmail";
 import {
@@ -25,7 +25,7 @@ import {
 } from "./ordersData";
 
 export function QuoteDesk({ config }: { config: AppConfig }) {
-  const { orders, loading, seed, reload } = useOrdersData(config);
+  const { orders, loading, reload } = useOrdersData(config);
   const { toasts, push } = useToasts();
   const [q, setQ] = useState("");
   const [quoteFor, setQuoteFor] = useState<Order | null>(null);
@@ -52,7 +52,6 @@ export function QuoteDesk({ config }: { config: AppConfig }) {
         subtitle="Send a tailored quote for any order, and jump to the order or product in the old web."
         right={
           <>
-            <SeedBadge show={seed} />
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search orders…" className="w-56 pl-8" />

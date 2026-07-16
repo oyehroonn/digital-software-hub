@@ -7,8 +7,9 @@
  * overlay (localStorage) keyed by a stable order key. The overlay is merged on
  * top of the sheet so the two never fight.
  *
- * Every loader keeps a deterministic seed fallback (flagged `seed: true`) so the
- * whole area renders now, before the read endpoint is deployed / while offline.
+ * Loaders return REAL data only — when the Orders/Telemetry sheet has no rows
+ * they return empty arrays (`isEmpty: true`) so the UI shows a clean empty
+ * state, never fabricated orders.
  */
 import { useCallback, useEffect, useState } from "react";
 import type { AppConfig } from "@/lib/config";
@@ -283,13 +284,14 @@ export function groupByCustomer(orders: Order[]): CustomerGroup[] {
 }
 
 /* ------------------------------------------------------------------ *
- * Loaders with deterministic seed fallback
+ * Loaders — REAL data only (empty state when the sheet has no rows)
  * ------------------------------------------------------------------ */
 export interface OrdersState {
   orders: Order[];
   loading: boolean;
   error: string | null;
-  seed: boolean;
+  /** True when the Orders sheet returned no rows → render an empty state. */
+  isEmpty: boolean;
   reload: () => void;
 }
 
@@ -297,7 +299,6 @@ export function useOrdersData(config: AppConfig): OrdersState {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [seed, setSeed] = useState(false);
 
   const reload = useCallback(() => {
     let alive = true;
@@ -306,18 +307,11 @@ export function useOrdersData(config: AppConfig): OrdersState {
     fetchOrders(config)
       .then((rows) => {
         if (!alive) return;
-        if (rows.length) {
-          setOrders(rows);
-          setSeed(false);
-        } else {
-          setOrders(SEED_ORDERS);
-          setSeed(true);
-        }
+        setOrders(rows);
       })
       .catch((e) => {
         if (!alive) return;
-        setOrders(SEED_ORDERS);
-        setSeed(true);
+        setOrders([]);
         setError(e instanceof Error ? e.message : String(e));
       })
       .finally(() => alive && setLoading(false));
@@ -327,20 +321,19 @@ export function useOrdersData(config: AppConfig): OrdersState {
   }, [config]);
 
   useEffect(() => reload(), [reload]);
-  return { orders, loading, error, seed, reload };
+  return { orders, loading, error, isEmpty: orders.length === 0, reload };
 }
 
 export interface TelemetryState {
   events: TelemetryEvent[];
   loading: boolean;
-  seed: boolean;
+  isEmpty: boolean;
   reload: () => void;
 }
 
 export function useTelemetryData(config: AppConfig): TelemetryState {
   const [events, setEvents] = useState<TelemetryEvent[]>([]);
   const [loading, setLoading] = useState(false);
-  const [seed, setSeed] = useState(false);
 
   const reload = useCallback(() => {
     let alive = true;
@@ -348,18 +341,11 @@ export function useTelemetryData(config: AppConfig): TelemetryState {
     fetchTelemetry(config)
       .then((rows) => {
         if (!alive) return;
-        if (rows.length) {
-          setEvents(rows);
-          setSeed(false);
-        } else {
-          setEvents(SEED_TELEMETRY);
-          setSeed(true);
-        }
+        setEvents(rows);
       })
       .catch(() => {
         if (!alive) return;
-        setEvents(SEED_TELEMETRY);
-        setSeed(true);
+        setEvents([]);
       })
       .finally(() => alive && setLoading(false));
     return () => {
@@ -368,41 +354,5 @@ export function useTelemetryData(config: AppConfig): TelemetryState {
   }, [config]);
 
   useEffect(() => reload(), [reload]);
-  return { events, loading, seed, reload };
+  return { events, loading, isEmpty: events.length === 0, reload };
 }
-
-/* ------------------------------------------------------------------ *
- * Deterministic seed data (only used when the sheet has no rows)
- * ------------------------------------------------------------------ */
-function daysAgo(n: number, hour = 10): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  d.setHours(hour, 15, 0, 0);
-  return d.toISOString();
-}
-
-export const SEED_ORDERS: Order[] = [
-  { timestamp: daysAgo(1), customerName: "Beth Hurigan", email: "beth@financeplan.com.au", phone: "+61 400 111 222", city: "Melbourne", country: "Australia", productId: "dsm-pro", productName: "DSM Professional", sku: "DSM-PRO-1Y", quantity: 2, price: "1490", currency: "AUD", status: "quoted", notes: "Wants annual, 2 seats" },
-  { timestamp: daysAgo(2), customerName: "Selma Christoffey", email: "selma@originalargo.com", phone: "+61 400 333 444", city: "Sydney", country: "Australia", productId: "vts", productName: "Virtual Try-On", sku: "VTS-ENT", quantity: 1, price: "8900", currency: "AUD", status: "paid", notes: "Enterprise, delivered" },
-  { timestamp: daysAgo(3), customerName: "Marcus Feld", email: "marcus@peakretail.io", phone: "+61 400 555 666", city: "Brisbane", country: "Australia", productId: "vsz", productName: "Virtual Sizing", sku: "VSZ-STD", quantity: 3, price: "640", currency: "AUD", status: "contacted", notes: "Comparing editions" },
-  { timestamp: daysAgo(4), customerName: "Priya Nair", email: "priya@nairstudios.com", phone: "+61 400 777 888", city: "Perth", country: "Australia", productId: "pbk", productName: "Pointblank", sku: "PBK-STD", quantity: 1, price: "320", currency: "AUD", status: "new", notes: "" },
-  { timestamp: daysAgo(6), customerName: "Beth Hurigan", email: "beth@financeplan.com.au", phone: "+61 400 111 222", city: "Melbourne", country: "Australia", productId: "vpo", productName: "VPO Suite", sku: "VPO-STD", quantity: 1, price: "540", currency: "AUD", status: "paid", notes: "Repeat customer" },
-  { timestamp: daysAgo(8), customerName: "Owen Blackwood", email: "owen@blackwoodmfg.com", phone: "+61 400 999 000", city: "Adelaide", country: "Australia", productId: "apex", productName: "Apex", sku: "APEX-PRO", quantity: 5, price: "1200", currency: "AUD", status: "won", notes: "Team of 5" },
-  { timestamp: daysAgo(10), customerName: "Lena Ortiz", email: "lena@ortizdesign.co", phone: "+61 401 222 333", city: "Melbourne", country: "Australia", productId: "logicpacks", productName: "LogicPacks", sku: "LP-STD", quantity: 2, price: "410", currency: "AUD", status: "lost", notes: "Went with competitor" },
-  { timestamp: daysAgo(12), customerName: "Selma Christoffey", email: "selma@originalargo.com", phone: "+61 400 333 444", city: "Sydney", country: "Australia", productId: "vsz", productName: "Virtual Sizing", sku: "VSZ-ENT", quantity: 1, price: "2100", currency: "AUD", status: "paid", notes: "Add-on module" },
-  { timestamp: daysAgo(15), customerName: "Marcus Feld", email: "marcus@peakretail.io", phone: "+61 400 555 666", city: "Brisbane", country: "Australia", productId: "dsm-pro", productName: "DSM Professional", sku: "DSM-PRO-1Y", quantity: 1, price: "790", currency: "AUD", status: "paid", notes: "" },
-  { timestamp: daysAgo(18), customerName: "Grace Tolliver", email: "grace@tolliverco.com", phone: "+61 401 444 555", city: "Hobart", country: "Australia", productId: "bringit", productName: "Bringit", sku: "BRG-STD", quantity: 1, price: "260", currency: "AUD", status: "won", notes: "" },
-  { timestamp: daysAgo(22), customerName: "Owen Blackwood", email: "owen@blackwoodmfg.com", phone: "+61 400 999 000", city: "Adelaide", country: "Australia", productId: "preservemyworld", productName: "PreserveMy.World", sku: "PMW-STD", quantity: 1, price: "480", currency: "AUD", status: "paid", notes: "Repeat" },
-  { timestamp: daysAgo(28), customerName: "Ahmed Farouk", email: "ahmed@farouktech.ae", phone: "+971 50 111 2222", city: "Dubai", country: "UAE", productId: "techrealm", productName: "TechRealm", sku: "TR-ENT", quantity: 4, price: "1600", currency: "USD", status: "won", notes: "Multi-seat" },
-];
-
-export const SEED_TELEMETRY: TelemetryEvent[] = [
-  { timestamp: daysAgo(0, 9), sessionId: "s-ab1", anonymousId: "a-ab1", event: "add_to_cart", eventType: "click", pageUrl: "/product/dsm-pro", productId: "dsm-pro", elementText: "Add to cart", metadata: { email: "reed@vantageco.com", productName: "DSM Professional", price: 790, currency: "AUD" } },
-  { timestamp: daysAgo(0, 9), sessionId: "s-ab1", anonymousId: "a-ab1", event: "begin_checkout", eventType: "click", pageUrl: "/checkout", productId: "dsm-pro", metadata: { email: "reed@vantageco.com", value: 790, currency: "AUD" } },
-  { timestamp: daysAgo(0, 14), sessionId: "s-ab2", anonymousId: "a-ab2", event: "add_to_cart", eventType: "click", pageUrl: "/product/vts", productId: "vts", metadata: { productName: "Virtual Try-On", price: 8900, currency: "AUD" } },
-  { timestamp: daysAgo(1, 11), sessionId: "s-ab3", anonymousId: "a-ab3", event: "add_to_cart", eventType: "click", pageUrl: "/product/apex", productId: "apex", metadata: { email: "dana@brightloop.io", productName: "Apex", price: 1200, currency: "AUD" } },
-  { timestamp: daysAgo(1, 11), sessionId: "s-ab3", anonymousId: "a-ab3", event: "begin_checkout", eventType: "click", pageUrl: "/checkout", productId: "apex", metadata: { email: "dana@brightloop.io", value: 2400, currency: "AUD" } },
-  { timestamp: daysAgo(2, 16), sessionId: "s-ok1", anonymousId: "a-ok1", event: "add_to_cart", eventType: "click", pageUrl: "/product/vpo", productId: "vpo", metadata: { email: "beth@financeplan.com.au" } },
-  { timestamp: daysAgo(2, 16), sessionId: "s-ok1", anonymousId: "a-ok1", event: "purchase", eventType: "conversion", pageUrl: "/thank-you", productId: "vpo", metadata: { email: "beth@financeplan.com.au" } },
-  { timestamp: daysAgo(3, 10), sessionId: "s-ab4", anonymousId: "a-ab4", event: "add_to_cart", eventType: "click", pageUrl: "/product/logicpacks", productId: "logicpacks", metadata: { email: "katya@nordform.se", productName: "LogicPacks", price: 410, currency: "AUD" } },
-];

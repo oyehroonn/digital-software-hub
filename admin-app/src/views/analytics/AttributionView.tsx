@@ -9,7 +9,7 @@ import { Radio, Megaphone } from "lucide-react";
 import type { AppConfig } from "@/lib/config";
 import { buildAttribution } from "@/lib/attribution";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader, StatTile, MeterBar } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty, StatTile, MeterBar } from "./shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ import { fmtMoney } from "@/lib/utils";
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 
 export function AttributionView({ config }: { config: AppConfig }) {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const a = useMemo(() => buildAttribution(events, orders), [events, orders]);
   const maxSessions = a.channels[0]?.sessions ?? 1;
 
@@ -29,12 +29,15 @@ export function AttributionView({ config }: { config: AppConfig }) {
         icon={<Radio className="h-4 w-4 text-primary" />}
         title="Source & campaign attribution"
         subtitle="First-touch attribution — where each session came from, and which channels & campaigns actually drive orders and revenue, not just clicks."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<Radio className="h-7 w-7" />} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Sessions" value={a.sessions.toLocaleString("en-US")} />
         <StatTile
@@ -137,6 +140,8 @@ export function AttributionView({ config }: { config: AppConfig }) {
             </CardContent>
           </Card>
         </div>
+      )}
+        </>
       )}
     </div>
   );

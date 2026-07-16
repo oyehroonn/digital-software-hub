@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Empty } from "@/components/Empty";
-import { SectionHeader, SeedBadge, Stat, ToastHost, useToasts, fmtDate } from "./parts";
+import { SectionHeader, Stat, ToastHost, useToasts, fmtDate } from "./parts";
 import {
   useOrdersData,
   useOverlay,
@@ -32,7 +32,7 @@ function isDeliverable(o: Order, stage: string): boolean {
 }
 
 export function FulfillmentTracker({ config }: { config: AppConfig }) {
-  const { orders, loading, seed, reload } = useOrdersData(config);
+  const { orders, loading, reload } = useOrdersData(config);
   const overlay = useOverlay();
   const { toasts, push } = useToasts();
   const [keyDraft, setKeyDraft] = useState<Record<string, string>>({});
@@ -166,7 +166,6 @@ export function FulfillmentTracker({ config }: { config: AppConfig }) {
         subtitle="Track which paid orders have had their license delivered — and deliver them in one click."
         right={
           <>
-            <SeedBadge show={seed} />
             <Button variant="outline" size="sm" onClick={reload} disabled={loading}>
               <RefreshCw className={loading ? "animate-spin" : ""} /> Refresh
             </Button>

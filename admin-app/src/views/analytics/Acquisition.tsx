@@ -37,7 +37,7 @@ import {
 } from "@/lib/acquisition";
 import { timeOf } from "@/lib/telemetryFields";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader, StatTile, MeterBar } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty, StatTile, MeterBar } from "./shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +80,7 @@ function LegendChip({ color, label, value }: { color: string; label: string; val
 }
 
 export function Acquisition({ config }: { config: AppConfig }) {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const [range, setRange] = useState<RangeKey>("14");
 
   // Range filter: keep events inside the last N days (by max timestamp in-set,
@@ -123,7 +123,6 @@ export function Acquisition({ config }: { config: AppConfig }) {
         icon={<Globe className="h-4 w-4 text-primary" />}
         title="Acquisition & Traffic"
         subtitle="Where sessions come from and how visitors arrive — channels, referrers, new vs returning, traffic over time, and the landing & exit pages that start and end each journey."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
@@ -144,6 +143,10 @@ export function Acquisition({ config }: { config: AppConfig }) {
         }
       />
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<Globe className="h-7 w-7" />} />
+      ) : (
+        <>
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Sessions" value={a.sessions.toLocaleString("en-US")} sub={`${a.visitors.toLocaleString("en-US")} unique visitors`} />
@@ -499,6 +502,8 @@ export function Acquisition({ config }: { config: AppConfig }) {
               </CardContent>
             </Card>
           </div>
+        </>
+      )}
         </>
       )}
     </div>

@@ -1,22 +1,19 @@
 /**
  * Shared data layer for the Product & Catalog area.
  *
- * Real catalog rows come from the UNSTABLE VPS Flask API (`/products`). Because
- * that box may be offline (and today often is), every loader falls back to a
- * DETERMINISTIC seed — same input, same output — with every row flagged
- * `_seed: true` so the UI can badge it and nothing looks broken while the VPS
- * is down. The moment `/products` answers, real rows replace the seed with no
- * code change.
+ * Real catalog rows come from the UNSTABLE VPS Flask API (`/products`). Data is
+ * REAL-only: when that box is offline (returns nothing) the loaders return an
+ * empty catalog and the UI renders a clean empty state — never fabricated rows.
+ * The moment `/products` answers, real rows render with no code change.
  *
  * Performance/trending views join this catalog with the STABLE Telemetry +
- * Orders sheets (via lib/ecommerce + lib/analytics). Telemetry/orders have
- * their own seed fallback so the join always renders.
+ * Orders sheets (via lib/ecommerce + lib/analytics), which are likewise
+ * real-only.
  */
 import type { AppConfig } from "@/lib/config";
 import { getProducts, type Product } from "@/lib/products";
 import { fetchOrders, fetchTelemetry, type Order, type TelemetryEvent } from "@/lib/ecommerce";
 import { buildProductAnalytics, type ProductStat } from "@/lib/analytics";
-import { generateSeedEvents } from "@/analytics/telemetryClient";
 
 /** A catalog product with the extended fields the catalog tools read/write. */
 export interface CatProduct extends Product {
@@ -45,12 +42,12 @@ export async function loadCatalog(cfg: AppConfig): Promise<CatalogResult> {
   try {
     const res = await getProducts(cfg, { limit: 500 });
     const rows = (res.products ?? []) as CatProduct[];
-    if (rows.length > 0) return { products: rows.map(normalizeCat), seeded: false };
-    return { products: generateSeedProducts(), seeded: true };
+    return { products: rows.map(normalizeCat), seeded: false };
   } catch (e) {
+    // Real data only — a VPS outage yields an empty catalog + clean empty state.
     return {
-      products: generateSeedProducts(),
-      seeded: true,
+      products: [],
+      seeded: false,
       error: e instanceof Error ? e.message : String(e),
     };
   }
@@ -79,13 +76,12 @@ export interface PerfResult {
 
 /**
  * Fetch telemetry + orders (stable sheets) and build the per-product analytics
- * join. Falls back to the deterministic telemetry seed + derived seed orders so
- * performance/trending always render.
+ * join. REAL data only — when the sheets are empty the join is empty and the UI
+ * renders a clean empty state (never fabricated rows).
  */
 export async function loadPerformance(cfg: AppConfig): Promise<PerfResult> {
   let events: TelemetryEvent[] = [];
   let orders: Order[] = [];
-  let seeded = false;
   try {
     [events, orders] = await Promise.all([
       fetchTelemetry(cfg),
@@ -93,51 +89,10 @@ export async function loadPerformance(cfg: AppConfig): Promise<PerfResult> {
     ]);
   } catch {
     events = [];
-  }
-  if (events.length === 0) {
-    events = generateSeedEvents() as unknown as TelemetryEvent[];
-    seeded = true;
-  }
-  if (orders.length === 0) {
-    orders = deriveSeedOrders(events);
-    if (orders.length > 0 && events.some((e) => (e as { _seed?: boolean })._seed)) seeded = true;
+    orders = [];
   }
   const stats = buildProductAnalytics(events, orders);
-  return { stats, events, orders, seeded };
-}
-
-/** Turn the seed telemetry `order` conversion events into Orders-sheet rows. */
-function deriveSeedOrders(events: TelemetryEvent[]): Order[] {
-  const out: Order[] = [];
-  const names = seedNames();
-  for (const e of events) {
-    const name = String(e.event ?? "").toLowerCase();
-    if (!/^order$|purchase|order_?placed/.test(name)) continue;
-    const pid = String(e.productId ?? "").trim();
-    if (!pid) continue;
-    const meta = (typeof e.metadata === "object" && e.metadata ? e.metadata : {}) as Record<
-      string,
-      unknown
-    >;
-    const value = Number(meta.value ?? meta.price ?? 0) || 199 + (hash(pid) % 900);
-    out.push({
-      timestamp: e.timestamp,
-      customerName: "Seed Customer",
-      email: `${pid}@seed.dsm`,
-      productId: pid,
-      productName: names[pid] ?? pid,
-      quantity: Number(meta.qty ?? 1) || 1,
-      price: value,
-      currency: String(meta.currency ?? "USD"),
-    });
-  }
-  return out;
-}
-
-function seedNames(): Record<string, string> {
-  const m: Record<string, string> = {};
-  for (const p of generateSeedProducts()) m[String(p.id)] = p.name;
-  return m;
+  return { stats, events, orders, seeded: false };
 }
 
 /* ------------------------------------------------------------------ *
@@ -327,159 +282,3 @@ export function isPriceless(p: CatProduct): boolean {
 }
 
 export const LOW_STOCK_THRESHOLD = 5;
-
-/* ------------------------------------------------------------------ *
- * Deterministic seed catalog
- * ------------------------------------------------------------------ */
-
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function hash(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
-/**
- * ~40 realistic catalog rows. The first six use the same ids the telemetry seed
- * emits (dsm, virtual-sizing, …) so the performance/trending join lights up.
- * Deliberately seeded with gaps the catalog tools are built to catch:
- *   - some rows have NO price (Contact-for-pricing auditor)
- *   - some are low/zero stock (stock alerts)
- *   - some have NO 3D model (box coverage)
- *   - several are edition variations of one base (duplicate cleanup)
- *   - some have thin/empty SEO fields (SEO editor)
- */
-export function generateSeedProducts(): CatProduct[] {
-  const rnd = mulberry32(20260715);
-  const out: CatProduct[] = [];
-
-  // DSM's own flagship products (ids match telemetry seed where applicable).
-  const flagship: Array<Partial<CatProduct> & { id: string; name: string }> = [
-    { id: "dsm", name: "DSM Design Suite", brand: "DSM", category: "3D CAD", price: 1499, stock: 40 },
-    { id: "virtual-sizing", name: "Virtual Sizing", brand: "DSM", category: "Retail Tech", price: 899, stock: 22 },
-    { id: "virtual-try-on", name: "Virtual Try-On", brand: "DSM", category: "Retail Tech", price: 1190, stock: 3 },
-    { id: "pointblank", name: "Pointblank Analytics", brand: "DSM", category: "Analytics", price: undefined, stock: 15 },
-    { id: "vpo", name: "VPO Cloud", brand: "DSM", category: "Cloud", price: 349, stock: 0 },
-    { id: "techrealm", name: "TechRealm Platform", brand: "TechRealm", category: "Platform", price: 2400, stock: 8 },
-    { id: "preservemyworld", name: "PreserveMy.World", brand: "DSM", category: "Archival", price: undefined, stock: 12 },
-    { id: "logicpacks", name: "LogicPacks Automation", brand: "DSM", category: "Automation", price: 599, stock: 30 },
-    { id: "lazyware", name: "Lazyware", brand: "DSM", category: "Automation", price: 129, stock: 120 },
-    { id: "bringit", name: "Bringit Logistics", brand: "DSM", category: "Logistics", price: 459, stock: 2 },
-    { id: "flyaquab", name: "FlyAquab", brand: "DSM", category: "IoT", price: undefined, stock: 5 },
-    { id: "apex", name: "Apex Render Engine", brand: "DSM", category: "3D CAD", price: 1990, stock: 18 },
-    { id: "ummah-directory", name: "Ummah Directory", brand: "DSM", category: "Directory", price: 0, stock: 999 },
-  ];
-
-  const CATS = ["3D CAD", "Analytics", "Cloud", "Automation", "Retail Tech", "Platform"];
-  const LICENSES = ["Standard", "Professional", "Enterprise"];
-
-  for (const f of flagship) {
-    const price = f.price;
-    const withModel = rnd() > 0.35;
-    const thinSeo = rnd() > 0.55;
-    out.push({
-      id: f.id,
-      name: f.name,
-      brand: f.brand,
-      category: f.category,
-      licenseType: LICENSES[Math.floor(rnd() * LICENSES.length)],
-      price: price,
-      salePrice: rnd() > 0.8 && price ? Math.round((price as number) * 0.85) : undefined,
-      stock: f.stock,
-      status: f.stock === 0 ? "out_of_stock" : "active",
-      sku: `DSM-${f.id.slice(0, 4).toUpperCase()}-${Math.floor(rnd() * 900 + 100)}`,
-      description:
-        rnd() > 0.75
-          ? ""
-          : `${f.name} — production-grade tooling from DSM. Trusted since 1994.`,
-      slug: f.id,
-      viewer: withModel ? `https://dsm-api.techrealm.ai/viewer/${f.id}` : "",
-      seoTitle: thinSeo ? "" : `${f.name} | DSM`,
-      seoDescription: thinSeo ? "" : `Buy ${f.name} from DSM. Licensing, pricing and support.`,
-      tags: [f.category ?? "software", f.brand ?? "DSM"],
-      updatedAt: new Date(Date.UTC(2026, 6, 1 + Math.floor(rnd() * 14))).toISOString(),
-      _seed: true,
-    });
-
-    // Emit edition variations for a couple of flagships (duplicate cleanup demo).
-    if (f.id === "dsm" || f.id === "apex") {
-      for (const lic of ["Professional", "Enterprise"]) {
-        out.push({
-          id: `${f.id}-${lic.toLowerCase()}`,
-          name: `${f.name} ${lic} Edition`,
-          brand: f.brand,
-          category: f.category,
-          licenseType: lic,
-          price: price ? Math.round((price as number) * (lic === "Enterprise" ? 1.8 : 1.3)) : undefined,
-          stock: Math.floor(rnd() * 25),
-          status: "active",
-          sku: `DSM-${f.id.slice(0, 4).toUpperCase()}-${lic.slice(0, 3).toUpperCase()}`,
-          description: `${f.name} ${lic} Edition.`,
-          slug: `${f.id}-${lic.toLowerCase()}`,
-          viewer: withModel ? `https://dsm-api.techrealm.ai/viewer/${f.id}` : "",
-          seoTitle: "",
-          seoDescription: "",
-          tags: [f.category ?? "software", lic],
-          updatedAt: new Date(Date.UTC(2026, 6, 1 + Math.floor(rnd() * 14))).toISOString(),
-          _seed: true,
-        });
-      }
-    }
-  }
-
-  // Generic long-tail catalog to fill out the tables.
-  const bases = [
-    "Photon Modeler",
-    "Nimbus Vault",
-    "Quanta Ledger",
-    "Helix Studio",
-    "Orbit Scheduler",
-    "Vertex Forge",
-    "Cobalt Insights",
-    "Aperture Scan",
-    "Strata Sync",
-    "Lumen Board",
-    "Cascade Flow",
-    "Ironclad Backup",
-  ];
-  for (let i = 0; i < bases.length; i++) {
-    const name = bases[i];
-    const priced = rnd() > 0.22;
-    const stock = Math.floor(Math.pow(rnd(), 1.6) * 80);
-    const withModel = rnd() > 0.5;
-    out.push({
-      id: `sku-${1000 + i}`,
-      name,
-      brand: i % 3 === 0 ? "TechRealm" : "DSM",
-      category: CATS[Math.floor(rnd() * CATS.length)],
-      licenseType: LICENSES[Math.floor(rnd() * LICENSES.length)],
-      price: priced ? 79 + Math.floor(rnd() * 1500) : undefined,
-      stock,
-      status: stock === 0 ? "out_of_stock" : rnd() > 0.9 ? "draft" : "active",
-      sku: `TR-${1000 + i}`,
-      description: rnd() > 0.7 ? "" : `${name} keeps teams moving.`,
-      slug: name.toLowerCase().replace(/\s+/g, "-"),
-      viewer: withModel ? `https://dsm-api.techrealm.ai/viewer/sku-${1000 + i}` : "",
-      seoTitle: rnd() > 0.5 ? `${name} | DSM` : "",
-      seoDescription: rnd() > 0.5 ? `Get ${name} today.` : "",
-      tags: [],
-      updatedAt: new Date(Date.UTC(2026, 6, 1 + Math.floor(rnd() * 14))).toISOString(),
-      _seed: true,
-    });
-  }
-
-  return out;
-}

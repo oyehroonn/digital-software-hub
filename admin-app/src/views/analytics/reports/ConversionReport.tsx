@@ -51,6 +51,7 @@ import {
   GRID,
   KpiCard,
   PALETTE,
+  ReportEmpty,
   ReportHeader,
   TOOLTIP,
   buildBuckets,
@@ -87,7 +88,7 @@ function orderTime(o: { timestamp?: string; received_at?: string }): number {
 }
 
 export function ConversionReport({ config }: { config: AppConfig }) {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const range = useDateRange();
 
   const d = useMemo(() => {
@@ -149,12 +150,15 @@ export function ConversionReport({ config }: { config: AppConfig }) {
         icon={<Layers className="h-5 w-5 text-primary" />}
         title="Conversion"
         subtitle="Conversion rate over time and the Sessions → Cart → Checkout → Converted funnel with the drop-off at every step — split by device and source — plus the value sitting in abandoned carts. Scoped to the selected range with vs-previous deltas."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
+      {isEmpty ? (
+        <ReportEmpty icon={<Layers className="h-7 w-7" />} />
+      ) : (
+        <>
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <KpiCard
@@ -350,6 +354,8 @@ export function ConversionReport({ config }: { config: AppConfig }) {
           />
         )}
       </ChartCard>
+        </>
+      )}
     </div>
   );
 }

@@ -76,7 +76,6 @@ export interface CampaignAnalyticsProps {
   events: TelemetryEvent[];
   orders: Order[];
   config: AppConfig;
-  seeded?: boolean;
 }
 
 interface Metrics {
@@ -253,7 +252,7 @@ function build(events: TelemetryEvent[], want: { source?: string; medium?: strin
   };
 }
 
-export function CampaignAnalytics({ source, medium, campaign, label, events, orders, config, seeded }: CampaignAnalyticsProps) {
+export function CampaignAnalytics({ source, medium, campaign, label, events, orders, config }: CampaignAnalyticsProps) {
   const range = useDateRange();
   const compare = range.compareEnabled;
   const scoped = useMemo(() => scopeToRange(events, orders, range), [events, orders, range]);
@@ -389,7 +388,7 @@ export function CampaignAnalytics({ source, medium, campaign, label, events, ord
             ))}
           </div>
         ) : (
-          <EmptyNote>No attributed conversions{seeded ? " in the seed for this campaign" : ""} in range.</EmptyNote>
+          <EmptyNote>No attributed conversions in range.</EmptyNote>
         )}
       </Block>
     </div>

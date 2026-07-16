@@ -23,7 +23,7 @@ import {
 import { MonitorSmartphone, Chrome, Cpu, Gauge, Smartphone, Monitor, Tablet, HelpCircle } from "lucide-react";
 import type { AppConfig } from "@/lib/config";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader, StatTile, MeterBar } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty, StatTile, MeterBar } from "./shell";
 import { buildDeviceTech, type DeviceType, type TechRow } from "./deviceTech";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
@@ -150,7 +150,7 @@ function ScreenTooltip({ active, payload }: { active?: boolean; payload?: { payl
 }
 
 export function DevicesTech({ config }: { config: AppConfig }) {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const t = useMemo(() => buildDeviceTech(events, orders), [events, orders]);
 
   const deviceDonut = t.devices.map((d) => ({ label: d.label, value: d.sessions, color: DEVICE_COLOR[d.device] }));
@@ -173,12 +173,15 @@ export function DevicesTech({ config }: { config: AppConfig }) {
         icon={<MonitorSmartphone className="h-4 w-4 text-primary" />}
         title="Devices & tech"
         subtitle="Device type, browser, OS and screen-size mix parsed from the user-agent and viewport metadata — plus how mobile and desktop compare on conversion, and where performance is holding sales back."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<MonitorSmartphone className="h-7 w-7" />} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Sessions" value={t.totalSessions.toLocaleString("en-US")} sub={`${t.identifiedUA.toLocaleString("en-US")} device-identified`} />
         <StatTile label="Mobile + tablet share" value={pct0(t.mobileShare)} tone="primary" sub={`${pct0(1 - t.mobileShare)} desktop`} />
@@ -474,6 +477,8 @@ export function DevicesTech({ config }: { config: AppConfig }) {
               </Table>
             </CardContent>
           </Card>
+        </>
+      )}
         </>
       )}
     </div>

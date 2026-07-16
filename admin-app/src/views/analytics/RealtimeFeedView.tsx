@@ -9,7 +9,7 @@ import { Activity, ShoppingCart, MousePointerClick, Search, CreditCard, Receipt,
 import type { AppConfig } from "@/lib/config";
 import { buildRealtime, type LiveKind } from "@/lib/realtime";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader, StatTile } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty, StatTile } from "./shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Empty } from "@/components/Empty";
@@ -48,7 +48,7 @@ function ago(ms: number): string {
 }
 
 export function RealtimeFeedView({ config }: { config: AppConfig }) {
-  const { events, seeded, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
+  const { events, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
   const [now, setNow] = useState(() => Date.now());
 
   // Tick the clock every 2s; refetch telemetry every 20s.
@@ -70,7 +70,6 @@ export function RealtimeFeedView({ config }: { config: AppConfig }) {
         icon={<Activity className="h-4 w-4 text-ok" />}
         title="Real-time visitors"
         subtitle="Who is on the site right now and what they just did — a live feed with the events-per-minute pulse. Auto-updates every couple of seconds."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
@@ -81,6 +80,10 @@ export function RealtimeFeedView({ config }: { config: AppConfig }) {
         }
       />
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<Activity className="h-7 w-7" />} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Active sessions" value={rt.activeCount.toLocaleString("en-US")} tone="ok" sub="last 5 min" />
         <StatTile label="Events / hour" value={rt.eventsLastHour.toLocaleString("en-US")} />
@@ -171,6 +174,8 @@ export function RealtimeFeedView({ config }: { config: AppConfig }) {
           </CardContent>
         </Card>
       </div>
+        </>
+      )}
     </div>
   );
 }

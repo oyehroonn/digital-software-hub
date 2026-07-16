@@ -53,7 +53,7 @@ import {
   type SessionJourney,
 } from "@/lib/behaviorFlow";
 import { useAnalyticsData } from "./useAnalyticsData";
-import { AnalyticsHeader, StatTile, MeterBar } from "./shell";
+import { AnalyticsHeader, AnalyticsEmpty, StatTile, MeterBar } from "./shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -97,7 +97,7 @@ function classifyEvent(e: FlowEvent): { tone: Tone; icon: typeof Eye; label: str
 /* ================================================================== */
 
 export function BehaviorFlow({ config }: { config: AppConfig }) {
-  const { events, seeded, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
+  const { events, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
   const b = useMemo(() => buildBehavior(events), [events]);
 
   return (
@@ -106,12 +106,15 @@ export function BehaviorFlow({ config }: { config: AppConfig }) {
         icon={<Route className="h-4 w-4 text-primary" />}
         title="Behavior & user flow"
         subtitle="How visitors move through the site — the pages they see, the paths they walk, how long they linger, where they leave, and a replay of any single session's events in order."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
+      {isEmpty ? (
+        <AnalyticsEmpty icon={<Route className="h-7 w-7" />} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatTile label="Sessions" value={b.sessions.toLocaleString("en-US")} />
         <StatTile label="Page views" value={b.totalViews.toLocaleString("en-US")} tone="primary" />
@@ -135,6 +138,8 @@ export function BehaviorFlow({ config }: { config: AppConfig }) {
             <PathFlowExplorer b={b} />
           </div>
           <SessionExplorer journeys={b.journeys} />
+        </>
+      )}
         </>
       )}
     </div>

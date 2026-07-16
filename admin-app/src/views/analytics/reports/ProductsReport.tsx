@@ -58,6 +58,7 @@ import {
   SERIES_COLORS,
   KpiCard,
   ChartCard,
+  ReportEmpty,
   ReportHeader,
   deltaOf,
   fmtNum,
@@ -108,7 +109,7 @@ interface ProdStat {
 const ABC_TONE: Record<"A" | "B" | "C", "ok" | "warn" | "muted"> = { A: "ok", B: "warn", C: "muted" };
 
 export function ProductsReport({ config }: { config: AppConfig }) {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const range = useDateRange();
 
   const model = useMemo(() => {
@@ -277,13 +278,14 @@ export function ProductsReport({ config }: { config: AppConfig }) {
         icon={<Package className="h-5 w-5 text-primary" />}
         title="Products & inventory"
         subtitle="Product funnel (view → cart → order), per-product conversion & revenue, ABC revenue concentration, top / slow movers vs the previous period, and inventory value & days-of-stock — for the selected range."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
-      {empty ? (
+      {isEmpty ? (
+        <ReportEmpty icon={<Package className="h-7 w-7" />} />
+      ) : empty ? (
         <Empty
           icon={<Package className="h-8 w-8" />}
           title="No product activity in this range"

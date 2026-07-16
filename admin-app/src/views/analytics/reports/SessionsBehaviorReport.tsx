@@ -62,6 +62,7 @@ import {
   GRID,
   KpiCard,
   PALETTE,
+  ReportEmpty,
   ReportHeader,
   TOOLTIP,
   buildBuckets,
@@ -85,7 +86,7 @@ function orderTime(o: { timestamp?: string; received_at?: string }): number {
 const uniq = (rows: SessionRow[], key: (r: SessionRow) => string) => new Set(rows.map(key)).size;
 
 export function SessionsBehaviorReport({ config }: { config: AppConfig }) {
-  const { events, orders, seeded, loading, liveCount, refresh } = useAnalyticsData(config);
+  const { events, orders, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config);
   const range = useDateRange();
 
   const d = useMemo(() => {
@@ -168,12 +169,15 @@ export function SessionsBehaviorReport({ config }: { config: AppConfig }) {
         icon={<Activity className="h-5 w-5 text-primary" />}
         title="Sessions & Behavior"
         subtitle="Sessions over time and the device, location, source, social, landing-page and referrer mix — plus on-site search demand and how many visits convert. Scoped to the selected range with vs-previous deltas."
-        seeded={seeded}
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
       />
 
+      {isEmpty ? (
+        <ReportEmpty icon={<Activity className="h-7 w-7" />} />
+      ) : (
+        <>
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <KpiCard
@@ -529,6 +533,8 @@ export function SessionsBehaviorReport({ config }: { config: AppConfig }) {
           )}
         </ChartCard>
       </div>
+        </>
+      )}
     </div>
   );
 }
