@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { AppProvider, useApp } from "@/contexts/AppContext";
 import { initTracker } from "@/lib/track";
 import { useEffect, lazy, Suspense } from "react";
@@ -40,6 +40,11 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const { state, setNavigate } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
+  // /marketing and /services are full-viewport 3rd-party microsites (iframes)
+  // with their own cosmic aesthetic — the DSM crimson concierge + ordering-avatar
+  // FABs clash there, so hide them on those routes.
+  const hideFloatingWidgets = /^\/(marketing|services)(\/|$)/.test(location.pathname);
   
   // Set navigate function in AppContext so AI actions can use it
   useEffect(() => {
@@ -100,14 +105,18 @@ const AppContent = () => {
             {/* Site-wide 24/7 Sales Concierge (feature 06). Routes through the
                 codex-proxy via llm.ts and renders nothing when the LLM is down.
                 Replaces the dead Kiro-backed floating chat. Lazy-loaded. */}
-            <Suspense fallback={null}>
-              <SalesConcierge />
-            </Suspense>
-            <Suspense fallback={null}>
-              <AIFeature backend="codex" feature="member-ordering-avatar" recheckMs={60_000}>
-                <MemberOrderingAvatar variant="floating" showGuestTeaser={false} />
-              </AIFeature>
-            </Suspense>
+            {!hideFloatingWidgets && (
+              <>
+                <Suspense fallback={null}>
+                  <SalesConcierge />
+                </Suspense>
+                <Suspense fallback={null}>
+                  <AIFeature backend="codex" feature="member-ordering-avatar" recheckMs={60_000}>
+                    <MemberOrderingAvatar variant="floating" showGuestTeaser={false} />
+                  </AIFeature>
+                </Suspense>
+              </>
+            )}
             <SettingsPanel />
           </ProductModalProvider>
         </CompareProvider>

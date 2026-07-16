@@ -22,6 +22,15 @@ const Services = () => {
 
   return (
     <div className="relative min-h-screen w-full bg-[#030305]">
+      {/* Always-available way back to the main DSM landing page (the AI Lab is a
+          full-viewport iframe with no DSM chrome, so without this you're stuck). */}
+      <Link
+        to="/"
+        aria-label="Back to the DSM home page"
+        className="fixed left-5 top-5 z-[10000] inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-md transition-colors hover:border-crimson/60 hover:text-crimson"
+      >
+        <span aria-hidden className="text-base leading-none">&larr;</span> DSM Store
+      </Link>
       {isLoading && (
         <DSMAILabLoader
           onLoadComplete={handleLoadComplete}
