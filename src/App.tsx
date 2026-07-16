@@ -105,17 +105,17 @@ const AppContent = () => {
             {/* Site-wide 24/7 Sales Concierge (feature 06). Routes through the
                 codex-proxy via llm.ts and renders nothing when the LLM is down.
                 Replaces the dead Kiro-backed floating chat. Lazy-loaded. */}
-            {!hideFloatingWidgets && (
-              <>
-                <Suspense fallback={null}>
-                  <SalesConcierge />
-                </Suspense>
-                <Suspense fallback={null}>
-                  <AIFeature backend="codex" feature="member-ordering-avatar" recheckMs={60_000}>
-                    <MemberOrderingAvatar variant="floating" showGuestTeaser={false} />
-                  </AIFeature>
-                </Suspense>
-              </>
+            {!hideFloatingWidgets && !state.hideConcierge && (
+              <Suspense fallback={null}>
+                <SalesConcierge />
+              </Suspense>
+            )}
+            {!hideFloatingWidgets && !state.hideAvatar && (
+              <Suspense fallback={null}>
+                <AIFeature backend="codex" feature="member-ordering-avatar" recheckMs={60_000}>
+                  <MemberOrderingAvatar variant="floating" showGuestTeaser={false} />
+                </AIFeature>
+              </Suspense>
             )}
             <SettingsPanel />
           </ProductModalProvider>

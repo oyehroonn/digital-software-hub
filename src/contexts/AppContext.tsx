@@ -13,6 +13,8 @@ interface AppState {
   sortBy: string;
   marketingMode: boolean;
   theme: 'light' | 'dark';
+  hideAvatar: boolean;
+  hideConcierge: boolean;
 }
 
 export interface CartItem {
@@ -54,6 +56,8 @@ interface AppContextType {
   applyAIAction: (action: { type: string; payload: any }) => void;
   setMarketingMode: (enabled: boolean) => void;
   setTheme: (theme: 'light' | 'dark') => void;
+  setHideAvatar: (hidden: boolean) => void;
+  setHideConcierge: (hidden: boolean) => void;
   setNavigate: (navigateFn: (path: string) => void) => void;
 }
 
@@ -71,6 +75,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return {
           marketingMode: prefs.marketingMode !== false, // default true
           theme: prefs.theme || 'dark', // default dark
+          hideAvatar: prefs.hideAvatar === true, // default visible
+          hideConcierge: prefs.hideConcierge === true, // default visible
         };
       }
     } catch (e) {
@@ -79,6 +85,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return {
       marketingMode: true,
       theme: 'dark' as const,
+      hideAvatar: false,
+      hideConcierge: false,
     };
   }, []);
 
@@ -109,6 +117,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     sortBy: 'popular',
     marketingMode: preferences.marketingMode,
     theme: preferences.theme,
+    hideAvatar: preferences.hideAvatar,
+    hideConcierge: preferences.hideConcierge,
   });
 
   // Apply theme to document root
@@ -128,8 +138,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('dsm-preferences', JSON.stringify({
       marketingMode: state.marketingMode,
       theme: state.theme,
+      hideAvatar: state.hideAvatar,
+      hideConcierge: state.hideConcierge,
     }));
-  }, [state.marketingMode, state.theme]);
+  }, [state.marketingMode, state.theme, state.hideAvatar, state.hideConcierge]);
 
   // Save cart to localStorage
   useEffect(() => {
@@ -291,6 +303,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, theme }));
   }, []);
 
+  const setHideAvatar = useCallback((hidden: boolean) => {
+    setState(prev => ({ ...prev, hideAvatar: hidden }));
+  }, []);
+
+  const setHideConcierge = useCallback((hidden: boolean) => {
+    setState(prev => ({ ...prev, hideConcierge: hidden }));
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -309,6 +329,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         applyAIAction,
         setMarketingMode,
         setTheme,
+        setHideAvatar,
+        setHideConcierge,
         setNavigate,
       }}
     >
