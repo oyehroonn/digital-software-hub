@@ -39,6 +39,7 @@ import {
   LifeBuoy,
   Mail,
   Megaphone,
+  MonitorDown,
   Newspaper,
   Pencil,
   Repeat,
@@ -71,6 +72,8 @@ import { AiView } from "@/views/ai/AiView";
 import { OpsView } from "@/views/ops/OpsView";
 import { SettingsView } from "@/views/SettingsView";
 import { DashboardView } from "@/views/dashboard/DashboardView";
+import { ApprovalsView } from "@/views/approvals/ApprovalsView";
+import { DesktopAppView } from "@/views/system/DesktopAppView";
 
 export type LucideIcon = typeof Boxes;
 
@@ -212,14 +215,28 @@ export const SECTIONS: Section[] = [
   },
 
   {
+    key: "approvals",
+    label: "Approvals",
+    icon: ShieldCheck,
+    group: "Commerce",
+    perm: "orders.view",
+    blurb:
+      "Decision desk for site quote & order requests — price, approve to create the DSM Exclusive Member account and email the quote, or reject.",
+    singlePage: true,
+    pages: [],
+    render: (ctx) => <ApprovalsView config={ctx.config} />,
+  },
+
+  {
     key: "customers",
     label: "Customers",
     icon: Users,
     group: "Commerce",
     perm: "customers.view",
-    blurb: "Unified lead inbox, scoring, customer 360, licences, segments & win-back.",
+    blurb: "Unified lead inbox, site-lead aggregation, scoring, customer 360, licences, segments & win-back.",
     pages: [
       { key: "inbox", label: "Lead inbox", icon: Inbox, desc: "Unified inbox of inbound leads." },
+      { key: "siteleads", label: "Site leads", icon: Share2, desc: "Every email the site captured, grouped by contact & source.", keywords: "footer popup reseller quote savings callback newsletter aggregation" },
       { key: "scoring", label: "Scoring", icon: Gauge, desc: "Lead scoring and grades." },
       { key: "customers", label: "Customer 360", icon: Users, desc: "Full customer profiles." },
       { key: "licenses", label: "Licences", icon: KeyRound, desc: "License renewals tracker." },
@@ -280,6 +297,17 @@ export const SECTIONS: Section[] = [
       { key: "roles", label: "Roles & access", icon: ShieldCheck, perm: "roles.manage", desc: "Manage roles and access." },
     ],
     render: (ctx) => <OpsView config={ctx.config} page={ctx.page} onPageChange={ctx.setPage} />,
+  },
+
+  {
+    key: "desktop",
+    label: "Desktop App",
+    icon: MonitorDown,
+    group: "System",
+    blurb: "Install the DSM Admin desktop app (macOS & Windows), what it adds, and the build & docs.",
+    singlePage: true,
+    pages: [],
+    render: (ctx) => <DesktopAppView config={ctx.config} />,
   },
 
   {

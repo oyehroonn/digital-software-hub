@@ -13,8 +13,17 @@ import { LicenseTracker } from "./LicenseTracker";
 import { SegmentBuilder } from "./SegmentBuilder";
 import { FollowUps } from "./FollowUps";
 import { WinBack } from "./WinBack";
+import { UnifiedLeadInbox } from "./UnifiedLeadInbox";
 
-type CrmTab = "inbox" | "scoring" | "customers" | "licenses" | "segments" | "tasks" | "winback";
+type CrmTab =
+  | "inbox"
+  | "siteleads"
+  | "scoring"
+  | "customers"
+  | "licenses"
+  | "segments"
+  | "tasks"
+  | "winback";
 
 /**
  * CRM / Leads area entry point. Owns the single data load and routes between the
@@ -44,6 +53,7 @@ export function CrmView({
 
   const tabs: { key: CrmTab; label: string; badge?: number }[] = [
     { key: "inbox", label: "Lead Inbox", badge: hot },
+    { key: "siteleads", label: "Site leads" },
     { key: "scoring", label: "Scoring" },
     { key: "customers", label: "Customer 360" },
     { key: "licenses", label: "Licences", badge: data.renewals.length },
@@ -90,6 +100,8 @@ export function CrmView({
         <Empty title="Couldn't load CRM data" hint={data.error} />
       ) : tab === "inbox" ? (
         <LeadInbox leads={data.leads} onOpenCustomer={openCustomer} />
+      ) : tab === "siteleads" ? (
+        <UnifiedLeadInbox config={config} onOpenCustomer={openCustomer} onRefresh={data.refresh} />
       ) : tab === "scoring" ? (
         <LeadScoring leads={data.leads} />
       ) : tab === "customers" ? (
