@@ -590,7 +590,15 @@ export function AnalyticsOverview({ config }: { config: AppConfig }) {
         }
       />
 
-      {isEmpty ? (
+      {loading && isEmpty ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card py-24 text-muted-foreground">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
+          <p className="text-sm font-medium text-foreground/80">Loading live analytics…</p>
+          <p className="text-[11px] text-muted-foreground/70">
+            Fetching from the Telemetry &amp; Orders sheets — this can take a few seconds.
+          </p>
+        </div>
+      ) : isEmpty ? (
         <AnalyticsEmpty icon={<LayoutDashboard className="h-7 w-7" />} />
       ) : (
         <>

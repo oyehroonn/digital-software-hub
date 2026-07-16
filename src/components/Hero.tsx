@@ -47,19 +47,6 @@ const Hero = () => {
       <div ref={glowRef} className="cursor-glow-dot z-[2]" />
 
       <div ref={ref} className="relative z-10 w-full max-w-5xl mx-auto px-6 flex flex-col items-center text-center">
-        {/* Trust Badge */}
-        <div className="hero-reveal mb-10 flex justify-center">
-          <span
-            className={`inline-flex items-center gap-2.5 px-4 py-2 border rounded-full backdrop-blur-sm text-xs font-medium uppercase tracking-[0.12em] transition-colors duration-300 ${
-              meshAccent === "azure"
-                ? "border-azure/40 bg-[#05070b]/70 text-gold"
-                : "border-white/20 bg-white/[0.06] text-white"
-            }`}
-          >
-            <span className="w-1.5 h-1.5 bg-azure rounded-full animate-pulse" />
-            Official Certified Reseller
-          </span>
-        </div>
 
         {/* Headline */}
         <div className="hero-reveal w-full text-center font-sans leading-[0.9] tracking-[0.04em] font-bold uppercase text-[#FEFEFE] mb-8 whitespace-nowrap" style={{ fontSize: "clamp(1.2rem, 4.8vw, 4rem)" }}>

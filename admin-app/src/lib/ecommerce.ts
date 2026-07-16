@@ -54,11 +54,23 @@ export interface TelemetryEvent {
   [k: string]: unknown;
 }
 
+// The Telemetry + Orders sheets are shared with other stores/projects; keep only
+// THIS store's rows so another project's traffic (e.g. a PKR olive-oil shop)
+// never pollutes DSM analytics. Matches store_name === "DSM" (case-insensitive),
+// and keeps blank-store rows (older DSM rows that predate the tag).
+const OWN_STORE = "dsm";
+function isOwnStore(storeName: unknown): boolean {
+  const s = String(storeName ?? "").trim().toLowerCase();
+  return s === "" || s.includes(OWN_STORE);
+}
+
 export async function fetchOrders(cfg: AppConfig, limit = 2000): Promise<Order[]> {
   // Generous timeout: the Apps Script read follows a 302 → googleusercontent
   // redirect and serialises up to `limit` rows, which can take 10-20s.
   const rows = await fetchSheetRows(cfg, cfg.orders_sheet_id, { timeoutMs: 25000 });
-  const mapped = rows.map((r) => normalizeOrder(r as unknown as Order));
+  const mapped = rows
+    .map((r) => normalizeOrder(r as unknown as Order))
+    .filter((o) => isOwnStore(o.storeName));
   return limit && mapped.length > limit ? mapped.slice(-limit) : mapped;
 }
 
@@ -66,7 +78,9 @@ export async function fetchTelemetry(cfg: AppConfig, limit = 2000): Promise<Tele
   // Telemetry is the big read (~2KB/row) — the 2000-row window is ~4MB and the
   // Apps Script + redirect can take ~10-15s, so allow 30s before falling back.
   const rows = await fetchSheetRows(cfg, cfg.telemetry_sheet_id, { timeoutMs: 30000 });
-  const mapped = rows.map((r) => normalizeEvent(r as unknown as TelemetryEvent));
+  const mapped = rows
+    .map((r) => normalizeEvent(r as unknown as TelemetryEvent))
+    .filter((e) => isOwnStore(e.storeName));
   return limit && mapped.length > limit ? mapped.slice(-limit) : mapped;
 }
 

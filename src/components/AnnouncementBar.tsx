@@ -1,4 +1,5 @@
 import { Phone, Clock, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const MESSAGES = [
   "Since 1994, DSM has helped over 15,000 businesses",
@@ -46,11 +47,11 @@ const AnnouncementBar = () => {
 
         {/* Right — Quick links */}
         <div className="hidden lg:flex items-center gap-4 text-[10px] text-[#B1B2B3]/50 tracking-wide flex-shrink-0">
-          <a href="#" className="hover:text-crimson transition-colors duration-300">My Account</a>
+          <Link to="/account" className="hover:text-crimson transition-colors duration-300">My Account</Link>
           <span className="w-px h-3 bg-white/[0.06]" />
-          <a href="#" className="hover:text-crimson transition-colors duration-300">Help</a>
+          <Link to="/support" className="hover:text-crimson transition-colors duration-300">Help</Link>
           <span className="w-px h-3 bg-white/[0.06]" />
-          <a href="#" className="hover:text-crimson transition-colors duration-300">Track Order</a>
+          <Link to="/account" className="hover:text-crimson transition-colors duration-300">Track Order</Link>
         </div>
       </div>
     </div>

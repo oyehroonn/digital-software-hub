@@ -48,6 +48,9 @@ export interface MemberOrderingAvatarProps {
 // ── The animated concierge orb ────────────────────────────────────────────────
 
 function ConciergeOrb({ size = 'lg' }: { size?: 'lg' | 'sm' }) {
+  // A real support-person portrait framed by the animated crimson glow ring
+  // (replaces the old CSS sphere). The image is eager + tiny (~66KB) so it never
+  // shows the slow "loading" state the sphere used to imply.
   return (
     <div
       className={cn('moa-orb-wrap relative shrink-0', size === 'lg' ? 'h-36 w-36' : 'h-24 w-24')}
@@ -55,9 +58,15 @@ function ConciergeOrb({ size = 'lg' }: { size?: 'lg' | 'sm' }) {
     >
       <span className="moa-orb-glow absolute inset-0 rounded-full" />
       <span className="moa-orb-ring absolute inset-0 rounded-full" />
-      <span className="moa-orb absolute inset-[10%] rounded-full">
-        <span className="moa-orb-core absolute inset-0 rounded-full" />
-        <span className="moa-orb-sheen absolute inset-0 rounded-full" />
+      <span className="absolute inset-[9%] overflow-hidden rounded-full border border-crimson/40 bg-[#0b0c0e] shadow-inner">
+        <img
+          src="/images/concierge-agent.jpg"
+          alt=""
+          loading="eager"
+          decoding="async"
+          className="h-full w-full rounded-full object-cover"
+          style={{ objectPosition: 'center 28%' }}
+        />
       </span>
       <span className="moa-orb-spark absolute inset-0 rounded-full" />
     </div>
@@ -180,6 +189,10 @@ export default function MemberOrderingAvatar({
 }: MemberOrderingAvatarProps) {
   const { isMember } = useAccount();
   const [open, setOpen] = useState(false);
+  // VIP override: append ?vip=1 (or any value) to force the ordering avatar on
+  // even for non-signed-in visitors — e.g. a VIP campaign link.
+  const isVip =
+    typeof window !== 'undefined' && /[?&]vip=/.test(window.location.search);
 
   const activate = useCallback(() => {
     setOpen(true);
@@ -190,9 +203,11 @@ export default function MemberOrderingAvatar({
     });
   }, [variant]);
 
-  // Non-members: nothing gated is reachable — only a tasteful teaser (or nothing).
-  if (!isMember) {
-    if (variant === 'floating') return null;
+  // Non-members: only a tasteful teaser (or nothing) — except the floating FAB,
+  // which also shows for VIP-link visitors (?vip=…).
+  if (variant === 'floating') {
+    if (!isMember && !isVip) return null;
+  } else if (!isMember) {
     return showGuestTeaser ? <GuestTeaser variant={variant} className={className} /> : null;
   }
 
@@ -210,7 +225,14 @@ export default function MemberOrderingAvatar({
             className,
           )}
         >
-          <ConciergeOrb size="sm" />
+          <span className="relative inline-flex">
+            <ConciergeOrb size="sm" />
+            {/* "wants to talk" pulsing dot */}
+            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-crimson opacity-70" />
+              <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-crimson ring-2 ring-[#0b0c0e]" />
+            </span>
+          </span>
           <span className="hidden text-xs font-semibold text-[#FEFEFE] sm:inline">
             Ordering Avatar
           </span>
