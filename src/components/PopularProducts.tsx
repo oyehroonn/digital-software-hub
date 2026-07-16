@@ -4,6 +4,27 @@ import { useState, useMemo } from "react";
 import ProductModelViewer from "./ProductModelViewer";
 import catalogueProducts from "@/data/catalogueProducts.json";
 import { useApp } from "@/contexts/AppContext";
+import { useProductModal } from "@/contexts/ProductModalContext";
+import type { Product } from "@/lib/api";
+
+/** Map a lightweight catalogue entry to the full Product the detail modal wants. */
+function toProduct(p: CatalogueProduct): Product {
+  return {
+    id: p.id,
+    name: p.name,
+    folder: p.folder,
+    filename: `${p.id}.glb`,
+    link: `/models/${p.id}.glb`,
+    viewer: `/models/${p.id}.glb`,
+    category: p.category,
+    brand: "",
+    licenseType: "",
+    price: p.price,
+    description: "",
+    tags: [],
+    status: "active",
+  };
+}
 
 const AnimatedCard = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   const { ref, className: animClass } = useScrollAnimation();
@@ -27,10 +48,23 @@ const ProductCard = ({
   onAddToCart: (product: CatalogueProduct) => void;
 }) => {
   const glbSrc = `/models/${product.id}.glb`;
-  
+  const { openProductModal } = useProductModal();
+  const openDetail = () => openProductModal(toProduct(product));
+
   return (
-    <div className="group relative">
-      <div 
+    <div
+      className="group relative cursor-pointer"
+      role="button"
+      tabIndex={0}
+      onClick={openDetail}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openDetail();
+        }
+      }}
+    >
+      <div
         className="relative aspect-[3/4] bg-white/[0.02] border border-white/[0.06] rounded-lg overflow-hidden mb-4 transition-all duration-500 group-hover:border-crimson/30 group-hover:bg-white/[0.04] group-hover:shadow-[0_0_40px_rgba(200,50,50,0.08)]"
         style={{ perspective: "1000px" }}
       >
@@ -55,7 +89,10 @@ const ProductCard = ({
           </div>
           <button
             className="btn-magnetic w-full py-2.5 bg-crimson text-[#FEFEFE] text-xs font-medium tracking-wide rounded-sm hover:bg-crimson-dark transition-all duration-300"
-            onClick={() => onAddToCart(product)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToCart(product);
+            }}
           >
             Add to Cart
           </button>
