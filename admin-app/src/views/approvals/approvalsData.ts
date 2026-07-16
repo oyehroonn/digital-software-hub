@@ -71,7 +71,15 @@ const REQUEST_HINT =
   /quote|lead|pending|request|enquir|inquir|reseller|callback|savings|footer|popup|new|proposal|interested|await/i;
 
 /** Keywords that mean the order is already DONE — never an approval request. */
-const DONE_HINT = /paid|complete|fulfilled|delivered|shipped|refund|cancel|won|closed|member|approved/i;
+const DONE_HINT = /paid|complete|fulfilled|delivered|shipped|refund|cancel|won|closed|member/i;
+
+/** Site marker: the quote was auto-approved + emailed while the VPS/AI was down. */
+const AUTO_APPROVED_HINT = /auto[-_\s]?approved/i;
+
+/** True when the site auto-approved this request (sent the quote + email offline). */
+export function isAutoApproved(o: Order): boolean {
+  return AUTO_APPROVED_HINT.test(`${str(o, "status")} ${o.notes ?? ""} ${rawSource(o)}`);
+}
 
 function bag(o: Order): Record<string, unknown> {
   return o as unknown as Record<string, unknown>;
@@ -105,6 +113,9 @@ export function sourceOf(o: Order): RequestSource {
 export function isRequest(o: Order): boolean {
   const hasContact = !!(o.email || o.customerName || o.phone);
   if (!hasContact) return false;
+  // Auto-approved quotes are still shown in the queue (as a record), even though
+  // their notes contain "approved" (which DONE_HINT would otherwise exclude).
+  if (isAutoApproved(o)) return true;
   const status = String(o.status ?? "");
   const notes = String(o.notes ?? "");
   const src = rawSource(o);
@@ -144,6 +155,8 @@ export interface ApprovalRequest {
   seats?: number;
   /** How many times this person submitted for this product. */
   captures: number;
+  /** Site auto-approved this while the VPS/AI was down (quote + email already sent). */
+  autoApproved: boolean;
   raw: Order[];
 }
 
@@ -191,6 +204,7 @@ function fromOrder(o: Order): ApprovalRequest {
     budget: optNum(o, "budget", "value"),
     seats: optNum(o, "seats", "teamSize", "team", "users"),
     captures: 1,
+    autoApproved: isAutoApproved(o),
     raw: [o],
   };
 }
@@ -208,12 +222,14 @@ export function deriveRequests(orders: Order[]): ApprovalRequest[] {
     }
     existing.captures += 1;
     existing.raw.push(o);
+    existing.autoApproved = existing.autoApproved || r.autoApproved;
     // Latest capture wins for the headline fields; back-fill any blanks.
     if (r.ts >= existing.ts) {
       byKey.set(r.id, {
         ...existing,
         ...r,
         captures: existing.captures,
+        autoApproved: existing.autoApproved,
         raw: existing.raw,
         details: r.details || existing.details,
         phone: r.phone || existing.phone,
@@ -236,7 +252,7 @@ export function deriveRequests(orders: Order[]): ApprovalRequest[] {
  * Local decision overlay (approved / rejected + quote + member)
  * ------------------------------------------------------------------ */
 
-export type DecisionState = "pending" | "approved" | "rejected";
+export type DecisionState = "pending" | "approved" | "rejected" | "auto_approved";
 
 export interface Decision {
   state: DecisionState;
@@ -348,14 +364,24 @@ export interface ApprovalStats {
   pending: number;
   approved: number;
   rejected: number;
+  auto_approved: number;
 }
 
 export function mergeDecisions(requests: ApprovalRequest[], overlay: Overlay): ApprovalItem[] {
-  return requests.map((r) => ({ ...r, decision: overlay[r.id] ?? { state: "pending", updatedAt: 0 } }));
+  return requests.map((r) => {
+    // A local admin decision always wins. Otherwise, a site auto-approved quote
+    // shows as "auto_approved" (already sent); everything else is pending.
+    const decision: Decision =
+      overlay[r.id] ??
+      (r.autoApproved
+        ? { state: "auto_approved", updatedAt: 0, emailSent: true }
+        : { state: "pending", updatedAt: 0 });
+    return { ...r, decision };
+  });
 }
 
 export function statsOf(items: ApprovalItem[]): ApprovalStats {
-  const s: ApprovalStats = { total: items.length, pending: 0, approved: 0, rejected: 0 };
+  const s: ApprovalStats = { total: items.length, pending: 0, approved: 0, rejected: 0, auto_approved: 0 };
   for (const it of items) s[it.decision.state]++;
   return s;
 }

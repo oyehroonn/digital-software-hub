@@ -192,6 +192,7 @@ export function ApprovalsView({ config }: { config: AppConfig }) {
       <div className="flex flex-wrap gap-2">
         <StatTile label="All" value={stats.total} tone="text-muted-foreground" active={filter === "all"} onClick={() => setFilter("all")} />
         <StatTile label="Pending" value={stats.pending} tone="text-amber-500" active={filter === "pending"} onClick={() => setFilter("pending")} />
+        <StatTile label="Auto-approved" value={stats.auto_approved} tone="text-sky-500" active={filter === "auto_approved"} onClick={() => setFilter("auto_approved")} />
         <StatTile label="Approved" value={stats.approved} tone="text-emerald-500" active={filter === "approved"} onClick={() => setFilter("approved")} />
         <StatTile label="Rejected" value={stats.rejected} tone="text-rose-500" active={filter === "rejected"} onClick={() => setFilter("rejected")} />
       </div>
@@ -248,6 +249,7 @@ function RequestCard({
   const isPending = d.state === "pending";
   const isApproved = d.state === "approved";
   const isRejected = d.state === "rejected";
+  const isAuto = d.state === "auto_approved";
 
   // Default price: admin's set price → the request's carried price → blank.
   const [price, setPrice] = useState<string>(
@@ -339,6 +341,7 @@ function RequestCard({
       className={cn(
         "rounded-lg border bg-card p-4",
         isApproved && "border-emerald-500/30",
+        isAuto && "border-sky-500/30",
         isRejected && "border-rose-500/30 opacity-80",
         isPending && "border-border",
       )}
@@ -364,6 +367,11 @@ function RequestCard({
             {isRejected && (
               <Badge variant="down" className="gap-1">
                 <X className="h-3 w-3" /> Rejected
+              </Badge>
+            )}
+            {isAuto && (
+              <Badge className="gap-1 border-sky-500/40 bg-sky-500/10 text-sky-500" title="Quote + email sent automatically while the VPS was down">
+                <Check className="h-3 w-3" /> Auto-approved
               </Badge>
             )}
             {isPending && (

@@ -678,7 +678,41 @@ function QuoteBetaSignup({ reason, prefillNeed = '', onRetry }: BetaSignupProps)
       metadata: { feature: 'quote-genie', reason },
     });
 
-    // Also capture the email as a lead/customer for the admin Customers view.
+    // VPS/AI down → AUTO-APPROVE: email the customer their quote now and record
+    // the order tagged auto-approved, so it shows in the admin Approvals tab as
+    // "Auto-approved" (already sent) instead of waiting for a manual decision.
+    const auto = reason === 'offline';
+
+    if (auto) {
+      // Fire the quote email immediately (independent of the codex AI). If the
+      // email service is also down it self-queues; the order is recorded either
+      // way so the admin can follow up.
+      void sendEmail({
+        to,
+        subject: 'Your Digital Software Market quote',
+        body:
+          `Thanks for your request — here's your quote.\n\n` +
+          `What you asked for: ${need.trim() || '(general enquiry)'}\n\n` +
+          `We've applied our standard pricing and your Exclusive Member access is ` +
+          `being set up now. A specialist will confirm the final details and send ` +
+          `your login shortly.\n\n— Digital Software Market`,
+      }).catch(() => {
+        /* email service down too — order is still recorded auto-approved */
+      });
+
+      try {
+        await submitOrder(buildLeadOrder(to, need, null, 'quote-auto-approved'));
+      } catch {
+        /* self-queues */
+      } finally {
+        sendTelemetry({ event: 'quote_auto_approved', eventType: 'lead', elementText: to, metadata: { feature: 'quote-genie' } });
+        setSending(false);
+        setDone(true);
+      }
+      return;
+    }
+
+    // Non-offline degradation (runtime error): capture as an early-access lead.
     captureLead({
       email: to,
       source: 'quote',
