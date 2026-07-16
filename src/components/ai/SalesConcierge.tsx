@@ -276,6 +276,20 @@ function ConciergeWidget() {
   // Abort any in-flight stream on unmount.
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  // Let other parts of the site (e.g. the Support page's "Chat with the
+  // concierge" button) open this panel via a window event.
+  useEffect(() => {
+    const openIt = () => {
+      setOpen(true);
+      trackClick('concierge_open', {
+        elementId: 'sales-concierge-external-open',
+        metadata: { feature: 'sales-concierge' },
+      });
+    };
+    window.addEventListener('dsm:open-concierge', openIt);
+    return () => window.removeEventListener('dsm:open-concierge', openIt);
+  }, []);
+
   const toggleOpen = useCallback(() => {
     setOpen((prev) => {
       const next = !prev;

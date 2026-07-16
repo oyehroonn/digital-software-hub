@@ -39,7 +39,7 @@ const OrderingAvatar = lazy(() => import('@/components/ai/OrderingAvatar'));
 
 export interface MemberOrderingAvatarProps {
   /** `hero` = showcase panel (Exclusive Members); `cart` = compact aside (Cart). */
-  variant?: 'hero' | 'cart';
+  variant?: 'hero' | 'cart' | 'floating';
   /** Show the sign-in teaser to guests. Off when the host already gates members. */
   showGuestTeaser?: boolean;
   className?: string;
@@ -192,7 +192,32 @@ export default function MemberOrderingAvatar({
 
   // Non-members: nothing gated is reachable — only a tasteful teaser (or nothing).
   if (!isMember) {
+    if (variant === 'floating') return null;
     return showGuestTeaser ? <GuestTeaser variant={variant} className={className} /> : null;
+  }
+
+  // Floating variant: a bottom-left FAB (members only) that opens the ordering avatar.
+  if (variant === 'floating') {
+    return (
+      <>
+        <style>{orbCss}</style>
+        <button
+          type="button"
+          onClick={activate}
+          aria-label="Activate your AI ordering avatar"
+          className={cn(
+            'fixed bottom-6 left-6 z-40 flex items-center gap-2.5 rounded-full border border-crimson/30 bg-[#0b0c0e]/90 py-2 pl-2 pr-4 shadow-lg shadow-black/40 backdrop-blur transition-all hover:border-crimson/60 hover:bg-[#0b0c0e] hover:shadow-crimson-glow',
+            className,
+          )}
+        >
+          <ConciergeOrb size="sm" />
+          <span className="hidden text-xs font-semibold text-[#FEFEFE] sm:inline">
+            Ordering Avatar
+          </span>
+        </button>
+        {open && <AvatarModal onClose={() => setOpen(false)} />}
+      </>
+    );
   }
 
   return (

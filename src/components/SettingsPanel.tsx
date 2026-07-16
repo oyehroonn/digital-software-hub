@@ -7,6 +7,12 @@ export default function SettingsPanel() {
   const { state, setMarketingMode, setTheme } = useApp();
   const [isOpen, setIsOpen] = useState(false);
 
+  // Dev/demo control only. In production it must never appear: it floats over
+  // page content (bottom-left, where the member avatar also lives) and exposes a
+  // "Marketing Mode" switch that would blank the whole site to chatbot-only for a
+  // real visitor. Hidden in production builds.
+  if (!import.meta.env.DEV) return null;
+
   return (
     <>
       {/* Toggle Button */}

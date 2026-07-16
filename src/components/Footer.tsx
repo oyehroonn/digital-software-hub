@@ -174,7 +174,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-white/[0.04] pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-xs text-[#B1B2B3]/50">&copy; 2024 Digital Software Market. All rights reserved.</p>
+          <p className="text-xs text-[#B1B2B3]/50">&copy; 2026 Digital Software Market. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <div className="h-6 w-10 bg-white/[0.03] border border-white/[0.05] rounded flex items-center justify-center text-[10px] text-[#B1B2B3]/40">VISA</div>
             <div className="h-6 w-10 bg-white/[0.03] border border-white/[0.05] rounded flex items-center justify-center text-[10px] text-[#B1B2B3]/40">MC</div>

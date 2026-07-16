@@ -30,6 +30,10 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 // Site-wide floating concierge (feature 06) — deferred so the LLM chat code
 // never sits in the entry bundle; AIFeature still gates it on proxy health.
 const SalesConcierge = lazy(() => import("./components/ai/SalesConcierge"));
+// Bottom-left ordering-avatar FAB — renders only for signed-in Exclusive
+// Members (self-gates on isMember) and only when the AI backend is healthy.
+const MemberOrderingAvatar = lazy(() => import("./components/ai/MemberOrderingAvatar"));
+const AIFeature = lazy(() => import("./components/ai/AIFeature"));
 
 const queryClient = new QueryClient();
 
@@ -98,6 +102,11 @@ const AppContent = () => {
                 Replaces the dead Kiro-backed floating chat. Lazy-loaded. */}
             <Suspense fallback={null}>
               <SalesConcierge />
+            </Suspense>
+            <Suspense fallback={null}>
+              <AIFeature backend="codex" feature="member-ordering-avatar" recheckMs={60_000}>
+                <MemberOrderingAvatar variant="floating" showGuestTeaser={false} />
+              </AIFeature>
             </Suspense>
             <SettingsPanel />
           </ProductModalProvider>

@@ -278,6 +278,9 @@ const Support = () => {
       eventType: 'ai',
       metadata: { feature: 'support' },
     });
+    // Open the site-wide concierge widget (mounted in App.tsx) directly, so the
+    // button actually starts a chat rather than only pointing at the bubble.
+    window.dispatchEvent(new CustomEvent('dsm:open-concierge'));
   };
 
   return (
