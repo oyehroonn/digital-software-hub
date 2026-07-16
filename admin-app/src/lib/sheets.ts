@@ -31,6 +31,38 @@ export function sheetProxyUrl(vpsBase: string, sheetId: string): string {
 }
 
 /**
+ * Secret-gated Apps Script read URL for a known sheet id. The Apps Script owns
+ * the (private) sheets and serves their rows as JSON via
+ * `?action=telemetry|orders&secret=…`, so the sheets never need to be published
+ * publicly. Returns "" when the id isn't one of the two known sheets or the
+ * Apps Script url/secret isn't configured. `newest last`, capped at `limit`.
+ */
+export function appsScriptReadUrl(cfg: AppConfig, sheetId: string, limit = 5000): string {
+  if (!cfg.ecommerce_url || !cfg.ecommerce_secret || !sheetId) return "";
+  let action = "";
+  if (sheetId === cfg.telemetry_sheet_id) action = "telemetry";
+  else if (sheetId === cfg.orders_sheet_id) action = "orders";
+  if (!action) return "";
+  const base = cfg.ecommerce_url.replace(/\/+$/, "");
+  const q = new URLSearchParams({ action, secret: cfg.ecommerce_secret, limit: String(limit) });
+  return `${base}?${q.toString()}`;
+}
+
+/** Coerce the Apps Script's header-keyed row objects to Record<string,string>. */
+function normalizeRows(rows: unknown): Record<string, string>[] {
+  if (!Array.isArray(rows)) return [];
+  return rows.map((r) => {
+    const obj: Record<string, string> = {};
+    if (r && typeof r === "object") {
+      for (const [k, v] of Object.entries(r as Record<string, unknown>)) {
+        obj[k] = v == null ? "" : typeof v === "string" ? v : String(v);
+      }
+    }
+    return obj;
+  });
+}
+
+/**
  * Split raw CSV text into a matrix of cells, honouring RFC-4180 quoting:
  * doubled quotes (`""`) inside a quoted field, and commas / newlines embedded
  * inside quoted fields. Tolerates both CRLF and LF line endings.
@@ -124,6 +156,29 @@ export async function fetchSheetRows(
   const { timeoutMs = 12000 } = opts;
   if (!sheetId) return [];
 
+  // 1) Preferred: the secret-gated Apps Script JSON read. Works even though the
+  //    sheets are PRIVATE (the script owns them), so nothing needs publishing.
+  //    Native http bridge (Tauri) follows the 302 → googleusercontent echo and
+  //    isn't CORS-blocked; in the browser this may be blocked, so we still fall
+  //    through to the CSV/proxy candidates below.
+  const asUrl = appsScriptReadUrl(cfg, sheetId);
+  if (asUrl) {
+    try {
+      const text = await httpGet(asUrl, { timeoutMs });
+      if (text && !looksLikeHtml(text)) {
+        const data = JSON.parse(text) as { ok?: boolean; rows?: unknown };
+        if (data && data.ok && Array.isArray(data.rows)) {
+          const rows = normalizeRows(data.rows);
+          if (rows.length) return rows;
+        }
+      }
+    } catch {
+      /* endpoint not redeployed yet / blocked → fall back to CSV below */
+    }
+  }
+
+  // 2) Fallback: direct CSV export (Tauri) then the VPS CSV proxy. Only yields
+  //    data if the sheet is published "anyone with link: Viewer".
   const proxy = cfg.vps_base ? sheetProxyUrl(cfg.vps_base, sheetId) : "";
   const candidates = runtime.isTauri
     ? [sheetCsvUrl(sheetId), proxy].filter(Boolean)

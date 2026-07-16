@@ -26,7 +26,11 @@ export interface AppConfig {
 export const DEFAULT_CONFIG: AppConfig = {
   ecommerce_url:
     "https://script.google.com/macros/s/AKfycbwn05r3WVqMpV4Tftn4n1qEs7I10cu3Z8S306jMXaXXCClxizt2EfOUSKa9cTha6pPD/exec",
-  ecommerce_secret: "",
+  // Read/write secret for the ecommerce Apps Script (orders + telemetry). Gates
+  // the GET ?action=telemetry|orders read endpoints so the admin can pull the
+  // private sheets without publishing them. Internal admin tool → baked here;
+  // override per-machine in Settings / the OS config file if it ever rotates.
+  ecommerce_secret: "a003c5ef4fd64f54cae76d62925d93d63bc394c733f8a6dd30fdeffadaf990c2",
   telemetry_read_url: "",
   telemetry_sheet_id: "1MZykNN5r-pcelIxVApNZzcPUORshgqGfPRyEsE90vWc",
   orders_sheet_id: "1BeHD5fa6veJDBU2PGSsZ2Sw3If0dxyMQlFPq8os84cQ",
