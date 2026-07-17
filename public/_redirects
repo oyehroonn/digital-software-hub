@@ -1,0 +1,7 @@
+# Serve the marketing/services microsites as standalone pages (no React app /
+# iframe) for a fast load. Static files under those paths still serve directly;
+# the bare route redirects to the microsite's entry HTML.
+/marketing            /marketing/index.html            302
+/services             /services/dsmAIFinal.html        302
+# SPA fallback for the React store (every other client route).
+/*                    /index.html                      200
