@@ -151,20 +151,35 @@ export function captureLead(input: CaptureLeadInput): void {
     order,
   };
 
+  // Send the order fields at the TOP LEVEL too (not only nested under `order`),
+  // because the Apps Script `appendOrder_` reads top-level keys (email /
+  // customerName / productName / price / notes). The nested `order` stays for
+  // raw_json.
+  const body = JSON.stringify({ ...envelope, ...order });
+
+  // Prefer navigator.sendBeacon: it's PURPOSE-BUILT to reliably deliver a POST
+  // even as the page navigates or a modal unmounts (which is exactly when leads
+  // were getting dropped — reseller sign-in closes its modal, the footer form
+  // re-renders, etc.). Fall back to keepalive fetch where beacon is unavailable.
   try {
-    void fetch(ANALYTICS_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      keepalive: true,
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      // Send the order fields at the TOP LEVEL too (not only nested under
-      // `order`), because the Apps Script `appendOrder_` reads top-level keys
-      // (email / customerName / productName / price / notes). Without this the
-      // lead lands as a blank row. The nested `order` stays for raw_json.
-      body: JSON.stringify({ ...envelope, ...order }),
-    }).catch(() => {
-      /* fire-and-forget: swallow all network errors */
-    });
+    let sent = false;
+    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+      sent = navigator.sendBeacon(
+        ANALYTICS_URL,
+        new Blob([body], { type: 'text/plain;charset=utf-8' }),
+      );
+    }
+    if (!sent && typeof fetch !== 'undefined') {
+      void fetch(ANALYTICS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        keepalive: true,
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body,
+      }).catch(() => {
+        /* fire-and-forget: swallow all network errors */
+      });
+    }
   } catch {
     /* never let lead capture break the page */
   }
