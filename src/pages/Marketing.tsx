@@ -8,16 +8,20 @@ const Marketing = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const handleIframeLoad = useCallback(() => {
-    // Give extra time for iframe's own assets and animations to initialize
+    // The marketing site is a heavy Webflow "cosmos" build (WebGL globe + GSAP
+    // intro sequence). Its `load` event fires before the intro animation has
+    // settled, so give it a generous beat before revealing — otherwise the user
+    // sees the half-initialised, scattered layout ("ruined").
     setTimeout(() => {
       setIsContentReady(true);
-    }, 1000);
+    }, 3000);
   }, []);
 
-  // Resilience: never let a missing/slow iframe onLoad block content-ready.
-  // Force it ready after a hard cap so the loader can always resolve.
+  // Resilience only: if the iframe's load event never fires, force-resolve after
+  // a HIGH cap so the loader can't hang forever. (Previously 2500ms — far too
+  // low; it fired before the heavy iframe was ready and revealed a broken page.)
   useEffect(() => {
-    const t = setTimeout(() => setIsContentReady(true), 2500);
+    const t = setTimeout(() => setIsContentReady(true), 12000);
     return () => clearTimeout(t);
   }, []);
 

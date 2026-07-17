@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import DSMAILabLoader from '../components/DSMAILabLoader';
 import Footer from '../components/Footer';
@@ -12,9 +12,17 @@ const Services = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const handleIframeLoad = useCallback(() => {
-    // AL2: content is ready as soon as the iframe loads — no extra 1s gate,
-    // so the boot loader can clear well within the ≤2s budget.
-    setIsContentReady(true);
+    // The AI Lab is a heavy Webflow build; its `load` event fires while content
+    // is still animating/skeleton-loading. Give it a beat before revealing so
+    // the user never sees the half-built, scattered state.
+    setTimeout(() => setIsContentReady(true), 3000);
+  }, []);
+
+  // Safety cap: if the iframe's load event never fires, resolve after a high cap
+  // so the loader can't hang forever.
+  useEffect(() => {
+    const t = setTimeout(() => setIsContentReady(true), 12000);
+    return () => clearTimeout(t);
   }, []);
 
   const handleLoadComplete = useCallback(() => {
