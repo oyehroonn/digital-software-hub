@@ -1,6 +1,10 @@
 import { ArrowRight, ArrowUpRight, GraduationCap } from "lucide-react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
-const creativeStudioImg = "https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=2000&auto=format&fit=crop";
+// Branded DSM segment banners (creative team), served from /public/banners.
+// Replace the old Unsplash stock shots — same three audience tiles.
+const enterpriseImg = "/banners/enterprise-it.webp";
+const creativeStudioImg = "/banners/creative-studio.webp";
+const aecBimImg = "/banners/aec-bim.webp";
 
 const AnimatedCard = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   const { ref, className: animClass } = useScrollAnimation();
@@ -28,7 +32,7 @@ const RoleGrid = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-4 h-[800px] md:h-[600px] stagger-children">
           {/* Enterprise - Large */}
           <AnimatedCard className="group relative col-span-1 md:col-span-2 row-span-2 overflow-hidden rounded-md cursor-pointer border border-white/[0.04]">
-            <img src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=2000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Enterprise" />
+            <img src={enterpriseImg} loading="lazy" decoding="async" width={1800} height={1200} className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105" alt="Enterprise IT team collaborating with DSM" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#060708] via-[#060708]/40 to-transparent" />
             <div className="absolute bottom-0 left-0 p-8 w-full z-10">
               <span className="text-[10px] font-semibold text-crimson uppercase tracking-[0.14em] mb-2 block">For Teams</span>
@@ -40,7 +44,7 @@ const RoleGrid = () => {
 
           {/* Creative Studio */}
           <AnimatedCard className="group relative col-span-1 md:col-span-2 row-span-1 overflow-hidden rounded-md cursor-pointer border border-white/[0.04]">
-            <img src={creativeStudioImg} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Creative Studio" />
+            <img src={creativeStudioImg} loading="lazy" decoding="async" width={1300} height={1625} className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105" alt="Creative studio powered by DSM software" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#060708] via-[#060708]/30 to-transparent" />
             <div className="absolute bottom-0 left-0 p-8 w-full flex justify-between items-end z-10">
               <div>
@@ -53,7 +57,7 @@ const RoleGrid = () => {
 
           {/* AEC & BIM */}
           <AnimatedCard className="group relative col-span-1 row-span-1 overflow-hidden rounded-md cursor-pointer border border-white/[0.04]">
-            <img src="https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Architecture" />
+            <img src={aecBimImg} loading="lazy" decoding="async" width={1200} height={800} className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105" alt="AEC and BIM building model" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#060708] via-[#060708]/40 to-transparent" />
             <div className="absolute bottom-0 left-0 p-6 w-full z-10">
               <span className="text-[10px] font-semibold text-azure uppercase tracking-[0.14em] mb-1 block">CAD & BIM</span>
