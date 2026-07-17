@@ -116,7 +116,7 @@ function findProducts(query: string, limit = 4): CatalogueProduct[] {
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 
-  return scored.map((s) => s.doc);
+  return scored.map((s) => s.doc.product);
 }
 
 // ── Voice (browser Web Speech — the SDK paints a face but has no TTS) ─────────
@@ -579,7 +579,6 @@ function OrderingAvatarStage() {
   if (state === 'failed' || state === 'stopped') return <OrderingTextConcierge />;
 
   const connecting = state === 'connecting';
-  const stopped = state === 'stopped';
   const live = state === 'live';
 
   return (
@@ -605,16 +604,6 @@ function OrderingAvatarStage() {
             </div>
           )}
 
-          {stopped && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center text-[#B1B2B3]">
-              <ShoppingCart className="size-8 text-crimson" aria-hidden />
-              <p className="text-sm">Session ended — your chat and cart are still here.</p>
-              <Button type="button" size="sm" onClick={restart} className="bg-crimson font-semibold text-[#FEFEFE] hover:bg-crimson-dark">
-                <RotateCcw className="size-4" aria-hidden />
-                Start concierge again
-              </Button>
-            </div>
-          )}
 
           {live && (
             <>

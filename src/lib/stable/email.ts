@@ -76,6 +76,11 @@ interface BridgeRequest {
 }
 
 async function callBridge<R = unknown>(req: BridgeRequest, timeoutMs = 15000): Promise<R> {
+  // Never attempt an http://localhost fetch from a hosted HTTPS page (mixed
+  // content is a hard block + console error). Reject cleanly so callers degrade.
+  if (bridgeUnavailableOnHost()) {
+    throw new Error('Mail bridge is a local-only sidecar; unavailable on the hosted site.');
+  }
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
   let res: Response;
@@ -120,13 +125,32 @@ export async function sendEmail(args: SendEmailArgs, _endpoint?: MailEndpoint): 
   return data;
 }
 
+/**
+ * True when we're on a hosted HTTPS page but the mail bridge is a local
+ * `http://localhost` sidecar — it can never be reached (and an http:// fetch
+ * would be a mixed-content hard-block). Used to degrade the bridge-only
+ * calendar features gracefully instead of throwing / spamming the console.
+ */
+function bridgeUnavailableOnHost(): boolean {
+  return (
+    typeof location !== 'undefined' &&
+    location.protocol === 'https:' &&
+    MAIL_BRIDGE_URL.startsWith('http://')
+  );
+}
+
 /** Book a calendar event (feature 10 — Smart Callback). */
 export function createEvent(args: CreateEventArgs, endpoint?: MailEndpoint): Promise<unknown> {
+  // On the hosted site the local calendar bridge is unreachable — resolve as a
+  // no-op so the booking flow (confirmation email + lead capture) still runs;
+  // the admin creates the calendar entry from the captured lead.
+  if (bridgeUnavailableOnHost()) return Promise.resolve({ ok: true, hosted: true, skipped: 'createEvent' });
   return callBridge({ command: 'createEvent', args: { ...args }, _endpoint: endpoint });
 }
 
 /** Look up existing events (e.g. offer free slots for a callback). */
 export function findEvents(args: FindEventsArgs = {}, endpoint?: MailEndpoint): Promise<unknown> {
+  if (bridgeUnavailableOnHost()) return Promise.resolve([]);
   return callBridge({ command: 'findEvents', args: { ...args }, _endpoint: endpoint });
 }
 
