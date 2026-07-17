@@ -20,7 +20,7 @@ export interface HealthResult {
   error?: string;
 }
 
-export const DEFAULT_HEALTH_TIMEOUT_MS = 2500;
+export const DEFAULT_HEALTH_TIMEOUT_MS = 8000;
 
 // ── Endpoint resolution (env-overridable) ───────────────────────────────────
 

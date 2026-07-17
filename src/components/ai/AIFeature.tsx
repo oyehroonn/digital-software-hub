@@ -29,7 +29,7 @@ export interface AIFeatureProps {
   feature?: string;
   /** rendered when the backend is unhealthy; nothing rendered if omitted */
   fallback?: React.ReactNode;
-  /** health-check timeout in ms (default 2500) */
+  /** health-check timeout in ms (default 8000) */
   timeoutMs?: number;
   /**
    * Optional periodic re-check interval in ms. When set, the wrapper keeps
@@ -43,7 +43,7 @@ export default function AIFeature({
   backend,
   feature,
   fallback = null,
-  timeoutMs = 2500,
+  timeoutMs = 8000,
   recheckMs,
   children,
 }: AIFeatureProps) {
