@@ -98,18 +98,18 @@ function safeJson(value: unknown): string {
 }
 
 /**
- * Fire-and-forget a captured email as a lead/customer record into the Ecommerce
- * Apps Script Orders sheet. Safe to call from anywhere; never throws.
+ * Capture an email as a lead/customer record in the Ecommerce Apps Script Orders
+ * sheet. Never throws. Returns a promise that resolves once the write request has
+ * been dispatched — callers that navigate / close a modal immediately after can
+ * `await` it so the lead isn't dropped mid-flight.
  */
-export function captureLead(input: CaptureLeadInput): void {
-  if (typeof fetch === 'undefined') return;
-
+export function captureLead(input: CaptureLeadInput): Promise<void> {
   const email = (input.email ?? '').trim();
-  if (!EMAIL_RE.test(email)) return;
+  if (!EMAIL_RE.test(email)) return Promise.resolve();
 
   const source = (input.source || 'site').trim() || 'site';
   const dedupeKey = `${email.toLowerCase()}::${source}`;
-  if (sent.has(dedupeKey)) return;
+  if (sent.has(dedupeKey)) return Promise.resolve();
   sent.add(dedupeKey);
 
   const notes = [
@@ -157,31 +157,23 @@ export function captureLead(input: CaptureLeadInput): void {
   // raw_json.
   const body = JSON.stringify({ ...envelope, ...order });
 
-  // Prefer navigator.sendBeacon: it's PURPOSE-BUILT to reliably deliver a POST
-  // even as the page navigates or a modal unmounts (which is exactly when leads
-  // were getting dropped — reseller sign-in closes its modal, the footer form
-  // re-renders, etc.). Fall back to keepalive fetch where beacon is unavailable.
+  // keepalive fetch (NOT sendBeacon — Apps Script's cross-origin 302 redirect
+  // makes sendBeacon silently drop the write). Returns the promise so callers
+  // that immediately navigate / close a modal can `await` it and guarantee the
+  // lead lands (reseller sign-in + footer do this).
+  if (typeof fetch === 'undefined') return Promise.resolve();
   try {
-    let sent = false;
-    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-      sent = navigator.sendBeacon(
-        ANALYTICS_URL,
-        new Blob([body], { type: 'text/plain;charset=utf-8' }),
-      );
-    }
-    if (!sent && typeof fetch !== 'undefined') {
-      void fetch(ANALYTICS_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        keepalive: true,
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body,
-      }).catch(() => {
-        /* fire-and-forget: swallow all network errors */
-      });
-    }
+    return fetch(ANALYTICS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      keepalive: true,
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body,
+    })
+      .then(() => undefined)
+      .catch(() => undefined);
   } catch {
-    /* never let lead capture break the page */
+    return Promise.resolve();
   }
 }
 

@@ -15,7 +15,7 @@ const NewsletterSignup = () => {
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const value = email.trim();
     if (!EMAIL_RE.test(value)) {
@@ -23,14 +23,14 @@ const NewsletterSignup = () => {
       return;
     }
     setError("");
-    // Fire-and-forget lead capture into the admin Customers view.
-    captureLead({
+    track({ event: "newsletter_signup", eventType: "ecommerce", elementText: value });
+    // Await the lead write so it lands before the form swaps to the confirmation.
+    await captureLead({
       email: value,
       source: "newsletter",
       productName: "Newsletter signup",
       notes: "Subscribed to DSM updates from the footer.",
     });
-    track({ event: "newsletter_signup", eventType: "ecommerce", elementText: value });
     setDone(true);
     setEmail("");
   };

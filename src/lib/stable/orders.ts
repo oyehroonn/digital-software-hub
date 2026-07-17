@@ -95,18 +95,13 @@ async function postOrderNoCors(envelope: OrderEnvelope): Promise<void> {
   // Flatten the order fields to the top level: the Apps Script `appendOrder_`
   // reads top-level keys (email / customerName / productName / price …). The
   // nested `order` is retained for raw_json. Without this, orders land blank.
-  const body = JSON.stringify({ ...envelope, ...envelope.order });
-  // sendBeacon reliably delivers the order even as checkout navigates to the
-  // confirmation; only fall back to keepalive fetch if it's unavailable/refuses
-  // (the fetch path can still throw → the offline queue retries).
-  if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-    if (navigator.sendBeacon(ANALYTICS_URL, new Blob([body], { type: 'text/plain;charset=utf-8' }))) return;
-  }
+  // keepalive fetch (NOT sendBeacon — Apps Script's cross-origin 302 redirect
+  // makes sendBeacon drop the write). The caller awaits this before navigating.
   await fetch(ANALYTICS_URL, {
     method: 'POST',
     mode: 'no-cors',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body,
+    body: JSON.stringify({ ...envelope, ...envelope.order }),
     keepalive: true,
   });
 }

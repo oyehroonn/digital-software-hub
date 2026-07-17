@@ -102,7 +102,7 @@ export default function ResellerSignInModal({
     [onSignedIn, onOpenChange, navigate, redirectTo],
   );
 
-  const onRegister = useCallback(() => {
+  const onRegister = useCallback(async () => {
     setError('');
     if (!company.trim()) {
       setError('Please enter your company / trading name.');
@@ -124,7 +124,9 @@ export default function ResellerSignInModal({
         taxId: taxId.trim() || undefined,
         estAnnualUnits: Number.isFinite(parsedUnits) ? parsedUnits : undefined,
       });
-      captureLead({
+      // AWAIT the lead write before closing the modal — otherwise the in-flight
+      // request is cancelled when the modal unmounts and the reseller is lost.
+      await captureLead({
         email: profile.email,
         source: 'reseller',
         name: contactName.trim() || undefined,
