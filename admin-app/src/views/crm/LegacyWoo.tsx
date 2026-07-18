@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { Database, Search, Users, ShoppingBag, Package } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Database, Search, Users, ShoppingBag, Package,
+  RefreshCw, DownloadCloud, Mail, CheckCircle2, AlertCircle, Clock,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +98,9 @@ export function LegacyWoo() {
         </p>
       </div>
 
+      {/* Live sync panel */}
+      <SyncPanel onPulled={() => window.location.reload()} />
+
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Kpi icon={<Users className="size-4" />} label="Customers" value={customers.length.toLocaleString()} />
@@ -184,6 +190,132 @@ function Kpi({ icon, label, value }: { icon: React.ReactNode; label: string; val
       <CardContent className="flex flex-col gap-1 pt-4">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">{icon}{label}</div>
         <div className="text-xl font-semibold tabular-nums">{value}</div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface SyncStatus {
+  state?: "idle" | "running" | "done" | "error";
+  phase?: string; progress?: number; message?: string;
+  lastPull?: string | null; counts?: { customers: number; orders: number };
+  drift?: { customers: number; orders: number; error?: string; checkedAt?: string } | null;
+  emailed?: boolean; emailError?: string;
+}
+
+const rel = (iso?: string | null) => {
+  if (!iso) return "never";
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+};
+
+/**
+ * Live-sync control. Talks to the dev-only /api/woo/* endpoints (keys stay
+ * server-side). Detects drift vs the live WooCommerce store, runs a pull job
+ * with progress, and the job emails the result. Absent on the deployed admin →
+ * shows a "run locally to sync" hint.
+ */
+function SyncPanel({ onPulled }: { onPulled: () => void }) {
+  const [status, setStatus] = useState<SyncStatus | null>(null);
+  const [available, setAvailable] = useState<boolean | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [drift, setDrift] = useState<SyncStatus["drift"] | null>(null);
+  const poll = useRef<number | null>(null);
+  const wasRunning = useRef(false);
+
+  const loadStatus = useCallback(async () => {
+    try {
+      const r = await fetch("/api/woo/status");
+      if (!r.ok) throw new Error();
+      const s: SyncStatus = await r.json();
+      setStatus(s); setAvailable(true);
+      if (s.drift && !s.drift.error) setDrift(s.drift);
+      if (s.state === "running") { wasRunning.current = true; }
+      else if (wasRunning.current && s.state === "done") {
+        wasRunning.current = false;
+        if (poll.current) { clearInterval(poll.current); poll.current = null; }
+        onPulled();
+      }
+      return s;
+    } catch { setAvailable(false); return null; }
+  }, [onPulled]);
+
+  useEffect(() => { loadStatus(); return () => { if (poll.current) clearInterval(poll.current); }; }, [loadStatus]);
+
+  const checkDrift = async () => {
+    setChecking(true);
+    try { const r = await fetch("/api/woo/drift"); setDrift(await r.json()); } catch { /* ignore */ }
+    setChecking(false);
+  };
+
+  const startPull = async () => {
+    await fetch("/api/woo/pull", { method: "POST" });
+    wasRunning.current = true;
+    setStatus((s) => ({ ...(s || {}), state: "running", progress: 1, message: "Starting…" }));
+    if (poll.current) clearInterval(poll.current);
+    poll.current = window.setInterval(loadStatus, 1500);
+  };
+
+  if (available === false) {
+    return (
+      <Card>
+        <CardContent className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
+          <Database className="size-3.5" /> Live WooCommerce sync runs in the <b>local admin</b> (<code>npm run dev</code>) — this is a deployed snapshot.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const running = status?.state === "running";
+  const hasNew = drift && !drift.error && (drift.customers > 0 || drift.orders > 0);
+
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-3 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm">
+            <Clock className="size-4 text-muted-foreground" />
+            <span>Last pull <b>{rel(status?.lastPull)}</b></span>
+            {status?.counts && <span className="text-muted-foreground">· {status.counts.customers.toLocaleString()} customers · {status.counts.orders} orders</span>}
+            {status?.emailed && <Badge variant="ok" className="font-normal"><Mail className="mr-1 size-3" />emailed</Badge>}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={checkDrift} disabled={checking || running}>
+              <RefreshCw className={checking ? "animate-spin" : ""} /> Check for changes
+            </Button>
+            <Button size="sm" onClick={startPull} disabled={running}>
+              <DownloadCloud className={running ? "animate-pulse" : ""} /> {running ? "Pulling…" : "Pull now"}
+            </Button>
+          </div>
+        </div>
+
+        {drift && !running && (
+          drift.error ? (
+            <div className="flex items-center gap-2 text-xs text-amber-500"><AlertCircle className="size-3.5" /> Couldn't reach WooCommerce: {drift.error}</div>
+          ) : hasNew ? (
+            <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs">
+              <AlertCircle className="size-3.5 text-amber-500" />
+              <span><b>{drift.customers > 0 ? `+${drift.customers} customers` : ""}{drift.customers > 0 && drift.orders > 0 ? ", " : ""}{drift.orders > 0 ? `+${drift.orders} orders` : ""}</b> on the live store since the last pull. Run <b>Pull now</b> to refresh.</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-emerald-500"><CheckCircle2 className="size-3.5" /> Up to date — no new customers or orders since the last pull.</div>
+          )
+        )}
+
+        {running && (
+          <div className="flex flex-col gap-1.5">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${status?.progress ?? 5}%` }} />
+            </div>
+            <div className="text-xs text-muted-foreground">{status?.message || "Working…"} · you'll get an email when it's done</div>
+          </div>
+        )}
+        {status?.state === "error" && !running && (
+          <div className="flex items-center gap-2 text-xs text-red-500"><AlertCircle className="size-3.5" /> Sync failed: {status.message}</div>
+        )}
       </CardContent>
     </Card>
   );
