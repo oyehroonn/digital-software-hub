@@ -14,7 +14,7 @@
  * The whole IA lives in src/nav/model.tsx; this file just wires state + chrome.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, Command, RefreshCw, Search } from "lucide-react";
+import { ChevronDown, Command, RefreshCw, Search, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { loadConfig, type AppConfig } from "@/lib/config";
 import { checkAll, type ServiceStatus } from "@/lib/health";
@@ -189,6 +189,21 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      {/* Data won't load without the Apps Script secret — make that explicit
+          instead of every view showing a bare "No data yet". */}
+      {config && !config.ecommerce_secret && (
+        <button
+          onClick={() => goto("settings")}
+          className="flex w-full items-center gap-2 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-left text-xs text-amber-200 hover:bg-amber-500/15"
+        >
+          <AlertTriangle className="size-3.5 shrink-0 text-amber-400" />
+          <span>
+            <b>No Apps Script secret set</b> — orders, telemetry, heatmaps &amp; reports won't load until you add it.
+            Click here to open <b>Settings</b> and paste your read secret.
+          </span>
+        </button>
+      )}
 
       <div className="flex min-h-0 flex-1">
         {/* Sidebar — sections grouped into collapsible buckets */}

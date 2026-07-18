@@ -27,6 +27,9 @@ interface WooOrder {
   total?: string; currency?: string; created?: string; paid?: string;
   items?: { name: string; qty: number; total: string }[]; payment?: string; customer_id?: number;
 }
+interface ACContact {
+  id?: string; email?: string; name?: string; phone?: string; created?: string; updated?: string; status?: string;
+}
 
 const PAGE = 50;
 const money = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -40,13 +43,16 @@ const statusTone: Record<string, "ok" | "warn" | "down" | "muted" | "default"> =
 export function LegacyWoo() {
   const [customers, setCustomers] = useState<WooCustomer[] | null>(null);
   const [orders, setOrders] = useState<WooOrder[] | null>(null);
+  const [acContacts, setAcContacts] = useState<ACContact[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"customers" | "orders">("customers");
+  const [tab, setTab] = useState<"customers" | "orders" | "ac">("customers");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
 
   useEffect(() => {
     const base = import.meta.env.BASE_URL || "/";
+    // AC contacts are optional (only present once pulled) — don't fail the view.
+    fetch(`${base}legacy/ac-contacts.json`).then((r) => (r.ok ? r.json() : [])).then(setAcContacts).catch(() => setAcContacts([]));
     Promise.all([
       fetch(`${base}legacy/woo-customers.json`).then((r) => r.json()),
       fetch(`${base}legacy/woo-orders.json`).then((r) => r.json()),
@@ -75,9 +81,12 @@ export function LegacyWoo() {
       const rows = customers || [];
       return t ? rows.filter((c) => `${c.email} ${c.name} ${c.username} ${c.country}`.toLowerCase().includes(t)) : rows;
     }
+    if (tab === "ac") {
+      return t ? acContacts.filter((c) => `${c.email} ${c.name} ${c.phone}`.toLowerCase().includes(t)) : acContacts;
+    }
     const rows = orders || [];
     return t ? rows.filter((o) => `${o.email} ${o.name} ${o.number} ${o.status}`.toLowerCase().includes(t)) : rows;
-  }, [tab, q, customers, orders]);
+  }, [tab, q, customers, orders, acContacts]);
 
   useEffect(() => setPage(0), [tab, q]);
 
@@ -98,8 +107,11 @@ export function LegacyWoo() {
         </p>
       </div>
 
-      {/* Live sync panel */}
-      <SyncPanel onPulled={() => window.location.reload()} />
+      {/* Live sync panels — WooCommerce + ActiveCampaign */}
+      <div className="grid gap-3 lg:grid-cols-2">
+        <SyncPanel base="woo" sourceLabel="WooCommerce" onPulled={() => window.location.reload()} />
+        <SyncPanel base="ac" sourceLabel="ActiveCampaign" onPulled={() => window.location.reload()} />
+      </div>
 
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -129,6 +141,9 @@ export function LegacyWoo() {
           <Button size="sm" variant={tab === "orders" ? "default" : "ghost"} onClick={() => setTab("orders")}>
             Orders <span className="ml-1 opacity-60">{orders.length}</span>
           </Button>
+          <Button size="sm" variant={tab === "ac" ? "default" : "ghost"} onClick={() => setTab("ac")}>
+            AC Contacts <span className="ml-1 opacity-60">{acContacts.length}</span>
+          </Button>
         </div>
         <div className="relative w-full max-w-xs">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -151,6 +166,25 @@ export function LegacyWoo() {
             ))}
           </TBody>
         </Table>
+      ) : tab === "ac" ? (
+        acContacts.length === 0 ? (
+          <Empty icon={<Database className="size-5" />} title="No ActiveCampaign contacts pulled yet" hint="Use the ActiveCampaign 'Pull now' button above (local admin) to import contacts." />
+        ) : (
+          <Table>
+            <THead><TR><TH>Email</TH><TH>Name</TH><TH>Phone</TH><TH>Status</TH><TH>Created</TH></TR></THead>
+            <TBody>
+              {(pageRows as ACContact[]).map((c) => (
+                <TR key={c.id}>
+                  <TD className="font-medium">{c.email}</TD>
+                  <TD className="text-muted-foreground">{c.name || "—"}</TD>
+                  <TD className="text-muted-foreground">{c.phone || "—"}</TD>
+                  <TD>{c.status === "1" ? <Badge variant="ok" className="font-normal">active</Badge> : <Badge variant="muted" className="font-normal">{String(c.status ?? "—")}</Badge>}</TD>
+                  <TD className="text-muted-foreground">{fdate(c.created)}</TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        )
       ) : (
         <Table>
           <THead><TR><TH>Order</TH><TH>Customer</TH><TH>Status</TH><TH>Total</TH><TH>Items</TH><TH>Date</TH></TR></THead>
@@ -198,8 +232,10 @@ function Kpi({ icon, label, value }: { icon: React.ReactNode; label: string; val
 interface SyncStatus {
   state?: "idle" | "running" | "done" | "error";
   phase?: string; progress?: number; message?: string;
-  lastPull?: string | null; counts?: { customers: number; orders: number };
-  drift?: { customers: number; orders: number; error?: string; checkedAt?: string } | null;
+  lastPull?: string | null;
+  counts?: { customers: number; orders: number }; // woo
+  count?: number;                                  // ac (contacts)
+  drift?: (Record<string, number> & { error?: string; checkedAt?: string }) | null;
   emailed?: boolean; emailError?: string;
 }
 
@@ -218,7 +254,7 @@ const rel = (iso?: string | null) => {
  * with progress, and the job emails the result. Absent on the deployed admin →
  * shows a "run locally to sync" hint.
  */
-function SyncPanel({ onPulled }: { onPulled: () => void }) {
+function SyncPanel({ base, sourceLabel, onPulled }: { base: "woo" | "ac"; sourceLabel: string; onPulled: () => void }) {
   const [status, setStatus] = useState<SyncStatus | null>(null);
   const [available, setAvailable] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(false);
@@ -228,7 +264,7 @@ function SyncPanel({ onPulled }: { onPulled: () => void }) {
 
   const loadStatus = useCallback(async () => {
     try {
-      const r = await fetch("/api/woo/status");
+      const r = await fetch(`/api/${base}/status`);
       if (!r.ok) throw new Error();
       const s: SyncStatus = await r.json();
       setStatus(s); setAvailable(true);
@@ -241,18 +277,18 @@ function SyncPanel({ onPulled }: { onPulled: () => void }) {
       }
       return s;
     } catch { setAvailable(false); return null; }
-  }, [onPulled]);
+  }, [base, onPulled]);
 
   useEffect(() => { loadStatus(); return () => { if (poll.current) clearInterval(poll.current); }; }, [loadStatus]);
 
   const checkDrift = async () => {
     setChecking(true);
-    try { const r = await fetch("/api/woo/drift"); setDrift(await r.json()); } catch { /* ignore */ }
+    try { const r = await fetch(`/api/${base}/drift`); setDrift(await r.json()); } catch { /* ignore */ }
     setChecking(false);
   };
 
   const startPull = async () => {
-    await fetch("/api/woo/pull", { method: "POST" });
+    await fetch(`/api/${base}/pull`, { method: "POST" });
     wasRunning.current = true;
     setStatus((s) => ({ ...(s || {}), state: "running", progress: 1, message: "Starting…" }));
     if (poll.current) clearInterval(poll.current);
@@ -263,14 +299,21 @@ function SyncPanel({ onPulled }: { onPulled: () => void }) {
     return (
       <Card>
         <CardContent className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
-          <Database className="size-3.5" /> Live WooCommerce sync runs in the <b>local admin</b> (<code>npm run dev</code>) — this is a deployed snapshot.
+          <Database className="size-3.5" /> Live {sourceLabel} sync runs in the <b>local admin</b> (<code>npm run dev</code>) — this is a deployed snapshot.
         </CardContent>
       </Card>
     );
   }
 
   const running = status?.state === "running";
-  const hasNew = drift && !drift.error && (drift.customers > 0 || drift.orders > 0);
+  const DRIFT_META = new Set(["error", "checkedAt", "live", "snapshot"]);
+  const driftItems = drift && !drift.error
+    ? Object.entries(drift).filter(([k, v]) => !DRIFT_META.has(k) && typeof v === "number" && (v as number) > 0) as [string, number][]
+    : [];
+  const hasNew = driftItems.length > 0;
+  const countLabel = status?.counts
+    ? `${status.counts.customers.toLocaleString()} customers · ${status.counts.orders} orders`
+    : status?.count != null ? `${status.count.toLocaleString()} contacts` : null;
 
   return (
     <Card>
@@ -278,8 +321,8 @@ function SyncPanel({ onPulled }: { onPulled: () => void }) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm">
             <Clock className="size-4 text-muted-foreground" />
-            <span>Last pull <b>{rel(status?.lastPull)}</b></span>
-            {status?.counts && <span className="text-muted-foreground">· {status.counts.customers.toLocaleString()} customers · {status.counts.orders} orders</span>}
+            <span><b>{sourceLabel}</b> · last pull <b>{rel(status?.lastPull)}</b></span>
+            {countLabel && <span className="text-muted-foreground">· {countLabel}</span>}
             {status?.emailed && <Badge variant="ok" className="font-normal"><Mail className="mr-1 size-3" />emailed</Badge>}
           </div>
           <div className="flex items-center gap-2">
@@ -294,14 +337,14 @@ function SyncPanel({ onPulled }: { onPulled: () => void }) {
 
         {drift && !running && (
           drift.error ? (
-            <div className="flex items-center gap-2 text-xs text-amber-500"><AlertCircle className="size-3.5" /> Couldn't reach WooCommerce: {drift.error}</div>
+            <div className="flex items-center gap-2 text-xs text-amber-500"><AlertCircle className="size-3.5" /> Couldn't reach {sourceLabel}: {drift.error}</div>
           ) : hasNew ? (
             <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs">
               <AlertCircle className="size-3.5 text-amber-500" />
-              <span><b>{drift.customers > 0 ? `+${drift.customers} customers` : ""}{drift.customers > 0 && drift.orders > 0 ? ", " : ""}{drift.orders > 0 ? `+${drift.orders} orders` : ""}</b> on the live store since the last pull. Run <b>Pull now</b> to refresh.</span>
+              <span><b>{driftItems.map(([k, v]) => `+${v} ${k}`).join(", ")}</b> since the last pull. Run <b>Pull now</b> to refresh.</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-xs text-emerald-500"><CheckCircle2 className="size-3.5" /> Up to date — no new customers or orders since the last pull.</div>
+            <div className="flex items-center gap-2 text-xs text-emerald-500"><CheckCircle2 className="size-3.5" /> Up to date — no changes since the last pull.</div>
           )
         )}
 
