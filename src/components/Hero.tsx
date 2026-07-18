@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ArrowDown, Check, Zap, Shield } from "lucide-react";
 import { useHeroReveal, useCursorGlow } from "@/hooks/useScrollAnimation";
@@ -15,16 +15,40 @@ const Hero = () => {
   const { containerRef, glowRef } = useCursorGlow();
   const [meshAccent, setMeshAccent] = useState<MeshAccent>("red");
 
+  // Defer the WebGL hero until the browser is idle. three.js + UnrealBloom init
+  // is a long main-thread task; mounting it after first paint / interactivity
+  // slashes Total Blocking Time (the page is usable before the mesh appears).
+  const [showMesh, setShowMesh] = useState(false);
+  useEffect(() => {
+    const ric: (cb: () => void) => number =
+      (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback
+        ? (cb) => (window as unknown as { requestIdleCallback: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback(cb, { timeout: 2500 })
+        : (cb) => window.setTimeout(cb, 1200);
+    const id = ric(() => setShowMesh(true));
+    return () => {
+      const cic = (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
+      cic ? cic(id) : clearTimeout(id);
+    };
+  }, []);
+
   return (
     <section
       ref={containerRef}
       className="cursor-glow relative min-h-screen flex items-center justify-center pt-28 overflow-hidden bg-[#030305]"
     >
-      {/* Three.js interactive mesh background (lazy-loaded chunk) */}
+      {/* Three.js interactive mesh background — deferred to browser idle so it
+          doesn't block first paint / interactivity (see showMesh above). An
+          instant CSS gradient stands in until it mounts. */}
       <div className="absolute inset-0 w-full h-full z-0">
-        <Suspense fallback={null}>
-          <HeroMesh accent={meshAccent} />
-        </Suspense>
+        <div
+          className="absolute inset-0 transition-opacity duration-700"
+          style={{ background: "radial-gradient(120% 90% at 50% 15%, hsl(4 70% 30% / 0.35) 0%, #0a0406 45%, #030305 100%)", opacity: showMesh ? 0 : 1 }}
+        />
+        {showMesh && (
+          <Suspense fallback={null}>
+            <HeroMesh accent={meshAccent} />
+          </Suspense>
+        )}
       </div>
 
       {/* Ambient orbs — layered above mesh, below text (radial gradients, no blur) */}
