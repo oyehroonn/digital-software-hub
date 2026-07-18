@@ -154,10 +154,24 @@ export function channelOf(source: string, medium: string): Channel {
   return "Referral";
 }
 
+/** Parse utm_source / utm_medium from a URL's query string. */
+function utmFromUrl(url: string): { source: string; medium: string } {
+  if (!url || !url.includes("utm_")) return { source: "", medium: "" };
+  try {
+    const q = new URL(url, "http://x").searchParams;
+    return { source: (q.get("utm_source") || "").toLowerCase().trim(), medium: (q.get("utm_medium") || "").toLowerCase().trim() };
+  } catch { return { source: "", medium: "" }; }
+}
+
 function firstTouch(e: TelemetryEvent): { source: string; medium: string } {
   const m = metaOf(e);
-  const source = str(metaPick(m, "utm_source", "utmSource", "source", "utm_src"));
-  const medium = str(metaPick(m, "utm_medium", "utmMedium", "medium"));
+  let source = str(metaPick(m, "utm_source", "utmSource", "utm_src"));
+  let medium = str(metaPick(m, "utm_medium", "utmMedium"));
+  // Fallback: the frontend puts utm_* in the landing page_url QUERY, not metadata.
+  if (!source) {
+    const fromUrl = utmFromUrl(str(pick(e, "pageUrl", "page_url", "url", "href")));
+    if (fromUrl.source) { source = fromUrl.source; medium = medium || fromUrl.medium; }
+  }
   const referrer = str(metaPick(m, "referrer", "referer", "ref", "document_referrer"));
   if (source) return { source: source.toLowerCase(), medium: (medium || "referral").toLowerCase() };
   const ref = fromReferrer(referrer);
