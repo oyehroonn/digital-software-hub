@@ -7,13 +7,28 @@
  * the rest of the analytics suite.
  */
 import type { ReactNode } from "react";
+import { Download } from "lucide-react";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { fmtMoney } from "@/lib/utils";
 import { MeterBar } from "../shell";
 import { Delta } from "./reportKit";
 import type { DimRow } from "./salesData";
 
 const nf = (n: number) => Math.round(n).toLocaleString("en-US");
+
+/** Client-side CSV download — generate & save a report with no backend. */
+function downloadCsv(filename: string, headers: string[], rows: (string | number)[][]) {
+  const esc = (v: string | number) => {
+    const s = String(v ?? "");
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const csv = [headers, ...rows].map((r) => r.map(esc).join(",")).join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 export type ValueKey = "net" | "gross" | "discounts" | "tax" | "refunds";
 
@@ -50,8 +65,21 @@ export function DimTable({
   const max = Math.max(...shown.map((r) => Math.abs(r[valueKey])), 1);
   const money = (v: number) => fmtMoney(v, currency);
 
+  const exportCsv = () => {
+    const headers = [labelHeader, valueHeader, "Orders", "Units", "AOV", "Share %", ...(extraCols?.map((c) => c.header) ?? [])];
+    const body = shown.map((r) => [
+      r.label, Math.round(r[valueKey]), r.orders, r.units, Math.round(r.aov), (r.share * 100).toFixed(1),
+    ]);
+    downloadCsv(`${labelHeader.toLowerCase().replace(/\s+/g, "-")}-report.csv`, headers, body);
+  };
+
   return (
     <div className="overflow-x-auto">
+      <div className="mb-2 flex justify-end">
+        <Button size="sm" variant="outline" onClick={exportCsv} disabled={!shown.length}>
+          <Download className="size-3.5" /> Export CSV
+        </Button>
+      </div>
       <Table className="min-w-[560px]">
         <THead>
           <TR>
