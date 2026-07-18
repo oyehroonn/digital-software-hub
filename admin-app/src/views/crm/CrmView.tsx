@@ -14,6 +14,7 @@ import { SegmentBuilder } from "./SegmentBuilder";
 import { FollowUps } from "./FollowUps";
 import { WinBack } from "./WinBack";
 import { UnifiedLeadInbox } from "./UnifiedLeadInbox";
+import { LegacyWoo } from "./LegacyWoo";
 
 type CrmTab =
   | "inbox"
@@ -23,7 +24,8 @@ type CrmTab =
   | "licenses"
   | "segments"
   | "tasks"
-  | "winback";
+  | "winback"
+  | "legacy";
 
 /**
  * CRM / Leads area entry point. Owns the single data load and routes between the
@@ -60,6 +62,7 @@ export function CrmView({
     { key: "segments", label: "Segments" },
     { key: "tasks", label: "Follow-ups", badge: openTasks },
     { key: "winback", label: "Win-back", badge: data.winBack.filter((w) => w.customer.email).length },
+    { key: "legacy", label: "Legacy (Woo)" },
   ];
 
   const openCustomer = (email: string) => {
@@ -112,6 +115,8 @@ export function CrmView({
         <SegmentBuilder leads={data.leads} customers={data.customers} />
       ) : tab === "tasks" ? (
         <FollowUps />
+      ) : tab === "legacy" ? (
+        <LegacyWoo />
       ) : (
         <WinBack config={config} winBack={data.winBack} />
       )}

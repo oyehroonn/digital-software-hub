@@ -28,9 +28,11 @@ export const DEFAULT_CONFIG: AppConfig = {
     "https://script.google.com/macros/s/AKfycbx0xBtUqHzC1Swqb7nuL8vyw5l_KkEYxrFYs24Bo7N2l_tRAg38BhF8ru6NlCDda91U/exec",
   // Read/write secret for the ecommerce Apps Script (orders + telemetry). Gates
   // the GET ?action=telemetry|orders read endpoints so the admin can pull the
-  // private sheets without publishing them. Internal admin tool → baked here;
-  // override per-machine in Settings / the OS config file if it ever rotates.
-  ecommerce_secret: "a003c5ef4fd64f54cae76d62925d93d63bc394c733f8a6dd30fdeffadaf990c2",
+  // private sheets without publishing them. NEVER hardcoded — it must not ship in
+  // a public web bundle. Sourced from a gitignored build env (VITE_ECOM_SECRET,
+  // set in admin-app/.env.local for local dev), the OS config file (desktop), or
+  // entered once in Settings (stored in localStorage). Empty on the public build.
+  ecommerce_secret: (import.meta.env.VITE_ECOM_SECRET as string) || "",
   telemetry_read_url: "",
   telemetry_sheet_id: "1MZykNN5r-pcelIxVApNZzcPUORshgqGfPRyEsE90vWc",
   orders_sheet_id: "1BeHD5fa6veJDBU2PGSsZ2Sw3If0dxyMQlFPq8os84cQ",

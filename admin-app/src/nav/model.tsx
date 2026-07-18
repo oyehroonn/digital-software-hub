@@ -243,6 +243,7 @@ export const SECTIONS: Section[] = [
       { key: "segments", label: "Segments", icon: Boxes, desc: "Build customer segments." },
       { key: "tasks", label: "Follow-ups", icon: CheckSquare, desc: "Follow-up tasks." },
       { key: "winback", label: "Win-back", icon: Repeat, desc: "Re-engage lapsed customers." },
+      { key: "legacy", label: "Legacy (Woo)", icon: FileSpreadsheet, desc: "Customers & orders migrated from the old WooCommerce store.", keywords: "woocommerce wordpress import migration legacy old store" },
     ],
     render: (ctx) => (
       <CrmView config={ctx.config} page={ctx.page} onPageChange={ctx.setPage} />

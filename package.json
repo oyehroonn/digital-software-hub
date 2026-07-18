@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.app.json --noEmit && vite build",
+    "build:admin": "cd admin-app && npm ci && ADMIN_BASE=/admin/ npm run build && rm -rf ../public/admin && cp -r dist ../public/admin && rm -rf ../public/admin/legacy",
+    "build": "npm run build:admin && tsc -p tsconfig.app.json --noEmit && vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
