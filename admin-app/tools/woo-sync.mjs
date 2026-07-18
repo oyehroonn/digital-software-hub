@@ -11,6 +11,7 @@
  * and emails a summary via the mailcli on completion.
  */
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 import { execFile } from "child_process";
@@ -96,6 +97,35 @@ async function doCheck() {
   console.log(JSON.stringify(drift));
 }
 
+// Scheduled proactive check: detect drift and email the user ONCE per new delta
+// (deduped via notifiedDrift so a 6-hourly cron doesn't repeat the same alert).
+async function doNotify() {
+  const snap = snapshotCounts() || readStatus().counts || { customers: 0, orders: 0 };
+  const live = await liveTotals();
+  if (live.error) { console.log(JSON.stringify({ check: "failed", error: live.error })); return; }
+  const drift = { customers: (live.customers ?? 0) - (snap.customers ?? 0), orders: (live.orders ?? 0) - (snap.orders ?? 0) };
+  writeStatus({ drift: { ...drift, live, snapshot: snap, checkedAt: nowISO() }, lastCheck: nowISO() });
+  const notified = readStatus().notifiedDrift || { customers: 0, orders: 0 };
+  const hasNew = drift.customers > 0 || drift.orders > 0;
+  const changed = drift.customers !== notified.customers || drift.orders !== notified.orders;
+  if (hasNew && changed) {
+    const parts = [drift.customers > 0 ? `${drift.customers} new customers` : "", drift.orders > 0 ? `${drift.orders} new orders` : ""].filter(Boolean).join(" and ");
+    const body = [
+      `The live WooCommerce store has ${parts} since your last pull.`, ``,
+      `Live now:  ${live.customers} customers · ${live.orders} orders`,
+      `Snapshot:  ${snap.customers} customers · ${snap.orders} orders`, ``,
+      `To refresh the admin, open the local admin → Customers → Legacy (Woo) → "Pull now".`,
+      `(Or run: cd admin-app && node tools/woo-sync.mjs pull)`, ``,
+      `Checked: ${nowISO()}`,
+    ].join("\n");
+    const mail = await email(`DSM: ${parts} on the store — pull?`, body);
+    if (mail.ok) writeStatus({ notifiedDrift: drift, lastNotified: nowISO() });
+    console.log(JSON.stringify({ notified: hasNew, drift, emailed: mail.ok, err: mail.err }));
+  } else {
+    console.log(JSON.stringify({ notified: false, drift, reason: hasNew ? "already notified" : "no new data" }));
+  }
+}
+
 async function doPull() {
   if (!CK || !CS) { writeStatus({ state: "error", message: "WOO_CK/WOO_CS not set" }); process.exit(2); }
   const started = Date.now();
@@ -115,6 +145,8 @@ async function doPull() {
   const rev = {};
   for (const o of slimO) if (["completed", "processing", "on-hold"].includes(o.status)) rev[o.currency || "?"] = (rev[o.currency || "?"] || 0) + Number(o.total || 0);
   const counts = { customers: slimC.length, orders: slimO.length };
+  // refresh the scheduler's baseline so proactive drift alerts reset after a pull
+  try { fs.writeFileSync(path.join(os.homedir(), ".dsm-sync", "baseline.json"), JSON.stringify({ ...counts, pulledAt: nowISO() })); } catch { /* scheduler not set up */ }
   const durationMs = Date.now() - started;
   const dCust = prev ? counts.customers - prev.customers : null;
   const dOrd = prev ? counts.orders - prev.orders : null;
@@ -141,7 +173,8 @@ const action = process.argv[2];
   try {
     if (action === "check") await doCheck();
     else if (action === "pull") await doPull();
-    else { console.error("usage: woo-sync.mjs check|pull"); process.exit(1); }
+    else if (action === "notify") await doNotify();
+    else { console.error("usage: woo-sync.mjs check|pull|notify"); process.exit(1); }
   } catch (e) {
     writeStatus({ state: "error", message: String(e.message || e), finishedAt: nowISO() });
     console.error("ERROR", e.message);
