@@ -14,9 +14,8 @@ export default function TopProducts() {
       <div className="max-w-[1600px] mx-auto px-6">
         <div ref={headingAnim.ref} className={`flex flex-col justify-between gap-6 md:flex-row md:items-end mb-12 ${headingAnim.className}`}>
           <div>
-            <span className="inline-block text-[10px] font-semibold text-crimson uppercase tracking-[0.2em] mb-4">Digital Software Market Choice</span>
+            <span className="inline-block text-[10px] font-semibold text-crimson uppercase tracking-[0.2em] mb-4">Digital Software Market choice</span>
             <h2 className="font-serif text-3xl md:text-4xl text-[hsl(220_10%_4%)]">Designed boxes. Chosen software.</h2>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-black/55">Priority products selected by DSM and presented in their approved Creative Studio packaging.</p>
           </div>
           <button onClick={() => navigate("/store")} className="hidden md:inline-flex items-center gap-2 self-start rounded-sm border border-[hsl(40_8%_88%)] px-4 py-2.5 text-sm font-medium text-[hsl(220_10%_4%)] transition hover:border-crimson hover:bg-crimson hover:text-white md:self-auto">
             Browse catalogue <ArrowRight className="w-4 h-4" />
