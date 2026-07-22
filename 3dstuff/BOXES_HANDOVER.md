@@ -16,7 +16,7 @@ BOX_H = 2.1
 BOX_D = 0.22
 ```
 
-The 0.22 depth is intentional: software packaging should look like a thin carton, not a deep retail cube. `gen_own_boxes.py` imports the same `apply_texture`, so do **not** implement a second box mesh there.
+The 0.22 depth is intentional: software packaging should look like a thin carton, not a deep retail cube. `gen_own_boxes.py` imports the same `apply_texture`, so do **not** implement a second box mesh there. When a creative archive supplies a numbered `Spine.png`, `import_creative_boxes.py` maps it to the right side and mirrors it for the left side; never use flat edge colour in place of an approved supplied spine.
 
 ## Regenerating safely
 

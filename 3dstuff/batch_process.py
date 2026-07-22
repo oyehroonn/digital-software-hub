@@ -616,11 +616,13 @@ def _edge_color(img: Image.Image):
     return tuple(int(x) for x in np.median(strip, axis=0))
 
 
-def _build_atlas(cover: Image.Image, side_color, size: int = 2048):
+def _build_atlas(cover: Image.Image, side_color, right_spine: Image.Image | None = None,
+                 left_spine: Image.Image | None = None, size: int = 2048):
     """Composite a single texture atlas:
         left column  (u 0..cover_u) = the product cover, aspect-fit + letterboxed
-        right column (u cover_u..1) = a flat panel of `side_color`
-    Returns (atlas_image, cover_u)."""
+        next panels = right and left spine artwork (when supplied)
+        remainder = a flat panel of `side_color`
+    Returns (atlas_image, cover_u, right_range, left_range)."""
     atlas = Image.new('RGB', (size, size), side_color)
     cover_w = int(round(size * (BOX_W / BOX_H)))   # front-face aspect region
     region = Image.new('RGB', (cover_w, size), side_color)
@@ -630,10 +632,30 @@ def _build_atlas(cover: Image.Image, side_color, size: int = 2048):
     resized = cover.resize((nw, nh), Image.Resampling.LANCZOS)
     region.paste(resized, ((cover_w - nw) // 2, (size - nh) // 2))
     atlas.paste(region, (0, 0))
-    return atlas, cover_w / size
+    spine_w = max(1, int(round(size * (BOX_D / BOX_H))))
+
+    def paste_spine(image, x):
+        if image is None:
+            return
+        # The supplied spine is deliberately squeezed to the physical thin-box
+        # width.  Its transparent pixels reveal the sampled edge colour.
+        source = image.convert('RGBA').resize((spine_w, size), Image.Resampling.LANCZOS)
+        panel = Image.new('RGB', (spine_w, size), side_color)
+        panel.paste(source, (0, 0), source)
+        atlas.paste(panel, (x, 0))
+
+    right_x = cover_w
+    left_x = right_x + spine_w
+    paste_spine(right_spine, right_x)
+    paste_spine(left_spine or right_spine, left_x)
+    return (atlas, cover_w / size,
+            (right_x / size, (right_x + spine_w) / size),
+            (left_x / size, (left_x + spine_w) / size))
 
 
-def apply_texture(glb_path, texture_img: Image.Image, output_path):
+def apply_texture(glb_path, texture_img: Image.Image, output_path,
+                  right_spine: Image.Image | None = None,
+                  left_spine: Image.Image | None = None):
     """Build a fresh, correctly-UV'd software box and texture it with the
     product cover.
 
@@ -643,12 +665,15 @@ def apply_texture(glb_path, texture_img: Image.Image, output_path):
     made each face sample a different rotated/mirrored slice, so back/side
     faces showed reversed gibberish. We therefore ignore box.glb's UVs and
     author our own geometry: the cover goes on the FRONT and BACK faces
-    upright and un-mirrored; the spine/top/bottom get a flat brand colour
-    sampled from the cover's edge. `glb_path` is kept for signature compat.
+    upright and un-mirrored; supplied spine strips go on the two narrow sides
+    (the left strip is mirrored); top/bottom use a sampled edge colour.
+    `glb_path` is kept for signature compat.
     """
     cover = _prep_cover(texture_img)
     side = _edge_color(cover)
-    atlas, cu = _build_atlas(cover, side)
+    atlas, cu, right_range, left_range = _build_atlas(
+        cover, side, right_spine=right_spine, left_spine=left_spine,
+    )
     atlas.save(os.path.join(os.path.dirname(output_path), 'texture.png'))
 
     hx, hy, hz = BOX_W / 2.0, BOX_H / 2.0, BOX_D / 2.0
@@ -666,18 +691,24 @@ def apply_texture(glb_path, texture_img: Image.Image, output_path):
     # Cover UVs for [BL, BR, TR, TL] with glTF top-left origin.
     v_bottom, v_top = (0.0, 1.0) if FLIP_V else (1.0, 0.0)
     cover_uv = [(0.0, v_bottom), (cu, v_bottom), (cu, v_top), (0.0, v_top)]
-    # A single point inside the flat side panel → uniform colour, no distortion.
+    # A single point inside the flat side panel → uniform top/bottom colour.
     sp = (cu + (1.0 - cu) / 2.0, 0.5)
     side_uv = [sp, sp, sp, sp]
+    right_uv = [(right_range[0], v_bottom), (right_range[1], v_bottom),
+                (right_range[1], v_top), (right_range[0], v_top)]
+    # The left box face is viewed from the opposite direction. Mirror this UV
+    # range so vertical spine artwork reads correctly on both sides.
+    left_uv = [(left_range[1], v_bottom), (left_range[0], v_bottom),
+               (left_range[0], v_top), (left_range[1], v_top)]
 
     # FRONT (+Z): cover, upright.  Quad order BL, BR, TR, TL.
     add_face([(-hx, -hy,  hz), ( hx, -hy,  hz), ( hx,  hy,  hz), (-hx,  hy,  hz)], cover_uv)
     # BACK (-Z): cover, upright & un-mirrored when viewed from behind.
     add_face([( hx, -hy, -hz), (-hx, -hy, -hz), (-hx,  hy, -hz), ( hx,  hy, -hz)], cover_uv)
-    # RIGHT (+X): flat side panel.
-    add_face([( hx, -hy,  hz), ( hx, -hy, -hz), ( hx,  hy, -hz), ( hx,  hy,  hz)], side_uv)
-    # LEFT (-X): flat side panel.
-    add_face([(-hx, -hy, -hz), (-hx, -hy,  hz), (-hx,  hy,  hz), (-hx,  hy, -hz)], side_uv)
+    # RIGHT (+X): supplied spine strip.
+    add_face([( hx, -hy,  hz), ( hx, -hy, -hz), ( hx,  hy, -hz), ( hx,  hy,  hz)], right_uv)
+    # LEFT (-X): same spine artwork, horizontally mirrored.
+    add_face([(-hx, -hy, -hz), (-hx, -hy,  hz), (-hx,  hy,  hz), (-hx,  hy, -hz)], left_uv)
     # TOP (+Y): flat side panel.
     add_face([(-hx,  hy,  hz), ( hx,  hy,  hz), ( hx,  hy, -hz), (-hx,  hy, -hz)], side_uv)
     # BOTTOM (-Y): flat side panel.
