@@ -6,7 +6,6 @@ import catalogueProducts from "@/data/catalogueProducts.json";
 import { useApp } from "@/contexts/AppContext";
 import { useProductModal } from "@/contexts/ProductModalContext";
 import type { Product } from "@/lib/api";
-import { Link } from "react-router-dom";
 import { DSM_CHOICES, dsmChoiceGlb } from "@/data/dsmChoices";
 
 // Keep the standard product grid visually aligned with the polished DSM AI
@@ -21,8 +20,8 @@ function toProduct(p: CatalogueProduct): Product {
     name: p.name,
     folder: p.folder,
     filename: `${p.id}.glb`,
-    link: catalogueGlb(p),
-    viewer: catalogueGlb(p),
+    link: p.glbSrc ?? catalogueGlb(p),
+    viewer: p.glbSrc ?? catalogueGlb(p),
     category: p.category,
     brand: "",
     licenseType: "",
@@ -45,6 +44,8 @@ interface CatalogueProduct {
   price: string;
   oldPrice?: string;
   folder: string;
+  glbSrc?: string;
+  presentationBackdrop?: string;
 }
 
 const ProductCard = ({
@@ -54,7 +55,7 @@ const ProductCard = ({
   product: CatalogueProduct;
   onAddToCart: (product: CatalogueProduct) => void;
 }) => {
-  const glbSrc = catalogueGlb(product);
+  const glbSrc = product.glbSrc ?? catalogueGlb(product);
   const { openProductModal } = useProductModal();
   const openDetail = () => openProductModal(toProduct(product));
 
@@ -83,6 +84,7 @@ const ProductCard = ({
 
         <ProductModelViewer
           glbSrc={glbSrc}
+          presentationBackdrop={product.presentationBackdrop}
           fallbackIcon={
             <div className="w-20 h-20 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
               <span className="text-2xl font-bold text-[#FEFEFE]/20">{product.name.charAt(0)}</span>
@@ -137,7 +139,18 @@ const PopularProducts = () => {
   const [visibleCount, setVisibleCount] = useState(PRODUCTS_PER_PAGE);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const allProducts = catalogueProducts as CatalogueProduct[];
+  const allProducts = useMemo<CatalogueProduct[]>(() => [
+    ...DSM_CHOICES.map((choice) => ({
+      id: choice.id,
+      name: choice.name,
+      category: choice.category,
+      price: "Request quote",
+      folder: choice.modelFolder,
+      glbSrc: dsmChoiceGlb(choice),
+      presentationBackdrop: choice.presentationBackdrop,
+    })),
+    ...(catalogueProducts as CatalogueProduct[]),
+  ], []);
 
   const filteredProducts = useMemo(() => {
     if (!searchQuery.trim()) return allProducts;
@@ -198,34 +211,6 @@ const PopularProducts = () => {
           </a>
         </div>
 
-        {/* A compact, real-GLB preview keeps the creative packaging visible in
-            the catalogue itself; the full credited registry lives at /creatives. */}
-        <div className="mb-12 border-y border-white/[0.07] py-7">
-          <div className="mb-5 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-crimson">Registered creatives</p>
-              <p className="mt-1 text-sm text-[#B1B2B3]/65">Approved product designs from the supplied Creative Studio archives.</p>
-            </div>
-            <Link to="/creatives" className="shrink-0 text-xs font-semibold uppercase tracking-[0.12em] text-[#B1B2B3]/70 transition hover:text-crimson">View all registered designs</Link>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {DSM_CHOICES.slice(0, 4).map((creative) => {
-              return (
-                <Link key={creative.id} to="/creatives" className="group rounded-lg border border-white/[0.07] bg-white/[0.02] p-2 transition hover:border-crimson/35 hover:bg-white/[0.04]">
-                  <div className="aspect-[4/3] overflow-hidden rounded-md">
-                    <ProductModelViewer
-                      glbSrc={dsmChoiceGlb(creative)}
-                      presentationBackdrop={creative.presentationBackdrop}
-                      fallbackIcon={<span className="text-lg text-white/20">DSM</span>}
-                    />
-                  </div>
-                  <p className="mt-2 truncate text-xs font-medium text-[#FEFEFE] group-hover:text-crimson">{creative.name}</p>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Search Bar */}
         <div className="mb-10">
           <div className="relative max-w-md">
@@ -266,7 +251,7 @@ const PopularProducts = () => {
                       name: p.name,
                       price: p.price,
                       category: p.category,
-                      glbSrc: catalogueGlb(p),
+                      glbSrc: p.glbSrc ?? catalogueGlb(p),
                     })
                   }
                 />
