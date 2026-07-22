@@ -669,7 +669,8 @@ def _build_atlas(cover: Image.Image, side_color, back_cover: Image.Image | None 
 def apply_texture(glb_path, texture_img: Image.Image, output_path,
                   back_cover: Image.Image | None = None,
                   right_spine: Image.Image | None = None,
-                  left_spine: Image.Image | None = None):
+                  left_spine: Image.Image | None = None,
+                  backdrop: Image.Image | None = None):
     """Build a fresh, correctly-UV'd software box and texture it with the
     product cover.
 
@@ -680,7 +681,9 @@ def apply_texture(glb_path, texture_img: Image.Image, output_path,
     faces showed reversed gibberish. We therefore ignore box.glb's UVs and
     author our own geometry: the cover goes on the FRONT and BACK faces
     upright and un-mirrored; supplied back artwork goes on the rear face;
-    supplied spine strips go on the two narrow sides
+    supplied spine strips go on the two narrow sides. A supplied transparent
+    backdrop is a separate plane set behind the physical box, never printed
+    onto a box face.
     (the left strip is mirrored); top/bottom use a sampled edge colour.
     `glb_path` is kept for signature compat.
     """
@@ -742,7 +745,39 @@ def apply_texture(glb_path, texture_img: Image.Image, output_path,
     mesh.visual = trimesh.visual.TextureVisuals(
         uv=np.array(UV, dtype=np.float64), material=material,
     )
-    mesh.export(str(output_path))
+
+    if backdrop is None:
+        mesh.export(str(output_path))
+        return
+
+    # The quote-only PNG is presentation artwork, not package artwork.  Place
+    # it just beyond the rear (-Z) face so it is revealed behind the box during
+    # rotation, while its RGBA transparency preserves the card background.
+    backdrop_w, backdrop_h = BOX_W * 0.92, BOX_H * 0.92
+    backdrop_z = -hz - 0.035
+    backdrop_vertices = np.array([
+        ( backdrop_w / 2, -backdrop_h / 2, backdrop_z),
+        (-backdrop_w / 2, -backdrop_h / 2, backdrop_z),
+        (-backdrop_w / 2,  backdrop_h / 2, backdrop_z),
+        ( backdrop_w / 2,  backdrop_h / 2, backdrop_z),
+    ], dtype=np.float64)
+    backdrop_mesh = trimesh.Trimesh(
+        vertices=backdrop_vertices,
+        faces=np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int64),
+        process=False,
+    )
+    backdrop_material = trimesh.visual.material.PBRMaterial(
+        baseColorTexture=backdrop.convert('RGBA'), metallicFactor=0.0,
+        roughnessFactor=1.0, alphaMode='BLEND', doubleSided=True,
+    )
+    backdrop_mesh.visual = trimesh.visual.TextureVisuals(
+        uv=np.array([(1.0, v_bottom), (0.0, v_bottom), (0.0, v_top), (1.0, v_top)], dtype=np.float64),
+        material=backdrop_material,
+    )
+    scene = trimesh.Scene()
+    scene.add_geometry(mesh, node_name='box')
+    scene.add_geometry(backdrop_mesh, node_name='rear-presentation-backdrop')
+    scene.export(str(output_path))
 
 
 # ── Main ─────────────────────────────────────────────────────────────────

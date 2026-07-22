@@ -57,6 +57,16 @@ def back_for(front: Path) -> Path | None:
     )
     return candidates[0] if candidates else None
 
+def backdrop_for(front: Path) -> Path | None:
+    """Find the supplied transparent quote-only backdrop in this archive tree."""
+    for parent in [front.parent, *front.parents]:
+        if parent == SOURCE.parent:
+            break
+        candidate = parent / "text.png"
+        if candidate.exists():
+            return candidate
+    return None
+
 def discovered():
     known = {Path(p).as_posix() for _, p in CURATED}
     remainder = []
@@ -85,14 +95,19 @@ def main():
         cover = Image.open(source).convert("RGB")
         spine_path = spine_for(source)
         back_path = back_for(source)
+        backdrop_path = backdrop_for(source)
         spine = Image.open(spine_path) if spine_path else None
         back = Image.open(back_path).convert("RGB") if back_path else None
+        backdrop = Image.open(backdrop_path) if backdrop_path else None
         shutil.copy2(source, destination / "creative-front.png")
         if spine_path:
             shutil.copy2(spine_path, destination / "creative-spine.png")
         if back_path:
             shutil.copy2(back_path, destination / "creative-back.png")
-        apply_texture(BASE_GLB, cover, destination / "model.glb", back_cover=back, right_spine=spine)
+        if backdrop_path:
+            shutil.copy2(backdrop_path, destination / "creative-backdrop.png")
+        apply_texture(BASE_GLB, cover, destination / "model.glb", back_cover=back,
+                      right_spine=spine, backdrop=backdrop)
         shutil.copy2(destination / "model.glb", PUBLIC_MODELS / f"{pid}.glb")
         entry = {"id": pid, "name": name, "folder": folder, "glb": "model.glb", "status": "ok", "creative_design": True, "source": rel}
         manifest.append(entry)
