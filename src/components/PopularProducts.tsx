@@ -45,7 +45,6 @@ interface CatalogueProduct {
   oldPrice?: string;
   folder: string;
   glbSrc?: string;
-  presentationBackdrop?: string;
 }
 
 const ProductCard = ({
@@ -84,7 +83,6 @@ const ProductCard = ({
 
         <ProductModelViewer
           glbSrc={glbSrc}
-          presentationBackdrop={product.presentationBackdrop}
           fallbackIcon={
             <div className="w-20 h-20 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
               <span className="text-2xl font-bold text-[#FEFEFE]/20">{product.name.charAt(0)}</span>
@@ -147,7 +145,6 @@ const PopularProducts = () => {
       price: "Request quote",
       folder: choice.modelFolder,
       glbSrc: dsmChoiceGlb(choice),
-      presentationBackdrop: choice.presentationBackdrop,
     })),
     ...(catalogueProducts as CatalogueProduct[]),
   ], []);

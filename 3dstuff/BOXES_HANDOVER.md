@@ -16,7 +16,7 @@ BOX_H = 2.1
 BOX_D = 0.22
 ```
 
-The 0.22 depth is intentional: software packaging should look like a thin carton, not a deep retail cube. `gen_own_boxes.py` imports the same `apply_texture`, so do **not** implement a second box mesh there. When a creative archive supplies a numbered `Spine.png`, `import_creative_boxes.py` maps it to the right side and mirrors it for the left side; never use flat edge colour in place of an approved supplied spine.
+The 0.22 depth is intentional: software packaging should look like a thin carton, not a deep retail cube. `gen_own_boxes.py` imports the same `apply_texture`, so do **not** implement a second box mesh there. Creative archives map their `Front` art to the front, their matching `Back` art (including the supplied quote treatment) to the rear, and a numbered `Spine.png` to the right side and mirrored left side. Never put rear artwork behind a catalogue card or replace approved spine art with a flat edge colour.
 
 ## Regenerating safely
 

@@ -45,6 +45,18 @@ def spine_for(front: Path) -> Path | None:
     candidate = front.parent / f"{match.group(1)} Spine.png"
     return candidate if candidate.exists() else None
 
+def back_for(front: Path) -> Path | None:
+    """Find the matching numbered back cover beside a creative front image."""
+    match = re.match(r"(\d+)\b", front.name)
+    if not match:
+        return None
+    prefix = match.group(1)
+    candidates = sorted(
+        path for path in front.parent.glob("*.png")
+        if path.name.startswith(prefix) and "back" in path.name.lower()
+    )
+    return candidates[0] if candidates else None
+
 def discovered():
     known = {Path(p).as_posix() for _, p in CURATED}
     remainder = []
@@ -72,11 +84,15 @@ def main():
         source = SOURCE / rel
         cover = Image.open(source).convert("RGB")
         spine_path = spine_for(source)
+        back_path = back_for(source)
         spine = Image.open(spine_path) if spine_path else None
+        back = Image.open(back_path).convert("RGB") if back_path else None
         shutil.copy2(source, destination / "creative-front.png")
         if spine_path:
             shutil.copy2(spine_path, destination / "creative-spine.png")
-        apply_texture(BASE_GLB, cover, destination / "model.glb", right_spine=spine)
+        if back_path:
+            shutil.copy2(back_path, destination / "creative-back.png")
+        apply_texture(BASE_GLB, cover, destination / "model.glb", back_cover=back, right_spine=spine)
         shutil.copy2(destination / "model.glb", PUBLIC_MODELS / f"{pid}.glb")
         entry = {"id": pid, "name": name, "folder": folder, "glb": "model.glb", "status": "ok", "creative_design": True, "source": rel}
         manifest.append(entry)

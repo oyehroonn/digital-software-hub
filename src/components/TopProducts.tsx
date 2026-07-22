@@ -27,7 +27,7 @@ export default function TopProducts() {
             <article key={product.id} className="group cursor-pointer" onClick={() => navigate("/store")}>
               <div className="relative aspect-[3/4] overflow-hidden rounded-lg border border-[hsl(40_8%_88%)] bg-[hsl(40_25%_99%)] transition duration-300 group-hover:-translate-y-1 group-hover:border-crimson/50 group-hover:shadow-xl">
                 <div className="absolute left-3 top-3 z-10 rounded-full border border-black/[0.08] bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-black/60 backdrop-blur">DSM Choice</div>
-                <ProductModelViewer glbSrc={dsmChoiceGlb(product)} presentationBackdrop={product.presentationBackdrop} fallbackIcon={<span className="font-serif text-3xl text-black/20">DSM</span>} className="bg-transparent" />
+                <ProductModelViewer glbSrc={dsmChoiceGlb(product)} fallbackIcon={<span className="font-serif text-3xl text-black/20">DSM</span>} className="bg-transparent" />
               </div>
               <div className="mt-4 flex items-start gap-3">
                 <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-crimson" aria-hidden />
