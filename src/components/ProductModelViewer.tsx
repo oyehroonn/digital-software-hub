@@ -8,6 +8,8 @@ interface ProductModelViewerProps {
   glbSrc: string;
   fallbackIcon: React.ReactNode;
   className?: string;
+  /** Optional supplied artwork used behind a box, never baked into its GLB texture. */
+  presentationBackdrop?: string;
 }
 
 const IDLE_SPEED = 50;
@@ -30,6 +32,7 @@ const ProductModelViewer = ({
   glbSrc,
   fallbackIcon,
   className = "",
+  presentationBackdrop,
 }: ProductModelViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const modelRef = useRef<HTMLElement | null>(null);
@@ -199,6 +202,13 @@ const ProductModelViewer = ({
     <div
       ref={containerRef}
       className={`model-viewer-container w-full h-full bg-secondary group-hover:bg-card transition-colors duration-500 ${className}`}
+      style={presentationBackdrop ? {
+        backgroundColor: "#f8f8f6",
+        backgroundImage: `url(${presentationBackdrop})`,
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundSize: "cover",
+      } : undefined}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >

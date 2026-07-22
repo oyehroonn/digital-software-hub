@@ -36,6 +36,7 @@ const EditorialSpotlight = () => {
             <div className="absolute inset-0 scale-110">
               <ProductModelViewer
                 glbSrc={dsmChoiceGlb(DSM_CHOICES[2])}
+                presentationBackdrop={DSM_CHOICES[2].presentationBackdrop}
                 fallbackIcon={
                   <div className="w-24 h-24 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
                     <span className="text-3xl font-bold text-white/20">W</span>

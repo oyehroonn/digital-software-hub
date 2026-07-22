@@ -213,6 +213,7 @@ const PopularProducts = () => {
                   <div className="aspect-[4/3] overflow-hidden rounded-md">
                     <ProductModelViewer
                       glbSrc={dsmChoiceGlb(creative)}
+                      presentationBackdrop={creative.presentationBackdrop}
                       fallbackIcon={<span className="text-lg text-white/20">DSM</span>}
                     />
                   </div>
