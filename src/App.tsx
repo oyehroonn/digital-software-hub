@@ -25,6 +25,7 @@ const Checkout = lazy(() => import("./pages/Checkout"));
 const Account = lazy(() => import("./pages/Account"));
 const ExclusiveMembers = lazy(() => import("./pages/ExclusiveMembers"));
 const ResellerPortal = lazy(() => import("./pages/ResellerPortal"));
+const RegisteredCreatives = lazy(() => import("./pages/RegisteredCreatives"));
 const Support = lazy(() => import("./pages/Support"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 // Site-wide floating concierge (feature 06) — deferred so the LLM chat code
@@ -95,6 +96,7 @@ const AppContent = () => {
                 <Route path="/account" element={<Account />} />
                 <Route path="/exclusive" element={<ExclusiveMembers />} />
                 <Route path="/reseller" element={<ResellerPortal />} />
+                <Route path="/creatives" element={<RegisteredCreatives />} />
                 <Route path="/support" element={<Support />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

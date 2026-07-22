@@ -543,11 +543,13 @@ def build_row_image_map(xlsx_path):
 
 
 # ── Box geometry (real software-box proportions, NOT a flat slab) ─────────
-# Front face is portrait (W x H); D is a healthy depth so the box never reads
-# as a paper-thin slab after the viewer normalises its size.
+# Front face is portrait (W x H). Depth preserves a visible spine while keeping
+# the silhouette recognisably close to a thin software carton.
+# Software boxes read as thin cartons, not deep retail cubes. Keep this shared
+# geometry as the single source of truth for catalogue and DSM-original GLBs.
 BOX_W = 1.5   # x  (cover width)
 BOX_H = 2.1   # y  (cover height)
-BOX_D = 0.5   # z  (spine depth)
+BOX_D = 0.22  # z  (spine depth; 15% of cover width)
 
 # trimesh's glTF exporter flips V on write, and three.js' GLTFLoader samples
 # with v=0 at the image BOTTOM. Verified with a marker render: the cover must

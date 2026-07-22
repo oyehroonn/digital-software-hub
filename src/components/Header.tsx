@@ -1,4 +1,4 @@
-import { User, ShoppingBag, ChevronDown, ArrowRight, LayoutGrid, PenTool, Box, ShieldCheck, Monitor, Cpu, Crown, Megaphone, Wrench, Building2, Users, LifeBuoy, Info, Menu, X } from "lucide-react";
+import { User, ShoppingBag, ChevronDown, ArrowRight, LayoutGrid, PenTool, Box, ShieldCheck, Monitor, Cpu, Crown, Megaphone, Wrench, Building2, Users, LifeBuoy, Info, Menu, X, Palette } from "lucide-react";
 import SearchBar from "./SearchBar";
 import ProductModelViewer from "./ProductModelViewer";
 import { Link, useNavigate } from "react-router-dom";
@@ -200,6 +200,7 @@ const Header = () => {
     { label: "DSM Services", desc: "Deployment, licensing & managed support", icon: Wrench, to: "/services" },
   ];
   const companyItems: DropdownItem[] = [
+    { label: "Registered Creatives", desc: "DSM-original product box collection", icon: Palette, to: "/creatives" },
     { label: "Enterprise", desc: "Volume licensing & procurement", icon: Building2, to: "/store" },
     { label: "Resellers", desc: "Partner portal & wholesale pricing", icon: Users, onClick: goReseller },
     { label: "Support", desc: "Help center, FAQs & contact", icon: LifeBuoy, to: "/support" },

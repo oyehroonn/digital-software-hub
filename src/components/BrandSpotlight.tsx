@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { useScrollAnimation, useCursorGlow } from "@/hooks/useScrollAnimation";
 import ProductModelViewer from "./ProductModelViewer";
+import { DSM_CHOICES, dsmChoiceGlb } from "@/data/dsmChoices";
 
 const BrandSpotlight = () => {
   const fadeRight = useScrollAnimation("animate-fade-right");
@@ -35,7 +36,7 @@ const BrandSpotlight = () => {
               {/* 3D Model - enlarged */}
               <div className="absolute inset-0 z-10 scale-110">
                 <ProductModelViewer
-                  glbSrc="https://dsm-api.techrealm.ai/models/8706/8706_Architecture_Engineering_and_Construction_AEC_Collection_202/model.glb"
+                  glbSrc={dsmChoiceGlb(DSM_CHOICES[7])}
                   fallbackIcon={
                     <div className="w-32 h-32 rounded-xl bg-azure/10 border border-azure/20 flex items-center justify-center">
                       <span className="text-4xl font-bold text-azure/40">A</span>
@@ -52,14 +53,14 @@ const BrandSpotlight = () => {
 
               {/* Floating badge */}
               <div className="absolute top-6 left-6 z-30 px-4 py-2 bg-azure/10 backdrop-blur-md border border-azure/30 rounded-sm text-[10px] font-semibold text-azure uppercase tracking-[0.14em] shadow-lg">
-                Brand Collection
+                Featured Autodesk Collection
               </div>
 
               {/* Bottom bar */}
               <div className="absolute bottom-0 left-0 right-0 p-6 flex items-end justify-between z-30">
                 <div className="flex items-center gap-4">
                   <div className="flex -space-x-1">
-                    {["AutoCAD", "Revit", "Civil 3D", "3ds Max"].map((name) => (
+                    {["AEC", "CAD", "BIM", "DSM"].map((name) => (
                       <div
                         key={name}
                         className="w-9 h-9 rounded-full bg-azure/10 backdrop-blur border border-azure/30 flex items-center justify-center text-[9px] font-bold text-azure/90 shadow-md"
@@ -68,7 +69,7 @@ const BrandSpotlight = () => {
                       </div>
                     ))}
                   </div>
-                  <span className="text-[11px] text-[#B1B2B3]/60">+12 more products</span>
+                  <span className="text-[11px] text-[#B1B2B3]/60">Creative Studio design</span>
                 </div>
               </div>
             </div>
@@ -81,23 +82,23 @@ const BrandSpotlight = () => {
           {/* Copy */}
           <div ref={fadeRight.ref} className={fadeRight.className}>
             <span className="inline-block text-[10px] font-semibold text-azure uppercase tracking-[0.2em] mb-6">
-              Featured Partner
+              Digital Software Market Choice
             </span>
             <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#FEFEFE] leading-[0.95] tracking-tight mb-6">
               Autodesk<br />
-              <span className="font-autodesk text-[#B1B2B3]/40 font-light">2026 Collection</span>
+              <span className="font-autodesk text-[#B1B2B3]/40 font-light">AEC Collection 2027</span>
             </h2>
             <p className="text-base text-[#B1B2B3]/60 font-light leading-relaxed mb-8 max-w-md line-clamp-3">
-              The complete AEC toolkit for architecture, engineering, and construction professionals. AutoCAD, Revit, Civil 3D, and more — all with exclusive DSM pricing and instant deployment.
+              AEC Collection 2027, shown in the approved Creative Studio box design. Architecture, engineering and construction tools in one DSM-selected collection.
             </p>
 
             {/* Features list */}
             <div className="space-y-4 mb-10 border-t border-white/[0.04] pt-8">
               {[
-                "Industry-leading BIM & CAD tools",
-                "Flexible yearly & 3-year subscriptions",
-                "Complimentary installation support",
-                "Enterprise volume licensing available",
+                "Approved DSM Creative Studio packaging",
+                "Thin-carton 3D box geometry",
+                "AutoCAD, Revit, Civil 3D and more",
+                "Selected for the DSM Choice shelf",
               ].map((feature, i) => (
                 <div key={i} className="flex items-center gap-3 text-sm text-[#B1B2B3]/70 font-light">
                   <span className="w-1 h-1 rounded-full bg-crimson flex-shrink-0" />
@@ -112,14 +113,14 @@ const BrandSpotlight = () => {
                 href="#"
                 className="btn-magnetic cta-red-sheen inline-flex items-center gap-2 px-8 py-4 bg-crimson text-[#FEFEFE] text-xs font-semibold uppercase tracking-[0.14em] rounded-sm hover:bg-crimson-dark hover:shadow-crimson-glow transition-all duration-400 group"
               >
-                Explore Collection
+                Explore Autodesk Collection
                 <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
               </a>
               <a
                 href="#"
                 className="text-xs font-medium text-[#B1B2B3]/50 uppercase tracking-[0.12em] hover:text-azure transition-colors duration-300"
               >
-                View Pricing
+                View DSM Choice
               </a>
             </div>
           </div>

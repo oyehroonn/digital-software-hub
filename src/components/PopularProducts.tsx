@@ -6,6 +6,11 @@ import catalogueProducts from "@/data/catalogueProducts.json";
 import { useApp } from "@/contexts/AppContext";
 import { useProductModal } from "@/contexts/ProductModalContext";
 import type { Product } from "@/lib/api";
+import { Link } from "react-router-dom";
+import { DSM_CHOICES, dsmChoiceGlb } from "@/data/dsmChoices";
+
+const catalogueGlb = (product: Pick<CatalogueProduct, "id" | "folder">) =>
+  `https://dsm-api.techrealm.ai/models/${product.id}/${product.folder}/model.glb`;
 
 /** Map a lightweight catalogue entry to the full Product the detail modal wants. */
 function toProduct(p: CatalogueProduct): Product {
@@ -14,8 +19,8 @@ function toProduct(p: CatalogueProduct): Product {
     name: p.name,
     folder: p.folder,
     filename: `${p.id}.glb`,
-    link: `/models/${p.id}.glb`,
-    viewer: `/models/${p.id}.glb`,
+    link: catalogueGlb(p),
+    viewer: catalogueGlb(p),
     category: p.category,
     brand: "",
     licenseType: "",
@@ -47,7 +52,7 @@ const ProductCard = ({
   product: CatalogueProduct;
   onAddToCart: (product: CatalogueProduct) => void;
 }) => {
-  const glbSrc = `/models/${product.id}.glb`;
+  const glbSrc = catalogueGlb(product);
   const { openProductModal } = useProductModal();
   const openDetail = () => openProductModal(toProduct(product));
 
@@ -191,6 +196,33 @@ const PopularProducts = () => {
           </a>
         </div>
 
+        {/* A compact, real-GLB preview keeps the creative packaging visible in
+            the catalogue itself; the full credited registry lives at /creatives. */}
+        <div className="mb-12 border-y border-white/[0.07] py-7">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-crimson">Registered creatives</p>
+              <p className="mt-1 text-sm text-[#B1B2B3]/65">Approved product designs from the supplied Creative Studio archives.</p>
+            </div>
+            <Link to="/creatives" className="shrink-0 text-xs font-semibold uppercase tracking-[0.12em] text-[#B1B2B3]/70 transition hover:text-crimson">View all registered designs</Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {DSM_CHOICES.slice(0, 4).map((creative) => {
+              return (
+                <Link key={creative.id} to="/creatives" className="group rounded-lg border border-white/[0.07] bg-white/[0.02] p-2 transition hover:border-crimson/35 hover:bg-white/[0.04]">
+                  <div className="aspect-[4/3] overflow-hidden rounded-md">
+                    <ProductModelViewer
+                      glbSrc={dsmChoiceGlb(creative)}
+                      fallbackIcon={<span className="text-lg text-white/20">DSM</span>}
+                    />
+                  </div>
+                  <p className="mt-2 truncate text-xs font-medium text-[#FEFEFE] group-hover:text-crimson">{creative.name}</p>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Search Bar */}
         <div className="mb-10">
           <div className="relative max-w-md">
@@ -231,7 +263,7 @@ const PopularProducts = () => {
                       name: p.name,
                       price: p.price,
                       category: p.category,
-                      glbSrc: `/models/${p.id}.glb`,
+                      glbSrc: catalogueGlb(p),
                     })
                   }
                 />
