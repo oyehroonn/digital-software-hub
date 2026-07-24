@@ -1,0 +1,1199 @@
+[
+  {
+    "id": 99001,
+    "name": "Microsoft Office 2024 Professional Plus MAK",
+    "folder": "99001_Microsoft_Office_2024_Professional_Plus_MAK",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/01 Microsoft Office 2024 Professional Plus MAK front.png"
+  },
+  {
+    "id": 99002,
+    "name": "Microsoft Office 2024 Standard LTSC MAK",
+    "folder": "99002_Microsoft_Office_2024_Standard_LTSC_MAK",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/02 Microsoft Office 2024 Standard LTSC MAK front.png"
+  },
+  {
+    "id": 99003,
+    "name": "Microsoft Windows 11 Professional MAK",
+    "folder": "99003_Microsoft_Windows_11_Professional_MAK",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/windows-11/01 Windows 11 Pro Front.png"
+  },
+  {
+    "id": 99004,
+    "name": "Microsoft Windows 10 Professional MAK",
+    "folder": "99004_Microsoft_Windows_10_Professional_MAK",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/04 Microsoft Windows 10 Professional MAK front.png"
+  },
+  {
+    "id": 99005,
+    "name": "Dynamics 365 Finance",
+    "folder": "99005_Dynamics_365_Finance",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/05 Dynamics 365 Finance front.png"
+  },
+  {
+    "id": 99006,
+    "name": "Dynamics 365 Project Operations",
+    "folder": "99006_Dynamics_365_Project_Operations",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/06 Dynamics 365 Project Operations front.png"
+  },
+  {
+    "id": 99007,
+    "name": "Microsoft 365 E5",
+    "folder": "99007_Microsoft_365_E5",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/09 Microsoft 365 E5 1 Year Subscription front.png"
+  },
+  {
+    "id": 99008,
+    "name": "Autodesk AEC Collection 2027",
+    "folder": "99008_Autodesk_AEC_Collection_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/04 Autodesk Architecture, Engineering & Construction (AEC) Collection 2027 (Front).png"
+  },
+  {
+    "id": 99009,
+    "name": "3ds Max 2027",
+    "folder": "99009_3ds_Max_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/01 3ds Max 2027 (Front).png"
+  },
+  {
+    "id": 99010,
+    "name": "AutoCAD 2027",
+    "folder": "99010_AutoCAD_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/02 AutoCAD 2027 (Front).png"
+  },
+  {
+    "id": 99011,
+    "name": "AutoCAD LT 2027",
+    "folder": "99011_AutoCAD_LT_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/03 AutoCAD LT 2027 (FRONT).png"
+  },
+  {
+    "id": 99012,
+    "name": "Autodesk Maya 2027",
+    "folder": "99012_Autodesk_Maya_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/05 Autodesk Maya 2027 (Front).png"
+  },
+  {
+    "id": 99013,
+    "name": "Autodesk Revit 2027",
+    "folder": "99013_Autodesk_Revit_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/06 Autodesk Revit 2027 (Front).png"
+  },
+  {
+    "id": 99014,
+    "name": "Civil 3D 2027",
+    "folder": "99014_Civil_3D_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/07 Civil 3D 2027 (Front).png"
+  },
+  {
+    "id": 99015,
+    "name": "Fabrication 2027",
+    "folder": "99015_Fabrication_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/08 Fabrication 2027 (Front).png"
+  },
+  {
+    "id": 99016,
+    "name": "Fusion 360 2027",
+    "folder": "99016_Fusion_360_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/09 Fusion 360 2027 (Front).png"
+  },
+  {
+    "id": 99017,
+    "name": "Inventor 2027",
+    "folder": "99017_Inventor_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/10 Inventor 2027 (Front).png"
+  },
+  {
+    "id": 99018,
+    "name": "Navisworks 2027",
+    "folder": "99018_Navisworks_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/11 Navisworks 2027 (Front).png"
+  },
+  {
+    "id": 99019,
+    "name": "Autodesk Alias 2027 \u2013 Shape the Future of Product Design",
+    "folder": "99019_Autodesk_Alias_2027_Shape_the_Future_of_Product_Design",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/12 Autodesk Alias 2027 \u2013 Shape the Future of Product Design (Front).png"
+  },
+  {
+    "id": 99020,
+    "name": "Autodesk Arnold 2027 \u2013 Advanced Global Illumination Rendering Software",
+    "folder": "99020_Autodesk_Arnold_2027_Advanced_Global_Illumination_Renderin",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/13 Autodesk Arnold 2027 \u2013 Advanced Global Illumination Rendering Software (Front).png"
+  },
+  {
+    "id": 99021,
+    "name": "Autodesk Flame 2027",
+    "folder": "99021_Autodesk_Flame_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/14 Autodesk Flame 2027 (Front).png"
+  },
+  {
+    "id": 99022,
+    "name": "Autodesk Media & Entertainment (MEC) Collection 2027",
+    "folder": "99022_Autodesk_Media_Entertainment_MEC_Collection_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/16 Autodesk Media & Entertainment (MEC) Collection 2027 (Front).png"
+  },
+  {
+    "id": 99023,
+    "name": "Autodesk Mudbox 2027",
+    "folder": "99023_Autodesk_Mudbox_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/17 Autodesk Mudbox 2027 (Front).png"
+  },
+  {
+    "id": 99024,
+    "name": "Autodesk Product Design & Manufacturing Collection 2027",
+    "folder": "99024_Autodesk_Product_Design_Manufacturing_Collection_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/18 Autodesk Product Design & Manufacturing Collection 2027 (Front).png"
+  },
+  {
+    "id": 99025,
+    "name": "Autodesk Construction Cloud \u2013 Build Better with Connected Workflows 2027",
+    "folder": "99025_Autodesk_Construction_Cloud_Build_Better_with_Connected_Wo",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "autodesk/New folder/19 Autodesk Construction Cloud \u2013 Build Better with Connected Workflows 2027 (Front).png"
+  },
+  {
+    "id": 99026,
+    "name": "Microsoft Windows 11 Professional MAK License front",
+    "folder": "99026_Microsoft_Windows_11_Professional_MAK_License_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/03 Microsoft Windows 11 Professional MAK License front.png"
+  },
+  {
+    "id": 99027,
+    "name": "Dynamics 365 Human Resources front",
+    "folder": "99027_Dynamics_365_Human_Resources_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/07 Dynamics 365 Human Resources front.png"
+  },
+  {
+    "id": 99028,
+    "name": "Dynamics 365 Business Central Premium front",
+    "folder": "99028_Dynamics_365_Business_Central_Premium_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/08 Dynamics 365 Business Central Premium front.png"
+  },
+  {
+    "id": 99029,
+    "name": "Microsoft Dynamics 365 Sales Enterprise front",
+    "folder": "99029_Microsoft_Dynamics_365_Sales_Enterprise_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/10 Microsoft Dynamics 365 Sales Enterprise front.png"
+  },
+  {
+    "id": 99030,
+    "name": "Microsoft Windows 11 Home front",
+    "folder": "99030_Microsoft_Windows_11_Home_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/windows-11/02 Microsoft Windows 11 Home front.png"
+  },
+  {
+    "id": 99031,
+    "name": "Windows 11 Enterprise LTSC (2024) Front",
+    "folder": "99031_Windows_11_Enterprise_LTSC_2024_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/windows-11/03 Windows 11 Enterprise LTSC (2024) Front.png"
+  },
+  {
+    "id": 99032,
+    "name": "Windows 11 Enterprise loT LTSC (2024) front",
+    "folder": "99032_Windows_11_Enterprise_loT_LTSC_2024_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/windows-11/04 Windows 11 Enterprise loT LTSC (2024) front.png"
+  },
+  {
+    "id": 99033,
+    "name": "Windows 11 Enterprise front",
+    "folder": "99033_Windows_11_Enterprise_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/windows-11/05 Windows 11 Enterprise front.png"
+  },
+  {
+    "id": 99034,
+    "name": "Microsoft Windows 11 Professional MAK License Front",
+    "folder": "99034_Microsoft_Windows_11_Professional_MAK_License_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "microsoft/windows-11/06 Microsoft Windows 11 Professional MAK License Front.png"
+  },
+  {
+    "id": 99035,
+    "name": "Autodesk Alias 2025",
+    "folder": "99035_Autodesk_Alias_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/01 Autodesk Alias 2025 (Front).png"
+  },
+  {
+    "id": 99036,
+    "name": "Autodesk Alias 2025",
+    "folder": "99036_Autodesk_Alias_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/02 Autodesk Alias 2025 (Front).png"
+  },
+  {
+    "id": 99037,
+    "name": "Autodesk Arnold 2025",
+    "folder": "99037_Autodesk_Arnold_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/03 Autodesk Arnold 2025 (Front).png"
+  },
+  {
+    "id": 99038,
+    "name": "Autodesk Autocad 2025",
+    "folder": "99038_Autodesk_Autocad_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/04 Autodesk Autocad 2025 (Front).png"
+  },
+  {
+    "id": 99039,
+    "name": "Autodesk Civil 3D 2025",
+    "folder": "99039_Autodesk_Civil_3D_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/05 Autodesk Civil 3D 2025 (Front).png"
+  },
+  {
+    "id": 99040,
+    "name": "Autodesk InfoDrainage 2025",
+    "folder": "99040_Autodesk_InfoDrainage_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/06 Autodesk InfoDrainage 2025 (Front).png"
+  },
+  {
+    "id": 99041,
+    "name": "Autodesk InfraWorks 2025",
+    "folder": "99041_Autodesk_InfraWorks_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/07 Autodesk InfraWorks 2025 (Front).png"
+  },
+  {
+    "id": 99042,
+    "name": "Autodesk Maya 2025",
+    "folder": "99042_Autodesk_Maya_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/08 Autodesk Maya 2025 (Front).png"
+  },
+  {
+    "id": 99043,
+    "name": "Autodesk Media & Entertainment (MEC) Collection 2025",
+    "folder": "99043_Autodesk_Media_Entertainment_MEC_Collection_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/09 Autodesk Media & Entertainment (MEC) Collection 2025 (Front).png"
+  },
+  {
+    "id": 99044,
+    "name": "Autodesk Mudbox 2025",
+    "folder": "99044_Autodesk_Mudbox_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/10 Autodesk Mudbox 2025 (Front).png"
+  },
+  {
+    "id": 99045,
+    "name": "Autodesk Product Design & Manufacturing Collection 2025",
+    "folder": "99045_Autodesk_Product_Design_Manufacturing_Collection_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/11 Autodesk Product Design & Manufacturing Collection 2025 (Front).png"
+  },
+  {
+    "id": 99046,
+    "name": "Autodesk Revit 2025",
+    "folder": "99046_Autodesk_Revit_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/12 Autodesk Revit 2025 (Front).png"
+  },
+  {
+    "id": 99047,
+    "name": "Navisworks 2025",
+    "folder": "99047_Navisworks_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/13 Navisworks 2025 (Front).png"
+  },
+  {
+    "id": 99048,
+    "name": "Autodesk Inventor 2025",
+    "folder": "99048_Autodesk_Inventor_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/14 Autodesk Inventor 2025 (Front).png"
+  },
+  {
+    "id": 99049,
+    "name": "Autodesk Fusion 360 2025",
+    "folder": "99049_Autodesk_Fusion_360_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/15 Autodesk Fusion 360 2025 (Front).png"
+  },
+  {
+    "id": 99050,
+    "name": "AutoCAD LT 2025",
+    "folder": "99050_AutoCAD_LT_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/16 AutoCAD LT 2025 (Front).png"
+  },
+  {
+    "id": 99051,
+    "name": "Autodesk 3ds Max 2025",
+    "folder": "99051_Autodesk_3ds_Max_2025",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2025 Boxes/Autodesk 2025 Boxes/17 Autodesk 3ds Max 2025 (Front).png"
+  },
+  {
+    "id": 99052,
+    "name": "3ds Max 2027",
+    "folder": "99052_3ds_Max_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/01 3ds Max 2027 (Front).png"
+  },
+  {
+    "id": 99053,
+    "name": "AutoCAD 2027",
+    "folder": "99053_AutoCAD_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/02 AutoCAD 2027 (Front).png"
+  },
+  {
+    "id": 99054,
+    "name": "AutoCAD LT 2027",
+    "folder": "99054_AutoCAD_LT_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/03 AutoCAD LT 2027 (FRONT).png"
+  },
+  {
+    "id": 99055,
+    "name": "Autodesk Architecture, Engineering & Construction (AEC) Collection 2027",
+    "folder": "99055_Autodesk_Architecture_Engineering_Construction_AEC_Collect",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/04 Autodesk Architecture, Engineering & Construction (AEC) Collection 2027 (Front).png"
+  },
+  {
+    "id": 99056,
+    "name": "Autodesk Maya 2027",
+    "folder": "99056_Autodesk_Maya_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/05 Autodesk Maya 2027 (Front).png"
+  },
+  {
+    "id": 99057,
+    "name": "Autodesk Revit 2027",
+    "folder": "99057_Autodesk_Revit_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/06 Autodesk Revit 2027 (Front).png"
+  },
+  {
+    "id": 99058,
+    "name": "Civil 3D 2027",
+    "folder": "99058_Civil_3D_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/07 Civil 3D 2027 (Front).png"
+  },
+  {
+    "id": 99059,
+    "name": "Fabrication 2027",
+    "folder": "99059_Fabrication_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/08 Fabrication 2027 (Front).png"
+  },
+  {
+    "id": 99060,
+    "name": "Fusion 360 2027",
+    "folder": "99060_Fusion_360_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/09 Fusion 360 2027 (Front).png"
+  },
+  {
+    "id": 99061,
+    "name": "Inventor 2027",
+    "folder": "99061_Inventor_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/10 Inventor 2027 (Front).png"
+  },
+  {
+    "id": 99062,
+    "name": "Navisworks 2027",
+    "folder": "99062_Navisworks_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/11 Navisworks 2027 (Front).png"
+  },
+  {
+    "id": 99063,
+    "name": "Autodesk Alias 2027 \u2013 Shape the Future of Product Design",
+    "folder": "99063_Autodesk_Alias_2027_Shape_the_Future_of_Product_Design",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/12 Autodesk Alias 2027 \u2013 Shape the Future of Product Design (Front).png"
+  },
+  {
+    "id": 99064,
+    "name": "Autodesk Arnold 2027 \u2013 Advanced Global Illumination Rendering Software",
+    "folder": "99064_Autodesk_Arnold_2027_Advanced_Global_Illumination_Renderin",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/13 Autodesk Arnold 2027 \u2013 Advanced Global Illumination Rendering Software (Front).png"
+  },
+  {
+    "id": 99065,
+    "name": "Autodesk Flame 2027",
+    "folder": "99065_Autodesk_Flame_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/14 Autodesk Flame 2027 (Front).png"
+  },
+  {
+    "id": 99066,
+    "name": "Autodesk Media & Entertainment (MEC) Collection 2027",
+    "folder": "99066_Autodesk_Media_Entertainment_MEC_Collection_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/16 Autodesk Media & Entertainment (MEC) Collection 2027 (Front).png"
+  },
+  {
+    "id": 99067,
+    "name": "Autodesk Mudbox 2027",
+    "folder": "99067_Autodesk_Mudbox_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/17 Autodesk Mudbox 2027 (Front).png"
+  },
+  {
+    "id": 99068,
+    "name": "Autodesk Product Design & Manufacturing Collection 2027",
+    "folder": "99068_Autodesk_Product_Design_Manufacturing_Collection_2027",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/18 Autodesk Product Design & Manufacturing Collection 2027 (Front).png"
+  },
+  {
+    "id": 99069,
+    "name": "Autodesk Construction Cloud \u2013 Build Better with Connected Workflows 2027",
+    "folder": "99069_Autodesk_Construction_Cloud_Build_Better_with_Connected_Wo",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Autodesk 2027 Boxes/New folder/19 Autodesk Construction Cloud \u2013 Build Better with Connected Workflows 2027 (Front).png"
+  },
+  {
+    "id": 99070,
+    "name": "Microsoft Office 2024 Professional Plus MAK front",
+    "folder": "99070_Microsoft_Office_2024_Professional_Plus_MAK_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Boxes 1-10/01 Microsoft Office 2024 Professional Plus MAK front.png"
+  },
+  {
+    "id": 99071,
+    "name": "Microsoft Office 2024 Standard LTSC MAK front",
+    "folder": "99071_Microsoft_Office_2024_Standard_LTSC_MAK_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Boxes 1-10/02 Microsoft Office 2024 Standard LTSC MAK front.png"
+  },
+  {
+    "id": 99072,
+    "name": "Microsoft Windows 11 Professional MAK License front",
+    "folder": "99072_Microsoft_Windows_11_Professional_MAK_License_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Boxes 1-10/03 Microsoft Windows 11 Professional MAK License front.png"
+  },
+  {
+    "id": 99073,
+    "name": "Microsoft Windows 10 Professional MAK front",
+    "folder": "99073_Microsoft_Windows_10_Professional_MAK_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Boxes 1-10/04 Microsoft Windows 10 Professional MAK front.png"
+  },
+  {
+    "id": 99074,
+    "name": "Dynamics 365 Finance front",
+    "folder": "99074_Dynamics_365_Finance_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Boxes 1-10/05 Dynamics 365 Finance front.png"
+  },
+  {
+    "id": 99075,
+    "name": "Dynamics 365 Project Operations front",
+    "folder": "99075_Dynamics_365_Project_Operations_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Boxes 1-10/06 Dynamics 365 Project Operations front.png"
+  },
+  {
+    "id": 99076,
+    "name": "Dynamics 365 Human Resources front",
+    "folder": "99076_Dynamics_365_Human_Resources_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Boxes 1-10/07 Dynamics 365 Human Resources front.png"
+  },
+  {
+    "id": 99077,
+    "name": "Dynamics 365 Business Central Premium front",
+    "folder": "99077_Dynamics_365_Business_Central_Premium_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Boxes 1-10/08 Dynamics 365 Business Central Premium front.png"
+  },
+  {
+    "id": 99078,
+    "name": "Microsoft 365 E5 1 Year Subscription front",
+    "folder": "99078_Microsoft_365_E5_1_Year_Subscription_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Boxes 1-10/09 Microsoft 365 E5 1 Year Subscription front.png"
+  },
+  {
+    "id": 99079,
+    "name": "Microsoft Dynamics 365 Sales Enterprise front",
+    "folder": "99079_Microsoft_Dynamics_365_Sales_Enterprise_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Boxes 1-10/10 Microsoft Dynamics 365 Sales Enterprise front.png"
+  },
+  {
+    "id": 99080,
+    "name": "Microsoft Office 2024 Professional Plus MAK front",
+    "folder": "99080_Microsoft_Office_2024_Professional_Plus_MAK_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Loose Office 2024/01 Microsoft Office 2024 Professional Plus MAK front.png"
+  },
+  {
+    "id": 99081,
+    "name": "Microsoft 365 E5 1 Year Subscription front",
+    "folder": "99081_Microsoft_365_E5_1_Year_Subscription_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft 365/01 Microsoft 365 E5 1 Year Subscription front.png"
+  },
+  {
+    "id": 99082,
+    "name": "Microsoft 365 E3 Front",
+    "folder": "99082_Microsoft_365_E3_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft 365/02 Microsoft 365 E3 Front.png"
+  },
+  {
+    "id": 99083,
+    "name": "Microsoft 365 Business Premium Front",
+    "folder": "99083_Microsoft_365_Business_Premium_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft 365/03 Microsoft 365 Business Premium Front.png"
+  },
+  {
+    "id": 99084,
+    "name": "Microsoft 365 Family Front",
+    "folder": "99084_Microsoft_365_Family_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft 365/04 Microsoft 365 Family Front.png"
+  },
+  {
+    "id": 99085,
+    "name": "Microsoft 365 Personal front",
+    "folder": "99085_Microsoft_365_Personal_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft 365/05 Microsoft 365 Personal front.png"
+  },
+  {
+    "id": 99086,
+    "name": "Microsoft 365 Education A5 front",
+    "folder": "99086_Microsoft_365_Education_A5_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft 365/06 Microsoft 365 Education A5 front.png"
+  },
+  {
+    "id": 99087,
+    "name": "Power Automate Process front",
+    "folder": "99087_Power_Automate_Process_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft 365/07 Power Automate Process front.png"
+  },
+  {
+    "id": 99088,
+    "name": "Power Automate Premium front",
+    "folder": "99088_Power_Automate_Premium_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft 365/08 Power Automate Premium front.png"
+  },
+  {
+    "id": 99089,
+    "name": "Microsoft Teams Rooms Pro front",
+    "folder": "99089_Microsoft_Teams_Rooms_Pro_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft 365/09 Microsoft Teams Rooms Pro front.png"
+  },
+  {
+    "id": 99090,
+    "name": "Microsoft Teams Premium front",
+    "folder": "99090_Microsoft_Teams_Premium_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft 365/10 Microsoft Teams Premium front.png"
+  },
+  {
+    "id": 99091,
+    "name": "Microsoft Office 365 Professional Plus front",
+    "folder": "99091_Microsoft_Office_365_Professional_Plus_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft 365/11 Microsoft Office 365 Professional Plus front.png"
+  },
+  {
+    "id": 99092,
+    "name": "Microsoft 365 Copilot Enterprise front",
+    "folder": "99092_Microsoft_365_Copilot_Enterprise_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft 365/12 Microsoft 365 Copilot Enterprise front.png"
+  },
+  {
+    "id": 99093,
+    "name": "Microsoft Office 2021 Professional front",
+    "folder": "99093_Microsoft_Office_2021_Professional_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Office 2021/01 Microsoft Office 2021 Professional front.png"
+  },
+  {
+    "id": 99094,
+    "name": "Microsoft Office 2021 Home and Business front",
+    "folder": "99094_Microsoft_Office_2021_Home_and_Business_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Office 2021/02 Microsoft Office 2021 Home and Business front.png"
+  },
+  {
+    "id": 99095,
+    "name": "Microsoft Office 2021 Home and Business for MAC front",
+    "folder": "99095_Microsoft_Office_2021_Home_and_Business_for_MAC_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Office 2021/03 Microsoft Office 2021 Home and Business for MAC front.png"
+  },
+  {
+    "id": 99096,
+    "name": "Microsoft Office 2021 Home and Student front",
+    "folder": "99096_Microsoft_Office_2021_Home_and_Student_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Office 2021/04 Microsoft Office 2021 Home and Student front.png"
+  },
+  {
+    "id": 99097,
+    "name": "Microsoft Office LTSC Standard 2024 Front",
+    "folder": "99097_Microsoft_Office_LTSC_Standard_2024_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Office 2024/01 Microsoft Office LTSC Standard 2024 Front.png"
+  },
+  {
+    "id": 99098,
+    "name": "Microsoft Office Home & Business 2024 Front",
+    "folder": "99098_Microsoft_Office_Home_Business_2024_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Office 2024/02 Microsoft Office Home & Business 2024 Front.png"
+  },
+  {
+    "id": 99099,
+    "name": "Microsoft Office 2024 Professional Plus front",
+    "folder": "99099_Microsoft_Office_2024_Professional_Plus_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Office 2024/03 Microsoft Office 2024 Professional Plus front.png"
+  },
+  {
+    "id": 99100,
+    "name": "Microsoft Office 2024 Home front",
+    "folder": "99100_Microsoft_Office_2024_Home_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Office 2024/04 Microsoft Office 2024 Home front.png"
+  },
+  {
+    "id": 99101,
+    "name": "Microsoft Windows 10 Front",
+    "folder": "99101_Microsoft_Windows_10_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 10/01 Microsoft Windows 10 Front.png"
+  },
+  {
+    "id": 99102,
+    "name": "Microsoft Windows 10 Pro for Workstation front",
+    "folder": "99102_Microsoft_Windows_10_Pro_for_Workstation_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 10/02 Microsoft Windows 10 Pro for Workstation front.png"
+  },
+  {
+    "id": 99103,
+    "name": "Microsoft Windows 10 Home to Professional Front",
+    "folder": "99103_Microsoft_Windows_10_Home_to_Professional_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 10/03 Microsoft Windows 10 Home to Professional Front.png"
+  },
+  {
+    "id": 99104,
+    "name": "Microsoft Windows 10 Home Front",
+    "folder": "99104_Microsoft_Windows_10_Home_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 10/04 Microsoft Windows 10 Home Front.png"
+  },
+  {
+    "id": 99105,
+    "name": "Microsoft Windows 10 Enterprise Front",
+    "folder": "99105_Microsoft_Windows_10_Enterprise_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 10/05 Microsoft Windows 10 Enterprise Front.png"
+  },
+  {
+    "id": 99106,
+    "name": "Microsoft Windows 10 Enterprise LTSB Front",
+    "folder": "99106_Microsoft_Windows_10_Enterprise_LTSB_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 10/06  Microsoft Windows 10 Enterprise LTSB Front.png"
+  },
+  {
+    "id": 99107,
+    "name": "Microsoft Windows 10 Enterprise 2021 LTSC Front",
+    "folder": "99107_Microsoft_Windows_10_Enterprise_2021_LTSC_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 10/07 Microsoft Windows 10 Enterprise 2021 LTSC Front.png"
+  },
+  {
+    "id": 99108,
+    "name": "Microsoft Windows 10 Enterprise 2019 LTSC Front",
+    "folder": "99108_Microsoft_Windows_10_Enterprise_2019_LTSC_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 10/08 Microsoft Windows 10 Enterprise 2019 LTSC Front.png"
+  },
+  {
+    "id": 99109,
+    "name": "Microsoft Windows 10 Professional MAK front",
+    "folder": "99109_Microsoft_Windows_10_Professional_MAK_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 10/09 Microsoft Windows 10 Professional MAK front.png"
+  },
+  {
+    "id": 99110,
+    "name": "Windows 11 Pro Front",
+    "folder": "99110_Windows_11_Pro_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 11 Boxes/01 Windows 11 Pro Front.png"
+  },
+  {
+    "id": 99111,
+    "name": "Microsoft Windows 11 Home front",
+    "folder": "99111_Microsoft_Windows_11_Home_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 11 Boxes/02 Microsoft Windows 11 Home front.png"
+  },
+  {
+    "id": 99112,
+    "name": "Windows 11 Enterprise LTSC (2024) Front",
+    "folder": "99112_Windows_11_Enterprise_LTSC_2024_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 11 Boxes/03 Windows 11 Enterprise LTSC (2024) Front.png"
+  },
+  {
+    "id": 99113,
+    "name": "Windows 11 Enterprise loT LTSC (2024) front",
+    "folder": "99113_Windows_11_Enterprise_loT_LTSC_2024_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 11 Boxes/04 Windows 11 Enterprise loT LTSC (2024) front.png"
+  },
+  {
+    "id": 99114,
+    "name": "Windows 11 Enterprise front",
+    "folder": "99114_Windows_11_Enterprise_front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 11 Boxes/05 Windows 11 Enterprise front.png"
+  },
+  {
+    "id": 99115,
+    "name": "Microsoft Windows 11 Professional MAK License Front",
+    "folder": "99115_Microsoft_Windows_11_Professional_MAK_License_Front",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/Microsoft Windows 11 Boxes/06 Microsoft Windows 11 Professional MAK License Front.png"
+  },
+  {
+    "id": 99116,
+    "name": "3ds Max 2026 Create immersive worlds and high-quality designs",
+    "folder": "99116_3ds_Max_2026_Create_immersive_worlds_and_high_quality_desi",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/01 3ds Max 2026 Create immersive worlds and high-quality designs (Front).png"
+  },
+  {
+    "id": 99117,
+    "name": "Autodesk InfoDrainage Create detailed drainage designs 2026",
+    "folder": "99117_Autodesk_InfoDrainage_Create_detailed_drainage_designs_202",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/02 Autodesk InfoDrainage Create detailed drainage designs 2026 (Front).png"
+  },
+  {
+    "id": 99118,
+    "name": "Alias 2026",
+    "folder": "99118_Alias_2026",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/03 Alias 2026 (Front).png"
+  },
+  {
+    "id": 99119,
+    "name": "Arnold 2026",
+    "folder": "99119_Arnold_2026",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/04 Arnold 2026 (Front).png"
+  },
+  {
+    "id": 99120,
+    "name": "AutoCAD 2026",
+    "folder": "99120_AutoCAD_2026",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/05 AutoCAD 2026 (Front).png"
+  },
+  {
+    "id": 99121,
+    "name": "AutoCAD LT 2026 Best-in-class 2D design and drafting tools with automation",
+    "folder": "99121_AutoCAD_LT_2026_Best_in_class_2D_design_and_drafting_tools",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/06 AutoCAD LT 2026 Best-in-class 2D design and drafting tools with automation (Front).png"
+  },
+  {
+    "id": 99122,
+    "name": "Autodesk (MEC) Collection 2026",
+    "folder": "99122_Autodesk_MEC_Collection_2026",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/07 Autodesk (MEC) Collection 2026 (Front).png"
+  },
+  {
+    "id": 99123,
+    "name": "Autodesk (PDM) Collection 2026",
+    "folder": "99123_Autodesk_PDM_Collection_2026",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/08 Autodesk (PDM) Collection 2026 (Front).png"
+  },
+  {
+    "id": 99124,
+    "name": "Autodesk Architecture, Engineering & Construction (AEC) Collection 2026",
+    "folder": "99124_Autodesk_Architecture_Engineering_Construction_AEC_Collect",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/09 Autodesk Architecture, Engineering & Construction (AEC) Collection 2026 (Front).png"
+  },
+  {
+    "id": 99125,
+    "name": "Civil 3D 2026 Comprehensive detailed design and documentation software for civil infrastructure",
+    "folder": "99125_Civil_3D_2026_Comprehensive_detailed_design_and_documentat",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/10 Civil 3D 2026 Comprehensive detailed design and documentation software for civil infrastructure (Front).png"
+  },
+  {
+    "id": 99126,
+    "name": "Fabrication 2026",
+    "folder": "99126_Fabrication_2026",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/11 Fabrication 2026 (Front).png"
+  },
+  {
+    "id": 99127,
+    "name": "Flame 2026",
+    "folder": "99127_Flame_2026",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/12 Flame 2026 (Front).png"
+  },
+  {
+    "id": 99128,
+    "name": "Fusion 360 2026",
+    "folder": "99128_Fusion_360_2026",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/13 Fusion 360 2026 (Front).png"
+  },
+  {
+    "id": 99129,
+    "name": "Inventor 2026",
+    "folder": "99129_Inventor_2026",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/14 Inventor 2026 (Front).png"
+  },
+  {
+    "id": 99130,
+    "name": "Maya 2026 Create expansive worlds, complex characters and dazzling effects",
+    "folder": "99130_Maya_2026_Create_expansive_worlds_complex_characters_and_d",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/15 Maya 2026 Create expansive worlds, complex characters and dazzling effects (Front).png"
+  },
+  {
+    "id": 99131,
+    "name": "Mudbox 2026",
+    "folder": "99131_Mudbox_2026",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/16 Mudbox 2026 (Front).png"
+  },
+  {
+    "id": 99132,
+    "name": "Navisworks 2026 3D model review, co-ordination and clash detection",
+    "folder": "99132_Navisworks_2026_3D_model_review_co_ordination_and_clash_de",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/17 Navisworks 2026 3D model review, co-ordination and clash detection (Front).png"
+  },
+  {
+    "id": 99133,
+    "name": "Revit 2026 BIM software to design and make anything",
+    "folder": "99133_Revit_2026_BIM_software_to_design_and_make_anything",
+    "glb": "model.glb",
+    "status": "ok",
+    "creative_design": true,
+    "source": "new-collections/New Autodesk 2026 Boxes/New Autodesk 2026 Boxes/18 Revit 2026 BIM software to design and make anything (Front).png"
+  }
+]

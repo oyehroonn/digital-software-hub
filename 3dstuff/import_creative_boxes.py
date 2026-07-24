@@ -17,6 +17,7 @@ from batch_process import BASE_GLB, MODELS_DIR, PUBLIC_MODELS, apply_texture
 HERE = Path(__file__).resolve().parent
 SOURCE = HERE / "creative-boxes"
 MANIFEST = MODELS_DIR / "manifest.json"
+CREATIVE_MANIFEST = MODELS_DIR / "creative-manifest.json"
 
 CURATED = [
     ("Microsoft Office 2024 Professional Plus MAK", "microsoft/01 Microsoft Office 2024 Professional Plus MAK front.png"),
@@ -74,10 +75,20 @@ def main():
     entries = discovered()
     manifest = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else []
     manifest = [m for m in manifest if not (99001 <= int(m.get("id", 0)) < 99200)]
+    previous = json.loads(CREATIVE_MANIFEST.read_text()) if CREATIVE_MANIFEST.exists() else []
+    existing_ids = {entry.get("source"): int(entry["id"]) for entry in previous if entry.get("source") and entry.get("id")}
+    allocated = set(existing_ids.values())
+    next_id = max({99000, *allocated}) + 1
     PUBLIC_MODELS.mkdir(parents=True, exist_ok=True)
     result = []
-    for offset, (name, rel) in enumerate(entries):
-        pid = 99001 + offset
+    for name, rel in entries:
+        pid = existing_ids.get(rel)
+        if pid is None:
+            while next_id in allocated:
+                next_id += 1
+            pid = next_id
+            allocated.add(pid)
+            next_id += 1
         folder = f"{pid}_{slug(name)}"
         destination = MODELS_DIR / folder
         destination.mkdir(parents=True, exist_ok=True)
@@ -100,7 +111,8 @@ def main():
         result.append(entry)
         print(f"[{pid}] {name}")
     MANIFEST.write_text(json.dumps(manifest, indent=2))
-    (MODELS_DIR / "creative-manifest.json").write_text(json.dumps(result, indent=2))
+    result.sort(key=lambda entry: entry["id"])
+    CREATIVE_MANIFEST.write_text(json.dumps(result, indent=2))
     print(f"Imported {len(result)} creative boxes")
 
 if __name__ == "__main__":
