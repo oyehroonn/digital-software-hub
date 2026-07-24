@@ -106,8 +106,8 @@ const Index = () => {
         <PopularProducts />
         <TrustSection />
         {/*
-          End-of-page scroll animation — our own products drift past as
-          DSM-style 3D boxes (fixed priority order, DSM first). The row only
+          End-of-page scroll animation — our own products drift past in a
+          fixed priority order. The row only
           animates once it scrolls into view and pauses on hover; pure CSS 3D
           keeps it smooth on mobile. Each box links to that product.
         */}
@@ -120,8 +120,8 @@ const Index = () => {
               More than a marketplace
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm text-[#B1B2B3]">
-              A studio of products built by the DSM team. Hover to pause, click
-              any box to explore.
+              Products built by the DSM team. Hover to pause, then select a
+              product to explore.
             </p>
           </div>
           <OwnProductBoxes variant="marquee" />

@@ -4,7 +4,7 @@ import ProductModelViewer from "@/components/ProductModelViewer";
 import { DSM_CHOICES, dsmChoiceGlb } from "@/data/dsmChoices";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
-/** The home priority shelf: approved creative packaging, not API popularity. */
+/** The home priority shelf: curated business software, not API popularity. */
 export default function TopProducts() {
   const navigate = useNavigate();
   const headingAnim = useScrollAnimation();
@@ -15,7 +15,7 @@ export default function TopProducts() {
         <div ref={headingAnim.ref} className={`flex flex-col justify-between gap-6 md:flex-row md:items-end mb-12 ${headingAnim.className}`}>
           <div>
             <span className="inline-block text-[10px] font-semibold text-crimson uppercase tracking-[0.2em] mb-4">Digital Software Market choice</span>
-            <h2 className="font-serif text-3xl md:text-4xl text-[hsl(220_10%_4%)]">Designed boxes. Chosen software.</h2>
+            <h2 className="font-serif text-3xl md:text-4xl text-[hsl(220_10%_4%)]">Software selected for business.</h2>
           </div>
           <button onClick={() => navigate("/store")} className="hidden md:inline-flex items-center gap-2 self-start rounded-sm border border-[hsl(40_8%_88%)] px-4 py-2.5 text-sm font-medium text-[hsl(220_10%_4%)] transition hover:border-crimson hover:bg-crimson hover:text-white md:self-auto">
             Browse catalogue <ArrowRight className="w-4 h-4" />

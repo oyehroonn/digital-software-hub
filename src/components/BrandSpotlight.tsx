@@ -69,7 +69,7 @@ const BrandSpotlight = () => {
                       </div>
                     ))}
                   </div>
-                  <span className="text-[11px] text-[#B1B2B3]/60">Creative Studio design</span>
+                  <span className="text-[11px] text-[#B1B2B3]/60">Professional AEC software</span>
                 </div>
               </div>
             </div>
@@ -89,14 +89,14 @@ const BrandSpotlight = () => {
               <span className="font-autodesk text-[#B1B2B3]/40 font-light">AEC Collection 2027</span>
             </h2>
             <p className="text-base text-[#B1B2B3]/60 font-light leading-relaxed mb-8 max-w-md line-clamp-3">
-              AEC Collection 2027, shown in the approved Creative Studio box design. Architecture, engineering and construction tools in one DSM-selected collection.
+              Architecture, engineering and construction tools in one complete collection for professional teams.
             </p>
 
             {/* Features list */}
             <div className="space-y-4 mb-10 border-t border-white/[0.04] pt-8">
               {[
-                "Approved DSM Creative Studio packaging",
-                "Thin-carton 3D box geometry",
+                "Professional Autodesk licensing",
+                "Architecture, engineering and construction workflows",
                 "AutoCAD, Revit, Civil 3D and more",
                 "Selected for the DSM Choice shelf",
               ].map((feature, i) => (
