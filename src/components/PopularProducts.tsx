@@ -8,10 +8,10 @@ import { useProductModal } from "@/contexts/ProductModalContext";
 import type { Product } from "@/lib/api";
 import { DSM_CHOICES, dsmChoiceGlb } from "@/data/dsmChoices";
 
-// Keep the standard product grid visually aligned with the polished DSM AI
-// catalogue. Creative Studio / DSM Choice products use their own API GLBs.
-const catalogueGlb = (product: Pick<CatalogueProduct, "id">) =>
-  `https://digitalsoftwaremarket.ai/models/${product.id}.glb`;
+// Standard products use the source-art thin cartons from the DSM model API.
+// Creative / DSM Choice products retain their separately approved GLBs.
+const catalogueGlb = (product: Pick<CatalogueProduct, "id" | "folder">) =>
+  `https://dsm-api.techrealm.ai/models/${product.id}/${product.folder}/model.glb`;
 
 /** Map a lightweight catalogue entry to the full Product the detail modal wants. */
 function toProduct(p: CatalogueProduct): Product {

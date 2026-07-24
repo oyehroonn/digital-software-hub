@@ -4,7 +4,7 @@
 
 - The storefront uses `@google/model-viewer` through `src/components/ProductModelViewer.tsx`.
 - Production GLBs are served by `https://dsm-api.techrealm.ai` from the VPS (`/root/3dstuff/models/`).
-- Catalogue cards use the GLBs in `/models/`; a live API outage falls back to the card icon rather than blocking the UI.
+- Catalogue cards use the API folder GLBs; a live API outage falls back to the card icon rather than blocking the UI.
 
 ## Geometry contract
 
@@ -20,7 +20,8 @@ The 0.22 depth is intentional: software packaging should look like a thin carton
 
 ## Regenerating safely
 
-1. Regenerate locally first and visually inspect a representative Microsoft, Autodesk, Adobe and DSM-original GLB.
+1. Non-creative catalogue boxes use the WordPress image anchored to that product row, stretched to the portrait carton face. Do not replace it with an invented marketing cover.
+2. Regenerate locally first and visually inspect a representative Microsoft, Autodesk, Adobe and DSM-original GLB.
 2. Copy the reviewed generator to the VPS and regenerate `/root/3dstuff/models/` there.
 3. Keep front/back cover UVs upright; use the sampled edge colour for side/top/bottom faces.
 4. Verify the live `dsm-api.techrealm.ai/models/.../model.glb` URLs before frontend deployment.

@@ -15,9 +15,9 @@ IMPORTANT (image mapping fix):
   xl/media/. The media files are named by content hash, so their sorted order
   does NOT follow row order; the old index-based mapping mis-assigned textures.
 
-This script is idempotent: products that already have a flat {id}.glb are
-skipped, so it can be re-run cheaply. A full 478-model regen is a Wave-3 task —
-running this now only fills gaps.
+Catalogue products use their original WordPress artwork stretched to the thin
+portrait carton face. Approved creative products are imported separately with
+their authored front/back/spine artwork.
 """
 
 import os
@@ -618,13 +618,16 @@ def _edge_color(img: Image.Image):
 
 def _build_atlas(cover: Image.Image, side_color, back_cover: Image.Image | None = None,
                  right_spine: Image.Image | None = None,
-                 left_spine: Image.Image | None = None, size: int = 2048):
+                 left_spine: Image.Image | None = None, size: int = 1024,
+                 stretch_cover: bool = False):
     """Composite a single texture atlas:
         first panel = the product front, aspect-fit + letterboxed
         second panel = the product back, aspect-fit + letterboxed
         next panels = right and left spine artwork (when supplied)
         final pixel = a flat panel of `side_color`
-    Returns UV ranges for front, back, right spine, left spine and edge."""
+    Returns UV ranges for front, back, right spine, left spine and edge.
+    The WordPress source art is 300px, so a 1024px atlas retains more than the
+    source detail while keeping a full catalogue rebuild practical."""
     cover_w = int(round(size * (BOX_W / BOX_H)))   # front-face aspect region
     spine_w = max(1, int(round(size * (BOX_D / BOX_H))))
     atlas_w = cover_w * 2 + spine_w * 2 + 1
@@ -632,6 +635,13 @@ def _build_atlas(cover: Image.Image, side_color, back_cover: Image.Image | None 
 
     def paste_cover(image, x):
         region = Image.new('RGB', (cover_w, size), side_color)
+        if stretch_cover:
+            # The established DSM AI fallback style deliberately expands the
+            # supplied square product art to the portrait carton face. It is
+            # not a new marketing cover; it preserves the source artwork.
+            region.paste(image.convert('RGB').resize((cover_w, size), Image.Resampling.LANCZOS))
+            atlas.paste(region, (x, 0))
+            return
         cw, ch = image.size
         scale = min(cover_w / cw, size / ch)
         nw, nh = max(1, int(round(cw * scale))), max(1, int(round(ch * scale)))
@@ -669,7 +679,8 @@ def _build_atlas(cover: Image.Image, side_color, back_cover: Image.Image | None 
 def apply_texture(glb_path, texture_img: Image.Image, output_path,
                   back_cover: Image.Image | None = None,
                   right_spine: Image.Image | None = None,
-                  left_spine: Image.Image | None = None):
+                  left_spine: Image.Image | None = None,
+                  stretch_cover: bool = False):
     """Build a fresh, correctly-UV'd software box and texture it with the
     product cover.
 
@@ -688,6 +699,7 @@ def apply_texture(glb_path, texture_img: Image.Image, output_path,
     side = _edge_color(cover)
     atlas, front_range, back_range, right_range, left_range, edge_uv = _build_atlas(
         cover, side, back_cover=back_cover, right_spine=right_spine, left_spine=left_spine,
+        stretch_cover=stretch_cover,
     )
     atlas.save(os.path.join(os.path.dirname(output_path), 'texture.png'))
 
@@ -760,7 +772,10 @@ def main():
 
     products = read_products_with_rows(EXCEL_PATH)
     print(f"\n📦 Found {len(products)} products in {EXCEL_PATH.name}")
-    print("🎨 Designing a uniform DSM cover for every product (data-driven).")
+    print("🎨 Applying each original WordPress product image to a thin DSM carton.")
+
+    row_images = build_row_image_map(EXCEL_PATH)
+    print(f"🖼️  Found {len(row_images)} row-anchored product images.")
 
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     PUBLIC_MODELS.mkdir(parents=True, exist_ok=True)
@@ -809,12 +824,19 @@ def main():
 
         folder_path.mkdir(parents=True, exist_ok=True)
         try:
-            params = derive_cover_params(product)
-            print(f"   brand={params['bottom_title']!r} glyph={params['glyph']!r}"
-                  f" badge={params['badge']!r}")
-            cover = make_cover(**params)
+            source_image = row_images.get(row)
+            if source_image:
+                cover = Image.open(io.BytesIO(source_image[0])).copy()
+                print("   source=image anchored to WordPress product row")
+                cover.save(folder_path / "source-product-image.png")
+            else:
+                # Two legacy rows have no embedded image. Keep a readable
+                # generated fallback instead of emitting an empty model.
+                params = derive_cover_params(product)
+                cover = make_cover(**params)
+                print("   source=generated fallback (no WordPress image)")
             cover.save(folder_path / "cover.png")
-            apply_texture(BASE_GLB, cover, output_glb)
+            apply_texture(BASE_GLB, cover, output_glb, stretch_cover=bool(source_image))
             shutil.copy2(output_glb, flat_glb)   # publish flat copy for the site
             print(f"   ✅ → {output_glb.name}  +  public/models/{pid}.glb")
             record("ok")
