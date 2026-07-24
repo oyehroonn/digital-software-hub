@@ -59,12 +59,12 @@ const ProductModelViewer = ({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
+        // Keep WebGL scoped to cards that are actually on-screen. The old
+        // one-way activation kept every previously viewed model and animation
+        // alive for the rest of a long catalogue session.
+        setIsVisible(entry.isIntersecting);
       },
-      { rootMargin: "200px" }
+      { rootMargin: "0px" }
     );
 
     observer.observe(el);
@@ -128,6 +128,13 @@ const ProductModelViewer = ({
     const mv = modelRef.current;
     if (!mv) return;
 
+    // Mobile retains the 3D box but skips continuous GPU animation. This
+    // avoids overwhelming constrained devices and automated mobile audits.
+    if (isMobile.current) {
+      mv.setAttribute("camera-orbit", FRONT_ORBIT);
+      return;
+    }
+
     const started = performance.now();
     const tick = (now: number) => {
       const phase = ((now - started) / SHOWROOM_CYCLE) * Math.PI * 2;
@@ -137,6 +144,10 @@ const ProductModelViewer = ({
     };
     showroomFrameRef.current = requestAnimationFrame(tick);
   }, [stopShowroomMotion]);
+
+  useEffect(() => {
+    if (!isVisible) stopShowroomMotion();
+  }, [isVisible, stopShowroomMotion]);
 
   const handleMouseEnter = useCallback(() => {
     if (isMobile.current) return;
