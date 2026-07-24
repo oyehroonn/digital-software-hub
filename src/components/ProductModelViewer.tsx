@@ -10,7 +10,9 @@ interface ProductModelViewerProps {
   className?: string;
 }
 
-const IDLE_SPEED = 0;
+// A slow showroom turn keeps the 3D effect without constantly presenting a
+// thin carton edge-on.
+const IDLE_SPEED = 8;
 const FRONT_ORBIT = "30deg 75deg 105%";
 const EASE_DURATION = 500;
 const DECEL_DURATION = 700;
@@ -152,7 +154,7 @@ const ProductModelViewer = ({
 
     mv.removeAttribute("camera-controls");
     mv.setAttribute("camera-orbit", FRONT_ORBIT);
-    mv.removeAttribute("auto-rotate");
+    mv.setAttribute("auto-rotate", "");
     mv.setAttribute("rotation-per-second", `${IDLE_SPEED}deg`);
   }, []);
 
@@ -160,10 +162,9 @@ const ProductModelViewer = ({
     setIsLoaded(true);
     const mv = modelRef.current;
     if (mv) {
-      // A thin carton is much clearer in a stable front three-quarter view.
-      // The viewer remains interactive on hover, without rotating away from
-      // the actual product artwork while someone is scanning the catalogue.
-      mv.removeAttribute("auto-rotate");
+      // Keep a restrained showroom turn so the box reads as 3D while the
+      // product face remains visible for most of the rotation.
+      mv.setAttribute("auto-rotate", "");
       mv.setAttribute("rotation-per-second", `${IDLE_SPEED}deg`);
     }
   }, []);
@@ -246,6 +247,8 @@ const ProductModelViewer = ({
             shadow-intensity="0.35"
             shadow-softness="1"
             exposure="1.1"
+            auto-rotate
+            auto-rotate-delay="0"
             rotation-per-second={`${IDLE_SPEED}deg`}
             touch-action="pan-y"
             style={{
