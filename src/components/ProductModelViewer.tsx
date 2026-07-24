@@ -11,9 +11,11 @@ interface ProductModelViewerProps {
 }
 
 const IDLE_SPEED = 0;
-const FRONT_ORBIT = "30deg 75deg 105%";
-const SHOWROOM_CENTER = 30;
-const SHOWROOM_SWEEP = 14;
+// Use the true front as the resting position. A narrow camera sweep keeps the
+// cover legible on every imported model while still giving genuine 3D motion.
+const FRONT_ORBIT = "0deg 75deg 105%";
+const SHOWROOM_CENTER = 0;
+const SHOWROOM_SWEEP = 8;
 const SHOWROOM_CYCLE = 4200;
 const EASE_DURATION = 500;
 const DECEL_DURATION = 700;
