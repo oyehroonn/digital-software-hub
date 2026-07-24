@@ -232,6 +232,18 @@ def get_base_url():
     return f"{proto}://{host}"
 
 
+def model_link(base_url, model):
+    """Return a cache-versioned GLB URL so model rebuilds reach store clients."""
+    folder = model.get('folder', '')
+    filename = model.get('glb', '')
+    path = os.path.join(MODELS_DIR, folder, filename)
+    try:
+        revision = int(os.path.getmtime(path))
+    except OSError:
+        revision = 0
+    return f"{base_url}/models/{model['id']}/{folder}/{filename}?v={revision}"
+
+
 def call_kiro(prompt, system_prompt=None, max_tokens=4096, retries=2):
     """Call Kiro API and extract text response (handling thinking blocks).
     Retries on transient errors."""
@@ -502,7 +514,7 @@ def enrich_product(m, base_url):
         "name": name,
         "folder": folder,
         "filename": m.get('glb'),
-        "link": f"{base_url}/models/{m['id']}/{folder}/{m.get('glb')}",
+        "link": model_link(base_url, m),
         "viewer": f"{base_url}/viewer/{m['id']}",
         "category": category,
         "categories": categories_list,
@@ -680,7 +692,7 @@ def index():
             {
                 "id":   m["id"],
                 "name": m["name"],
-                "link": f"{base}/models/{m['id']}/{m['folder']}/{m['glb']}",
+                "link": model_link(base, m),
                 "viewer": f"{base}/viewer/{m['id']}",
             }
             for m in ok
@@ -702,7 +714,7 @@ def list_models():
             "name":     m["name"],
             "folder":   m["folder"],
             "filename": m["glb"],
-            "link":     f"{base}/models/{m['id']}/{m['folder']}/{m['glb']}",
+            "link":     model_link(base, m),
             "viewer":   f"{base}/viewer/{m['id']}",
             "status":   m["status"],
         })
@@ -728,7 +740,7 @@ def get_model_by_id(pid):
         "name":     m["name"],
         "folder":   m["folder"],
         "filename": m["glb"],
-        "link":     f"{base}/models/{m['id']}/{m['folder']}/{m['glb']}",
+        "link":     model_link(base, m),
         "viewer":   f"{base}/viewer/{m['id']}",
     })
 
@@ -748,7 +760,7 @@ def serve_glb(pid, folder, filename):
     )
     # CORS so any frontend can fetch the model
     response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Cache-Control'] = 'public, max-age=86400'
+    response.headers['Cache-Control'] = 'public, max-age=3600'
     return response
 
 
@@ -1721,4 +1733,3 @@ if __name__ == '__main__':
     print()
 
     app.run(host=args.host, port=args.port, debug=True)
-
