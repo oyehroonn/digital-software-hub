@@ -10,10 +10,11 @@ interface ProductModelViewerProps {
   className?: string;
 }
 
-// Clearly visible showroom movement for both the landing and store grids,
-// while still slower than the original rapid spin.
-const IDLE_SPEED = 30;
+const IDLE_SPEED = 0;
 const FRONT_ORBIT = "30deg 75deg 105%";
+const SHOWROOM_CENTER = 30;
+const SHOWROOM_SWEEP = 14;
+const SHOWROOM_CYCLE = 4200;
 const EASE_DURATION = 500;
 const DECEL_DURATION = 700;
 // H7: if a GLB never resolves (missing box / live API down), fall back to the
@@ -43,6 +44,7 @@ const ProductModelViewer = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [modelAttempt, setModelAttempt] = useState(0);
   const animFrameRef = useRef<number>(0);
+  const showroomFrameRef = useRef<number>(0);
   const snapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMobile = useRef(false);
   const retryCountRef = useRef(0);
@@ -114,10 +116,33 @@ const ProductModelViewer = ({
     []
   );
 
+  const stopShowroomMotion = useCallback(() => {
+    if (showroomFrameRef.current) {
+      cancelAnimationFrame(showroomFrameRef.current);
+      showroomFrameRef.current = 0;
+    }
+  }, []);
+
+  const startShowroomMotion = useCallback(() => {
+    stopShowroomMotion();
+    const mv = modelRef.current;
+    if (!mv) return;
+
+    const started = performance.now();
+    const tick = (now: number) => {
+      const phase = ((now - started) / SHOWROOM_CYCLE) * Math.PI * 2;
+      const azimuth = SHOWROOM_CENTER + Math.sin(phase) * SHOWROOM_SWEEP;
+      mv.setAttribute("camera-orbit", `${azimuth}deg 75deg 105%`);
+      showroomFrameRef.current = requestAnimationFrame(tick);
+    };
+    showroomFrameRef.current = requestAnimationFrame(tick);
+  }, [stopShowroomMotion]);
+
   const handleMouseEnter = useCallback(() => {
     if (isMobile.current) return;
     const mv = modelRef.current;
     if (!mv) return;
+    stopShowroomMotion();
 
     if (snapTimeoutRef.current) {
       clearTimeout(snapTimeoutRef.current);
@@ -135,7 +160,7 @@ const ProductModelViewer = ({
       mv.setAttribute("camera-controls", "");
       snapTimeoutRef.current = null;
     }, DECEL_DURATION);
-  }, [animateSpeed]);
+  }, [animateSpeed, stopShowroomMotion]);
 
   const handleMouseLeave = useCallback(() => {
     if (isMobile.current) return;
@@ -154,20 +179,21 @@ const ProductModelViewer = ({
 
     mv.removeAttribute("camera-controls");
     mv.setAttribute("camera-orbit", FRONT_ORBIT);
-    mv.setAttribute("auto-rotate", "");
     mv.setAttribute("rotation-per-second", `${IDLE_SPEED}deg`);
-  }, []);
+    startShowroomMotion();
+  }, [startShowroomMotion]);
 
   const handleLoad = useCallback(() => {
     setIsLoaded(true);
     const mv = modelRef.current;
     if (mv) {
-      // Keep a restrained showroom turn so the box reads as 3D while the
-      // product face remains visible for most of the rotation.
-      mv.setAttribute("auto-rotate", "");
+      // Sway around the product-facing angle rather than doing a full 360°
+      // spin, which would expose the thin side or rear artwork in the grid.
+      mv.removeAttribute("auto-rotate");
       mv.setAttribute("rotation-per-second", `${IDLE_SPEED}deg`);
+      startShowroomMotion();
     }
-  }, []);
+  }, [startShowroomMotion]);
 
   const handleError = useCallback(() => {
     // The first few concurrently mounted WebGL viewers can emit a transient
@@ -197,6 +223,7 @@ const ProductModelViewer = ({
   useEffect(() => {
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (showroomFrameRef.current) cancelAnimationFrame(showroomFrameRef.current);
       if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
     };
   }, []);
@@ -247,8 +274,6 @@ const ProductModelViewer = ({
             shadow-intensity="0.35"
             shadow-softness="1"
             exposure="1.1"
-            auto-rotate
-            auto-rotate-delay="0"
             rotation-per-second={`${IDLE_SPEED}deg`}
             touch-action="pan-y"
             style={{
