@@ -10,9 +10,9 @@ interface ProductModelViewerProps {
   className?: string;
 }
 
-// A slow showroom turn keeps the 3D effect without constantly presenting a
-// thin carton edge-on.
-const IDLE_SPEED = 8;
+// Clearly visible showroom movement for both the landing and store grids,
+// while still slower than the original rapid spin.
+const IDLE_SPEED = 30;
 const FRONT_ORBIT = "30deg 75deg 105%";
 const EASE_DURATION = 500;
 const DECEL_DURATION = 700;
