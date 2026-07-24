@@ -39,9 +39,11 @@ const ProductModelViewer = ({
   const [mvReady, setMvReady] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [modelAttempt, setModelAttempt] = useState(0);
   const animFrameRef = useRef<number>(0);
   const snapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMobile = useRef(false);
+  const retryCountRef = useRef(0);
 
   useEffect(() => {
     isMobile.current = window.matchMedia("(hover: none)").matches;
@@ -167,6 +169,17 @@ const ProductModelViewer = ({
   }, []);
 
   const handleError = useCallback(() => {
+    // The first few concurrently mounted WebGL viewers can emit a transient
+    // error while the custom element is initialising. Remount once before
+    // showing a letter placeholder; genuine broken links still degrade safely.
+    if (retryCountRef.current < 1) {
+      retryCountRef.current += 1;
+      window.setTimeout(() => {
+        setIsLoaded(false);
+        setModelAttempt((attempt) => attempt + 1);
+      }, 350);
+      return;
+    }
     setHasError(true);
   }, []);
 
@@ -213,6 +226,7 @@ const ProductModelViewer = ({
             </div>
           )}
           <model-viewer
+            key={modelAttempt}
             ref={(el: HTMLElement | null) => {
               modelRef.current = el;
               if (el) {
