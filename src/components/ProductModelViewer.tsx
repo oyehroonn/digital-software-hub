@@ -15,8 +15,10 @@ const FRONT_ORBIT = "30deg 75deg 105%";
 const EASE_DURATION = 500;
 const DECEL_DURATION = 700;
 // H7: if a GLB never resolves (missing box / live API down), fall back to the
-// static icon instead of spinning forever. Keeps 3D boxes resilient offline.
-const LOAD_TIMEOUT = 8000;
+// static icon instead of spinning forever.  Start this only after the
+// model-viewer module has registered: the first visible product cards trigger
+// the dynamic import and must not be treated as failed while it downloads.
+const LOAD_TIMEOUT = 20000;
 
 function easeInCubic(t: number) {
   return t * t * t;
@@ -169,13 +171,14 @@ const ProductModelViewer = ({
   }, []);
 
   // H7: guard against a GLB that never fires load/error (404s on model-viewer
-  // don't always emit an error event). Once in view, if it hasn't loaded by
-  // LOAD_TIMEOUT, degrade gracefully to the fallback icon.
+  // don't always emit an error event).  Crucially, do not begin the timeout
+  // until the dynamic import has registered the custom element. Otherwise the
+  // first cards on a store page can expire before they have even mounted it.
   useEffect(() => {
-    if (!isVisible || isLoaded || hasError) return;
+    if (!isVisible || !mvReady || isLoaded || hasError) return;
     const t = setTimeout(() => setHasError(true), LOAD_TIMEOUT);
     return () => clearTimeout(t);
-  }, [isVisible, isLoaded, hasError]);
+  }, [isVisible, mvReady, isLoaded, hasError]);
 
   useEffect(() => {
     return () => {
