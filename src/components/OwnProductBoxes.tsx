@@ -1,17 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { OWN_PRODUCTS, type OwnProduct } from "@/data/ownProducts";
+import ProductModelViewer from "@/components/ProductModelViewer";
 
 /**
- * OwnProductBoxes — features our own products as interactive 3D showcase boxes,
+ * OwnProductBoxes — features our own products as interactive thin 3D cartons,
  * in the fixed priority order defined in src/data/ownProducts.ts.
  *
  * Interaction model (per the "animated 3D showcase" brief):
- *  - AUTO-ROTATE: each closed 6-face box slowly spins around its Y axis on its
- *    own (staggered so the row doesn't pulse in unison).
- *  - HOVER TO SPIN: pointer position over a box drives a live parallax spin —
- *    the auto-rotate freezes and the box turns to follow the cursor, lifting
- *    forward. Keyboard focus gets a clean brought-forward pose.
- *  - CLICK TO OPEN: the whole box is an anchor to that product.
+ *  - The same GLB template used by standard catalogue products renders every
+ *    DSM-owned product; supplied creative packaging is reserved for products
+ *    that have approved creative artwork.
+ *  - Hover interaction comes from ProductModelViewer; click opens the product.
  *
  * Two layouts:
  *  - variant="grid"    → static responsive grid (AI Lab showcase).
@@ -19,16 +18,8 @@ import { OWN_PRODUCTS, type OwnProduct } from "@/data/ownProducts";
  *                        revealed on scroll and paused on hover.
  *
  * Performance / resilience notes:
- *  - Pure CSS 3D (no WebGL, no model-viewer, no network) so it renders even
- *    when the VPS / LLM backends are down.
- *  - The spin layer and the pointer tilt live on SEPARATE elements so the
- *    keyframe auto-rotate and the JS-set tilt transform compose instead of
- *    fighting; only the hovered card runs a rAF loop, and it's cancelled on
- *    leave, so idle cost is zero JS.
- *  - prefers-reduced-motion disables the auto-rotate, float, drift AND the
- *    pointer tilt (CSS + a JS guard), leaving a static, fully clickable box.
- *  - On coarse-pointer / small screens CSS trims the continuous spin so paint
- *    stays cheap on mobile; the boxes still float + drift.
+ *  - The models are local static assets (`/models/90001.glb` through
+ *    `/models/90013.glb`) and fall back gracefully if a single model fails.
  */
 
 interface OwnProductBoxesProps {
@@ -42,66 +33,8 @@ function isExternal(url: string) {
 
 // Shared reduced-motion guard so we never wire up the rAF tilt loop for users
 // who asked their OS to minimise motion.
-function prefersReducedMotion() {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-}
-
-function OwnBox({ product, spinDelay }: { product: OwnProduct; spinDelay: number }) {
+function OwnBox({ product }: { product: OwnProduct }) {
   const external = isExternal(product.url);
-  // The element that receives the live pointer-driven tilt (inner of the
-  // spin layer, so the two transforms compose).
-  const boxRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef<number | null>(null);
-  const pendingRef = useRef<{ x: number; y: number } | null>(null);
-
-  const applyTilt = useCallback(() => {
-    frameRef.current = null;
-    const el = boxRef.current;
-    const p = pendingRef.current;
-    if (!el || !p) return;
-    // px/py are -0.5..0.5 across the box; turn cursor position into a spin.
-    el.style.setProperty("--tilt-y", `${p.x * 40}deg`);
-    el.style.setProperty("--tilt-x", `${-p.y * 24}deg`);
-  }, []);
-
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent<HTMLAnchorElement>) => {
-      if (e.pointerType === "touch" || prefersReducedMotion()) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      pendingRef.current = {
-        x: (e.clientX - rect.left) / rect.width - 0.5,
-        y: (e.clientY - rect.top) / rect.height - 0.5,
-      };
-      if (frameRef.current == null) {
-        frameRef.current = requestAnimationFrame(applyTilt);
-      }
-    },
-    [applyTilt]
-  );
-
-  const handlePointerLeave = useCallback(() => {
-    if (frameRef.current != null) {
-      cancelAnimationFrame(frameRef.current);
-      frameRef.current = null;
-    }
-    pendingRef.current = null;
-    const el = boxRef.current;
-    if (el) {
-      el.style.removeProperty("--tilt-y");
-      el.style.removeProperty("--tilt-x");
-    }
-  }, []);
-
-  useEffect(
-    () => () => {
-      if (frameRef.current != null) cancelAnimationFrame(frameRef.current);
-    },
-    []
-  );
 
   return (
     <a
@@ -109,39 +42,13 @@ function OwnBox({ product, spinDelay }: { product: OwnProduct; spinDelay: number
       {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
       className="own-box-card group"
       aria-label={`${product.name} — ${product.tagline}`}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
-      style={
-        {
-          ["--accent" as string]: product.accent,
-          ["--accent-to" as string]: product.accentTo,
-        } as React.CSSProperties
-      }
     >
-      <div className="own-box-scene">
-        {/* Spin layer: continuous auto-rotate (paused on hover/focus). */}
-        <div
-          className="own-box-spin"
-          style={{ ["--spin-delay" as string]: `${spinDelay}s` }}
-        >
-          {/* Tilt layer: base pose + live pointer-driven parallax spin. */}
-          <div className="own-box" ref={boxRef}>
-            <div className="own-box-face own-box-front">
-              <span className="own-box-wordmark">{product.wordmark}</span>
-              <span className="own-box-front-name">{product.name}</span>
-              <span className="own-box-shine" aria-hidden="true" />
-            </div>
-            <div className="own-box-face own-box-back" aria-hidden="true">
-              <span className="own-box-back-mark">{product.wordmark}</span>
-            </div>
-            <div className="own-box-face own-box-right" aria-hidden="true">
-              <span className="own-box-spine-text">{product.wordmark}</span>
-            </div>
-            <div className="own-box-face own-box-left" aria-hidden="true" />
-            <div className="own-box-face own-box-top" aria-hidden="true" />
-            <div className="own-box-face own-box-bottom" aria-hidden="true" />
-          </div>
-        </div>
+      <div className="relative aspect-[3/4] w-[132px] overflow-hidden rounded-md border border-white/[0.08] bg-[#0b0c0f] shadow-[0_18px_34px_rgba(0,0,0,0.35)] transition duration-300 group-hover:-translate-y-1 group-hover:border-crimson/50">
+        <ProductModelViewer
+          glbSrc={`/models/${product.modelId}.glb`}
+          className="bg-transparent"
+          fallbackIcon={<span className="text-2xl font-bold text-white/30">{product.wordmark}</span>}
+        />
       </div>
       <div className="own-box-label">
         <span className="own-box-name">{product.name}</span>
@@ -182,9 +89,6 @@ export default function OwnProductBoxes({
     [variant]
   );
 
-  // Stagger the per-box auto-rotate so the row never spins in lockstep.
-  const spinDelay = (i: number) => -(i % 6) * 3.4;
-
   if (variant === "marquee") {
     return (
       <div
@@ -193,7 +97,7 @@ export default function OwnProductBoxes({
       >
         <div className="own-box-marquee-track" aria-hidden={!active}>
           {marqueeItems.map((product, i) => (
-            <OwnBox key={`${product.id}-${i}`} product={product} spinDelay={spinDelay(i)} />
+            <OwnBox key={`${product.id}-${i}`} product={product} />
           ))}
         </div>
       </div>
@@ -211,7 +115,7 @@ export default function OwnProductBoxes({
           className="own-box-grid-item"
           style={{ ["--reveal-delay" as string]: `${Math.min(i, 8) * 70}ms` }}
         >
-          <OwnBox product={product} spinDelay={spinDelay(i)} />
+          <OwnBox product={product} />
         </div>
       ))}
     </div>

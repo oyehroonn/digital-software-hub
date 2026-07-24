@@ -14,6 +14,8 @@
 export interface OwnProduct {
   /** Short id / key. */
   id: string;
+  /** Thin DSM carton model generated with the standard catalogue template. */
+  modelId: number;
   /** Display name (box cover wordmark + label). */
   name: string;
   /** Short wordmark shown large on the box cover. */
@@ -32,6 +34,7 @@ export interface OwnProduct {
 export const OWN_PRODUCTS: OwnProduct[] = [
   {
     id: "dsm",
+    modelId: 90001,
     name: "DSM",
     wordmark: "DSM",
     tagline: "Genuine software licensing, instant delivery.",
@@ -41,6 +44,7 @@ export const OWN_PRODUCTS: OwnProduct[] = [
   },
   {
     id: "virtual-sizing",
+    modelId: 90002,
     name: "Virtual Sizing",
     wordmark: "VS",
     tagline: "AI picks every shopper's perfect size in seconds.",
@@ -50,6 +54,7 @@ export const OWN_PRODUCTS: OwnProduct[] = [
   },
   {
     id: "virtual-try-on",
+    modelId: 90003,
     name: "Virtual Try-On",
     wordmark: "VTO",
     tagline: "See it on before you buy — no returns.",
@@ -59,6 +64,7 @@ export const OWN_PRODUCTS: OwnProduct[] = [
   },
   {
     id: "pointblank",
+    modelId: 90004,
     name: "Pointblank",
     wordmark: "PB",
     tagline: "AI-driven cybersecurity threat hunting.",
@@ -68,6 +74,7 @@ export const OWN_PRODUCTS: OwnProduct[] = [
   },
   {
     id: "preservemy-world",
+    modelId: 90005,
     name: "PreserveMy.World",
     wordmark: "PMW",
     tagline: "Spatial-AI 3D capture of real places.",
@@ -77,6 +84,7 @@ export const OWN_PRODUCTS: OwnProduct[] = [
   },
   {
     id: "vpo",
+    modelId: 90006,
     name: "VPO",
     wordmark: "VPO",
     tagline: "Immersive 3D virtual shopping outlets.",
@@ -86,6 +94,7 @@ export const OWN_PRODUCTS: OwnProduct[] = [
   },
   {
     id: "techrealm",
+    modelId: 90007,
     name: "TechRealm",
     wordmark: "TR",
     tagline: "Cloud + AI platform engineered for 99.99% uptime.",
@@ -95,6 +104,7 @@ export const OWN_PRODUCTS: OwnProduct[] = [
   },
   {
     id: "logicpacks",
+    modelId: 90008,
     name: "LogicPacks",
     wordmark: "LP",
     tagline: "Drag-and-drop automation flows & dev connectors.",
@@ -104,6 +114,7 @@ export const OWN_PRODUCTS: OwnProduct[] = [
   },
   {
     id: "lazyware",
+    modelId: 90009,
     name: "Lazyware",
     wordmark: "LW",
     tagline: "Automate anything once, then forget — save ~10h/week.",
@@ -113,6 +124,7 @@ export const OWN_PRODUCTS: OwnProduct[] = [
   },
   {
     id: "bringit",
+    modelId: 90010,
     name: "Bringit",
     wordmark: "BI",
     tagline: "On-demand local delivery, done.",
@@ -122,6 +134,7 @@ export const OWN_PRODUCTS: OwnProduct[] = [
   },
   {
     id: "flyaquab",
+    modelId: 90011,
     name: "FlyAquab",
     wordmark: "FA",
     tagline: "Autonomous drone survey & aerial data capture.",
@@ -131,6 +144,7 @@ export const OWN_PRODUCTS: OwnProduct[] = [
   },
   {
     id: "apex",
+    modelId: 90012,
     name: "Apex",
     wordmark: "APX",
     tagline: "Reality-capture visualization for construction.",
@@ -140,6 +154,7 @@ export const OWN_PRODUCTS: OwnProduct[] = [
   },
   {
     id: "ummah-directory",
+    modelId: 90013,
     name: "Ummah Directory",
     wordmark: "UD",
     tagline: "The community business directory.",
