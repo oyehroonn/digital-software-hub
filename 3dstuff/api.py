@@ -233,15 +233,15 @@ def get_base_url():
 
 
 def model_link(base_url, model):
-    """Return a cache-versioned GLB URL so model rebuilds reach store clients."""
+    """Return the canonical GLB URL used by the browser model viewer.
+
+    Keep this URL stable: model-viewer can reject a previously loaded model
+    when a query-string revision is substituted while its resources are being
+    scheduled.  The file endpoint below forces a normal revalidation instead.
+    """
     folder = model.get('folder', '')
     filename = model.get('glb', '')
-    path = os.path.join(MODELS_DIR, folder, filename)
-    try:
-        revision = int(os.path.getmtime(path))
-    except OSError:
-        revision = 0
-    return f"{base_url}/models/{model['id']}/{folder}/{filename}?v={revision}"
+    return f"{base_url}/models/{model['id']}/{folder}/{filename}"
 
 
 def call_kiro(prompt, system_prompt=None, max_tokens=4096, retries=2):
@@ -760,7 +760,9 @@ def serve_glb(pid, folder, filename):
     )
     # CORS so any frontend can fetch the model
     response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Cache-Control'] = 'public, max-age=3600'
+    # Revalidate on each navigation so model rebuilds take effect without
+    # changing the model URL used by <model-viewer>.
+    response.headers['Cache-Control'] = 'public, max-age=0, must-revalidate'
     return response
 
 
