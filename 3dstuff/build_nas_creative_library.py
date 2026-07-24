@@ -97,13 +97,15 @@ def main() -> None:
         "- spine.png is printed on the right side and mirrored for the left side.\n\n"
         "00_RAW_ZIPS preserves the supplied archives. 02_UPLOAD_YOUR_DESIGNS is the intake folder for new artwork.\n"
         "03_INVENTORY contains the complete WordPress comparison, source collection names, live-model status, and missing-design checklist.\n"
+        "04_CONTACT_SHEETS contains a master collage and one collage per source collection for visual review before choosing a design.\n"
     )
     (LIBRARY / "index.html").write_text(
         "<!doctype html><meta charset='utf-8'><title>DSM Creative Box Library</title>"
         "<style>body{font:16px system-ui;background:#101114;color:#eee;max-width:900px;margin:48px auto;padding:0 20px}a{color:#ff6257}li{margin:10px 0}</style>"
         "<h1>DSM Creative Box Library</h1><p>Open a collection, then a design folder, then any image to preview it.</p>"
         "<ul><li><a href='01_DESIGNS/'>Browse designs</a></li><li><a href='00_RAW_ZIPS/'>Raw ZIPs</a></li>"
-        "<li><a href='02_UPLOAD_YOUR_DESIGNS/'>Upload your own designs</a></li><li><a href='03_INVENTORY/'>Inventory and missing checklist</a></li></ul>"
+        "<li><a href='02_UPLOAD_YOUR_DESIGNS/'>Upload your own designs</a></li><li><a href='03_INVENTORY/'>Inventory and missing checklist</a></li>"
+        "<li><a href='04_CONTACT_SHEETS/'>View contact sheets and master collage</a></li></ul>"
         "<p><a href='README.txt'>How artwork is mapped</a></p>"
     )
     print(f"Created {LIBRARY} with {copied} design folders")
