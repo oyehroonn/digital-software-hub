@@ -247,7 +247,10 @@ def make_cover(name, tagline, glyph, atop, abot, features=None):
 # sides, real box depth) instead of the old all-faces-garbled box.glb wrap.
 def apply_texture(glb_path, texture_img, output_path):
     from batch_process import apply_texture as _build_box
-    _build_box(glb_path, texture_img, output_path)
+    # DSM Originals follow the same full-bleed face mapping as the DSM AI
+    # fallback boxes.  These generated covers are square source canvases, so
+    # aspect-fitting would leave a framed panel on a portrait carton.
+    _build_box(glb_path, texture_img, output_path, stretch_cover=True)
 
 
 def main():
