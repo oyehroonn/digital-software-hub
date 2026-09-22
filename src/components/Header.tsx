@@ -119,6 +119,9 @@ const NavDropdown = ({
   return (
     <div className="relative h-full flex items-center" onMouseEnter={onOpen} onMouseLeave={onClose}>
       <button
+        type="button"
+        onClick={() => (isOpen ? onClose() : onOpen())}
+        aria-expanded={isOpen}
         className={`text-sm font-medium transition-colors duration-300 tracking-wide h-full flex items-center gap-1 ${isOpen ? "text-crimson" : navTextColor}`}
       >
         {label}
