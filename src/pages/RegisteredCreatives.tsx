@@ -21,7 +21,11 @@ export default function RegisteredCreatives() {
     fetch(API)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("creative catalogue unavailable")))
       .then((payload) => {
-        const imported = (payload.models as CreativeModel[]).filter((model) => Number(model.id) >= 99001 && Number(model.id) < 99200);
+        // Upper bound was a hardcoded 99200 that quietly clipped off any archive-backed
+        // creative box registered above that id (the Sep 2026 box-matching pass pushed the
+        // highest registered id to 99205, so 6 boxes were silently missing from this gallery).
+        // Widened to cover the whole 99xxx archive-backed id block instead of a moving target.
+        const imported = (payload.models as CreativeModel[]).filter((model) => Number(model.id) >= 99001 && Number(model.id) < 100000);
         if (imported.length) setCreativeModels(imported);
       })
       .catch(() => undefined);
