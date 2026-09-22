@@ -2,7 +2,8 @@
 <html lang="en"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Agent Services Dubai | Enterprise Automation UAE | DSM AI Lab</title>
+  <title>Services &amp; Products | DSM AI Labs — Strategic Tech Partner + agentBox</title>
+  <meta name="description" content="DSM AI Labs runs two arms: Services (AI-powered software, cloud, DevOps, marketing and design delivered end-to-end) and Products &amp; Investing (agentBox, Sovereign AI, and early-stage bets on Gulf agent infrastructure). Full taxonomy, platform solutions, and AI-agent briefs below.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -31,6 +32,23 @@
     .flo-section::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:linear-gradient(180deg,var(--dsm-blue),var(--dsm-yellow)); border-radius:0 2px 2px 0; }
     .industry-pill { border:1px solid rgba(24,24,27,.15); border-radius:9999px; padding:.3rem .7rem; font-size:10px; font-family:'JetBrains Mono',monospace; letter-spacing:.08em; text-transform:uppercase; color:#52525b; background:white; transition:all .3s; }
     .industry-pill:hover { border-color:var(--line); color:var(--text); }
+    /* REM-style bold divider between the two arms */
+    .arm-divider { background:var(--line); color:#fafafa; }
+    .arm-divider .arm-word { font-weight:500; letter-spacing:-0.03em; line-height:.92; }
+    .taxo-col h4 { font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.18em; color:#a1a1aa; margin-bottom:.75rem; }
+    .taxo-col li { font-size:12.5px; color:#3f3f46; padding:.3rem 0; border-bottom:1px dashed rgba(24,24,27,.08); }
+    .taxo-col li:last-child { border-bottom:none; }
+    .cred-strip { border-top:1px dashed rgba(24,24,27,.15); border-bottom:1px dashed rgba(24,24,27,.15); }
+    .ai-brief summary { cursor:pointer; list-style:none; }
+    .ai-brief summary::-webkit-details-marker { display:none; }
+    .ai-brief[open] summary .ai-brief-chevron { transform:rotate(90deg); }
+    .ai-brief-chevron { transition:transform .25s ease; display:inline-block; }
+    .ai-brief-grid dt { font-family:'JetBrains Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.15em; color:#a1a1aa; margin-top:1rem; }
+    .ai-brief-grid dt:first-child { margin-top:0; }
+    .ai-brief-grid dd { font-size:12.5px; color:#3f3f46; font-weight:300; line-height:1.6; margin:.25rem 0 0; }
+    .footer-taxo a { display:block; font-size:11.5px; color:#a1a1aa; padding:.25rem 0; text-decoration:none; }
+    .footer-taxo a:hover { color:#fafafa; }
+    .footer-taxo h5 { font-family:'JetBrains Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.18em; color:#71717a; margin-bottom:.9rem; }
     @media (prefers-reduced-motion:reduce) { .reveal { opacity:1; transform:none; } }
   </style>
 </head>
@@ -46,7 +64,8 @@
     <nav class="hidden md:flex text-[10px] font-mono tracking-[.18em] gap-5 text-zinc-500 items-center uppercase">
       <a href="dsmAIFinal.html" class="hover:text-zinc-900 transition-colors">Home</a>
       <a href="offerings.html" class="text-zinc-900 border-b border-zinc-900 pb-0.5">Services</a>
-      <a href="changelog.html" class="hover:text-zinc-900 transition-colors">Research</a>
+      <a href="offerings.html#products-investing" class="hover:text-zinc-900 transition-colors">Products</a>
+      <a href="changelog.html" class="hover:text-zinc-900 transition-colors">Release</a>
     </nav>
     <a href="#contact" class="pill-label text-[10px] tracking-[.15em] hover:bg-zinc-900 hover:text-white transition-colors duration-300 no-underline">
       <i data-lucide="arrow-right" class="w-3 h-3" stroke-width="1.5"></i> Get Started
@@ -55,22 +74,122 @@
 
   <main class="relative z-10 pt-28 pb-20">
     <!-- Hero -->
-    <section class="px-6 md:px-12 pb-20 md:pb-28 max-w-6xl mx-auto">
+    <section class="px-6 md:px-12 pb-16 md:pb-20 max-w-6xl mx-auto">
       <div class="reveal">
-        <div class="pill-label mb-6"><i data-lucide="layers" class="w-3.5 h-3.5" stroke-width="1.5"></i> Services</div>
-        <h1 class="text-5xl sm:text-6xl md:text-7xl font-medium tracking-tight text-zinc-900 leading-[1.05] mb-6">What We Build.</h1>
-        <p class="text-lg md:text-xl text-zinc-500 font-light max-w-2xl leading-relaxed">AI agents that automate your actual operations — not demos. We connect to Salesforce, QuickBooks, HubSpot, SAP, WhatsApp, and your custom systems to automate workflows, acquisition, and product development. ISO 27001 certified. UAE PDPL compliant. Production-ready in weeks.</p>
-        <div class="flex items-center gap-6 mt-8 text-[10px] font-mono uppercase tracking-[.15em] text-zinc-400">
+        <div class="pill-label mb-6"><i data-lucide="layers" class="w-3.5 h-3.5" stroke-width="1.5"></i> DSM AI Labs · Two arms, one lab</div>
+        <h1 class="text-5xl sm:text-6xl md:text-8xl font-medium tracking-tight text-zinc-900 leading-[0.98] mb-6">We build it.<br>We back it.</h1>
+        <p class="text-lg md:text-xl text-zinc-500 font-light max-w-2xl leading-relaxed">A strategic tech partner for enterprises that need software, cloud, and marketing shipped end-to-end — and an early-stage investor putting capital behind the AI agent infrastructure Abu Dhabi and Saudi founders are building next. Software licensing concierge since 1994; AI-native delivery since day one.</p>
+        <div class="flex items-center gap-6 mt-8 text-[10px] font-mono uppercase tracking-[.15em] text-zinc-400 flex-wrap">
           <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-zinc-900"></span> 50+ deployments</span>
           <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-zinc-900"></span> 8 industries</span>
           <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-zinc-900"></span> 99.9% on-time</span>
+          <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-zinc-900"></span> ISO 27001 &amp; 9001</span>
+          <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-zinc-900"></span> Official Microsoft, Adobe &amp; Autodesk partner</span>
+        </div>
+        <div class="flex flex-wrap gap-3 mt-8">
+          <a href="#services-arm" class="off-cta-btn-primary off-cta-btn px-6 py-3">Services — hire us to build</a>
+          <a href="#products-investing" class="off-cta-btn px-6 py-3">Products &amp; investing — back agent infra</a>
         </div>
       </div>
+    </section>
+
+    <!-- ═══════════ ARM 1 — SERVICES ═══════════ -->
+    <section id="services-arm" class="px-6 md:px-12 pt-8 pb-4 max-w-6xl mx-auto scroll-mt-24">
+      <div class="reveal flex items-baseline justify-between flex-wrap gap-3 mb-2">
+        <p class="font-mono text-[10px] uppercase tracking-[.25em] text-zinc-400">Arm 01</p>
+        <p class="font-mono text-[10px] uppercase tracking-[.25em] text-zinc-400">Like tkxel.com, run AI-native</p>
+      </div>
+      <h2 class="reveal text-3xl md:text-5xl font-medium tracking-tight text-zinc-900 mb-4">Services — your strategic tech partner.</h2>
+      <p class="reveal text-zinc-500 font-light max-w-2xl leading-relaxed mb-2">Full marketing, design, and development end-to-end — modernize systems, speed time-to-value, and reduce cost. Every engagement runs on AI-assisted delivery, so quotes, builds, and QA move faster than a traditional shop without cutting scope.</p>
     </section>
 
     <!-- Offerings -->
     <section class="px-6 md:px-12 max-w-6xl mx-auto">
       <div id="offerings-grid" class="space-y-10 md:space-y-14"></div>
+    </section>
+
+    <!-- Full services taxonomy (Techsaga-depth) -->
+    <section class="px-6 md:px-12 py-16 md:py-24 max-w-6xl mx-auto border-t border-dashed border-zinc-200">
+      <div class="reveal mb-10">
+        <p class="font-mono text-[9px] uppercase tracking-[.25em] text-zinc-400 mb-3">Full capability map</p>
+        <h3 class="text-2xl md:text-3xl font-medium tracking-tight text-zinc-900">Every service, laid out.</h3>
+        <p class="text-sm text-zinc-500 font-light mt-2 max-w-2xl">The complete taxonomy — the same depth you'd expect from a full-service systems integrator, reused across DSM's own products wherever it overlaps (FloAI, RealmAI, the DSM storefront) instead of reinvented per page.</p>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10 reveal">
+        <div class="taxo-col">
+          <h4>Software Development</h4>
+          <ul>
+            <li>Custom software development</li>
+            <li>Enterprise software development</li>
+            <li>SaaS &amp; multi-tenant platforms</li>
+            <li>Mobile apps — iOS, Android, React Native</li>
+            <li>API design &amp; MCP integration</li>
+            <li>Legacy system modernization</li>
+            <li>Microservices architecture</li>
+          </ul>
+        </div>
+        <div class="taxo-col">
+          <h4>Cloud &amp; Infrastructure</h4>
+          <ul>
+            <li>Cloud infrastructure (AWS, GCP, Azure)</li>
+            <li>Hybrid infrastructure</li>
+            <li>On-premises infrastructure</li>
+            <li>Agentic infrastructure — agentBox →</li>
+            <li>DevOps &amp; platform engineering</li>
+            <li>CI/CD pipeline design</li>
+            <li>Kubernetes &amp; container orchestration</li>
+            <li>Site reliability &amp; observability</li>
+          </ul>
+        </div>
+        <div class="taxo-col">
+          <h4>Quality &amp; Consulting</h4>
+          <ul>
+            <li>Functional testing</li>
+            <li>Automation testing</li>
+            <li>Performance &amp; load testing</li>
+            <li>Security testing &amp; audits</li>
+            <li>Digital transformation consulting</li>
+            <li>Business strategy consulting</li>
+            <li>Cloud strategy consulting</li>
+            <li>AI readiness assessments</li>
+          </ul>
+        </div>
+        <div class="taxo-col">
+          <h4>Marketing &amp; Creative</h4>
+          <ul>
+            <li>Digital marketing (SEO / AEO / paid)</li>
+            <li>WhatsApp &amp; voice acquisition</li>
+            <li>Brand &amp; creative design</li>
+            <li>Content &amp; campaign production</li>
+            <li>Growth &amp; behavioral funnels</li>
+            <li>Conversion-rate optimization</li>
+            <li>Multilingual campaigns (AR/EN/HI)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Solutions by platform -->
+    <section class="px-6 md:px-12 py-16 md:py-20 max-w-6xl mx-auto border-t border-dashed border-zinc-200">
+      <div class="reveal mb-8 text-center">
+        <p class="font-mono text-[9px] uppercase tracking-[.25em] text-zinc-400 mb-3">Solutions</p>
+        <h3 class="text-2xl md:text-3xl font-medium tracking-tight text-zinc-900">We build on the platforms you already run.</h3>
+        <p class="text-sm text-zinc-500 font-light mt-2 max-w-xl mx-auto">Named-platform implementation and integration — not just "we know the API."</p>
+      </div>
+      <div class="flex flex-wrap justify-center gap-3 reveal">
+        <span class="industry-pill">Salesforce</span>
+        <span class="industry-pill">SAP</span>
+        <span class="industry-pill">AWS</span>
+        <span class="industry-pill">Google Cloud</span>
+        <span class="industry-pill">Microsoft Azure</span>
+        <span class="industry-pill">HubSpot</span>
+        <span class="industry-pill">Shopify / WooCommerce</span>
+        <span class="industry-pill">QuickBooks / Xero</span>
+        <span class="industry-pill">WhatsApp Business API</span>
+        <span class="industry-pill">Zoho</span>
+        <span class="industry-pill">Jira / Atlassian</span>
+        <span class="industry-pill">Slack</span>
+      </div>
     </section>
 
     <!-- FLO AI Featured -->
@@ -118,30 +237,150 @@
       </div>
     </section>
 
+    <!-- Credibility strip -->
+    <section class="cred-strip px-6 md:px-12 py-10 max-w-6xl mx-auto">
+      <div class="reveal grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <div><p class="text-2xl md:text-3xl font-medium text-zinc-900">1994</p><p class="font-mono text-[9px] uppercase tracking-[.15em] text-zinc-400 mt-1">Software licensing since</p></div>
+        <div><p class="text-2xl md:text-3xl font-medium text-zinc-900">50+</p><p class="font-mono text-[9px] uppercase tracking-[.15em] text-zinc-400 mt-1">Agent &amp; automation deployments</p></div>
+        <div><p class="text-2xl md:text-3xl font-medium text-zinc-900">ISO 27001</p><p class="font-mono text-[9px] uppercase tracking-[.15em] text-zinc-400 mt-1">&amp; ISO 9001 certified</p></div>
+        <div><p class="text-2xl md:text-3xl font-medium text-zinc-900">MS · Adobe · Autodesk</p><p class="font-mono text-[9px] uppercase tracking-[.15em] text-zinc-400 mt-1">Official licensing partner</p></div>
+      </div>
+    </section>
+
     <!-- Research Data Strip -->
     <section class="px-6 md:px-12 py-16 max-w-5xl mx-auto">
       <div class="reveal">
         <div class="text-center mb-10">
           <div class="text-[9px] font-mono uppercase tracking-[.25em] text-zinc-400 mb-3">Backed by Data</div>
-          <h3 class="text-2xl md:text-3xl font-medium tracking-tight text-zinc-900">Our Research Proves It Works.</h3>
+          <h3 class="text-2xl md:text-3xl font-medium tracking-tight text-zinc-900">The Numbers Prove It Works.</h3>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <a href="resources/graphs/workflow-efficiency.html" class="wire-panel p-5 no-underline block group hover:shadow-md transition-shadow text-center">
             <div class="text-2xl font-medium text-zinc-900 mb-1">68–89%</div>
             <div class="text-[10px] font-mono uppercase tracking-[.15em] text-zinc-500">Process Time Reduction</div>
-            <div class="text-[9px] text-zinc-400 mt-2 group-hover:text-zinc-600 transition-colors">View Research →</div>
+            <div class="text-[9px] text-zinc-400 mt-2 group-hover:text-zinc-600 transition-colors">View data →</div>
           </a>
           <a href="resources/graphs/conversion-funnel.html" class="wire-panel p-5 no-underline block group hover:shadow-md transition-shadow text-center">
             <div class="text-2xl font-medium text-zinc-900 mb-1">3.8× ROAS</div>
             <div class="text-[10px] font-mono uppercase tracking-[.15em] text-zinc-500">AI Acquisition Returns</div>
-            <div class="text-[9px] text-zinc-400 mt-2 group-hover:text-zinc-600 transition-colors">View Research →</div>
+            <div class="text-[9px] text-zinc-400 mt-2 group-hover:text-zinc-600 transition-colors">View data →</div>
           </a>
           <a href="resources/graphs/ai-operations.html" class="wire-panel p-5 no-underline block group hover:shadow-md transition-shadow text-center">
             <div class="text-2xl font-medium text-zinc-900 mb-1">99.97%</div>
             <div class="text-[10px] font-mono uppercase tracking-[.15em] text-zinc-500">Uptime Across Deployments</div>
-            <div class="text-[9px] text-zinc-400 mt-2 group-hover:text-zinc-600 transition-colors">View Research →</div>
+            <div class="text-[9px] text-zinc-400 mt-2 group-hover:text-zinc-600 transition-colors">View data →</div>
           </a>
         </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ REM-style bold divider ═══════════ -->
+    <section class="arm-divider py-24 md:py-36 px-6 md:px-12">
+      <div class="max-w-6xl mx-auto text-center">
+        <p class="font-mono text-[10px] uppercase tracking-[.3em] text-zinc-400 mb-6">Arm 02</p>
+        <h2 class="arm-word text-5xl sm:text-6xl md:text-8xl">We also<br>back what's<br>next.</h2>
+        <p class="mt-8 text-zinc-400 font-light max-w-xl mx-auto text-sm md:text-base">Products &amp; early-stage investing — capital and infrastructure for the AI agent economy in Abu Dhabi and Saudi Arabia.</p>
+      </div>
+    </section>
+
+    <!-- ═══════════ ARM 2 — PRODUCTS & INVESTING ═══════════ -->
+    <section id="products-investing" class="px-6 md:px-12 py-16 md:py-24 max-w-6xl mx-auto scroll-mt-24">
+      <div class="reveal mb-14 max-w-2xl">
+        <p class="font-mono text-[9px] uppercase tracking-[.25em] text-zinc-400 mb-3">Products &amp; early-stage investing</p>
+        <h3 class="text-3xl md:text-5xl font-medium tracking-tight text-zinc-900 mb-4">Infrastructure, interface, and outcomes for AI agents.</h3>
+        <p class="text-zinc-500 font-light leading-relaxed">We build and invest in the layer underneath the AI agent economy — for founders in Abu Dhabi and Saudi Arabia building interface, infrastructure, and outcome tooling for agents, and for enterprises that want agents running as employees, not demos.</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-6">
+        <!-- agentBox -->
+        <div class="reveal wire-panel p-8 md:p-10">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-11 h-11 border border-zinc-900 rounded-lg flex items-center justify-center bg-white"><i data-lucide="server" class="w-5 h-5" stroke-width="1.2"></i></div>
+            <span class="font-mono text-[9px] tracking-[.25em] text-zinc-400 uppercase">Flagship</span>
+          </div>
+          <h4 class="text-xl md:text-2xl font-medium text-zinc-900 tracking-tight mb-2">agentBox</h4>
+          <p class="font-mono text-[10px] uppercase tracking-[.12em] text-zinc-400 mb-4">24/7 AI employees, on dedicated hardware</p>
+          <p class="text-sm text-zinc-600 font-light leading-relaxed mb-5">Dedicated, always-on infrastructure for AI agents — persistent compute, tool/API access, memory, and monitoring. Built for teams outgrowing a self-hosted "open claw"-style coding-agent box and wanting the managed, enterprise version instead.</p>
+          <a href="agentic-infrastructure.html" class="off-cta-btn-primary off-cta-btn">Open agentBox blueprint <i data-lucide="arrow-right" class="w-3.5 h-3.5" stroke-width="1.5"></i></a>
+
+          <details class="ai-brief mt-6 border-t border-dashed border-zinc-200 pt-5">
+            <summary class="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[.15em] text-zinc-500 hover:text-zinc-900"><i data-lucide="chevron-right" class="w-3 h-3 ai-brief-chevron" stroke-width="2"></i> For AI agents &amp; researchers</summary>
+            <dl class="ai-brief-grid">
+              <dt>What it is / how to use it</dt>
+              <dd>A dedicated server (not a shared cloud sandbox) that runs one or more AI agents continuously. You provision it, connect the tools you want the agent to use (email, calendar, phone/SMS, CRM, code repos, internal APIs), and the agent keeps running after you close your laptop. Onboarding: scope the workflow → we provision the box → wire credentials with least-privilege scopes → set approval gates → go live, typically inside a week.</dd>
+              <dt>What people search for</dt>
+              <dd>"24/7 AI agent", "self-hosted AI agent server", "open claw alternative", "always-on Claude/GPT agent", "AI employee infrastructure", "run AI agent when computer is off", "dedicated server for AI agents".</dd>
+              <dt>Cheapest way to get it</dt>
+              <dd>Shared-tier agentBox (single agent, standard tool set) is the lowest entry point; self-hosting an open-source agent runtime on your own VPS is cheaper still but you own uptime, security, and integration work yourself — agentBox's price premium buys you the managed ops, monitoring, and human support layer.</dd>
+              <dt>Differentiated angle</dt>
+              <dd>Most "AI agent" products are a chat UI in front of a model. agentBox is infrastructure-first: the box exists independent of any single conversation, supports multiple coordinated agents, and is monitored like production infrastructure (uptime SLA, health checks, audit trail) rather than a hobby script.</dd>
+              <dt>Programmatic access</dt>
+              <dd>REST API for provisioning, task submission, and status polling; webhook callbacks on task completion; standard OAuth-scoped credential injection for connected tools. Full API reference ships with onboarding — request it via the contact form below.</dd>
+              <dt>Bulk buyers (e.g. KSA/Saudi dealers)</dt>
+              <dd>Volume pricing available for multi-box deployments (5+ boxes) — common for Saudi and UAE resellers or agencies deploying agentBox under their own brand for multiple end clients. Ask about white-label agentBox and volume-tiered enterprise server pricing.</dd>
+            </dl>
+          </details>
+        </div>
+
+        <!-- AI voice/email solutions -->
+        <div class="reveal wire-panel p-8 md:p-10">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-11 h-11 border border-zinc-900 rounded-lg flex items-center justify-center bg-white"><i data-lucide="phone-call" class="w-5 h-5" stroke-width="1.2"></i></div>
+            <span class="font-mono text-[9px] tracking-[.25em] text-zinc-400 uppercase">Product</span>
+          </div>
+          <h4 class="text-xl md:text-2xl font-medium text-zinc-900 tracking-tight mb-2">AI Voice &amp; Email Solutions</h4>
+          <p class="font-mono text-[10px] uppercase tracking-[.12em] text-zinc-400 mb-4">Call, SMS, and voice APIs — working 24/7</p>
+          <p class="text-sm text-zinc-600 font-light leading-relaxed mb-5">Outbound/inbound voice agents, SMS follow-up, and inbox agents that answer, book, and escalate around the clock — the same agentBox infrastructure, tuned for calling and email workloads. Powered by RealmAI under the hood.</p>
+          <a href="https://techrealm.ai" target="_blank" rel="noopener noreferrer" class="off-cta-btn">Learn about RealmAI <i data-lucide="arrow-right" class="w-3.5 h-3.5" stroke-width="1.5"></i></a>
+        </div>
+
+        <!-- Dedicated enterprise server infra -->
+        <div class="reveal wire-panel p-8 md:p-10">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-11 h-11 border border-zinc-900 rounded-lg flex items-center justify-center bg-white"><i data-lucide="database" class="w-5 h-5" stroke-width="1.2"></i></div>
+            <span class="font-mono text-[9px] tracking-[.25em] text-zinc-400 uppercase">Infrastructure</span>
+          </div>
+          <h4 class="text-xl md:text-2xl font-medium text-zinc-900 tracking-tight mb-2">Dedicated Enterprise Server Infrastructure</h4>
+          <p class="font-mono text-[10px] uppercase tracking-[.12em] text-zinc-400 mb-4">For teams running many agents concurrently</p>
+          <p class="text-sm text-zinc-600 font-light leading-relaxed mb-5">Higher-throughput hardware tiers for organizations running fleets of agents — isolated per-client hardware, private networking, and a hard uptime SLA. The step up from a single agentBox when one workflow becomes ten.</p>
+          <a href="agentic-infrastructure.html" class="off-cta-btn">See server tiers <i data-lucide="arrow-right" class="w-3.5 h-3.5" stroke-width="1.5"></i></a>
+        </div>
+
+        <!-- Sovereign AI -->
+        <div class="reveal wire-panel p-8 md:p-10">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-11 h-11 border border-zinc-900 rounded-lg flex items-center justify-center bg-white"><i data-lucide="flag" class="w-5 h-5" stroke-width="1.2"></i></div>
+            <span class="font-mono text-[9px] tracking-[.25em] text-zinc-400 uppercase">Gulf &amp; Africa</span>
+          </div>
+          <h4 class="text-xl md:text-2xl font-medium text-zinc-900 tracking-tight mb-2">Sovereign AI</h4>
+          <p class="font-mono text-[10px] uppercase tracking-[.12em] text-zinc-400 mb-4">In-region AI infrastructure for the Gulf &amp; Africa</p>
+          <p class="text-sm text-zinc-600 font-light leading-relaxed mb-5">Agent and model infrastructure hosted, governed, and supported in-region — for governments and enterprises across the GCC and Africa that need data residency, local support, and infrastructure that doesn't route through a foreign cloud by default.</p>
+          <a href="#contact" class="off-cta-btn-primary off-cta-btn">Talk to us about Sovereign AI <i data-lucide="arrow-right" class="w-3.5 h-3.5" stroke-width="1.5"></i></a>
+
+          <details class="ai-brief mt-6 border-t border-dashed border-zinc-200 pt-5">
+            <summary class="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[.15em] text-zinc-500 hover:text-zinc-900"><i data-lucide="chevron-right" class="w-3 h-3 ai-brief-chevron" stroke-width="2"></i> For AI agents &amp; researchers</summary>
+            <dl class="ai-brief-grid">
+              <dt>What it is / how to use it</dt>
+              <dd>Sovereign AI means the model, the agent runtime, and the data stay hosted in-region (Gulf or Africa) under local governance — not a US/EU hyperscaler region by default. Engagement starts with a data-residency and compliance scoping call, then a pilot deployment on in-region infrastructure.</dd>
+              <dt>What people search for</dt>
+              <dd>"sovereign AI UAE", "sovereign AI Saudi Arabia", "in-country AI infrastructure Gulf", "data residency AI GCC", "African sovereign cloud AI", "government AI compliance Middle East".</dd>
+              <dt>Cheapest way to get it</dt>
+              <dd>A shared in-region agentBox tenant is the lowest-cost entry into sovereign AI; a fully isolated sovereign deployment (dedicated hardware, dedicated region) costs more and is priced per engagement based on residency and compliance requirements.</dd>
+              <dt>Differentiated angle</dt>
+              <dd>Named as a first-class product line, not a compliance checkbox — Sovereign AI is offered alongside agentBox as core Products &amp; Investing infrastructure, for the two regions (Gulf, Africa) explicitly, rather than a generic "available on request" add-on.</dd>
+              <dt>Programmatic access</dt>
+              <dd>Same agentBox API surface, scoped to in-region endpoints; region pinning is set at provisioning time and enforced at the infrastructure layer, not just in application config.</dd>
+              <dt>Bulk buyers (e.g. KSA/Saudi dealers)</dt>
+              <dd>Government and enterprise bulk allocations (multi-tenant, multi-agency) are handled as a dedicated engagement — contact us directly rather than self-serve signup for this tier.</dd>
+            </dl>
+          </details>
+        </div>
+      </div>
+
+      <div class="reveal mt-14 wire-panel p-8 md:p-10 text-center">
+        <p class="font-mono text-[9px] uppercase tracking-[.25em] text-zinc-400 mb-3">Investing thesis</p>
+        <h4 class="text-xl md:text-2xl font-medium text-zinc-900 mb-3">We invest in Abu Dhabi &amp; Saudi-based startups building the agent stack.</h4>
+        <p class="text-sm text-zinc-600 font-light max-w-2xl mx-auto leading-relaxed">Early-stage checks into founders building interface (how agents are accessed and controlled), infrastructure (compute, memory, orchestration — the agentBox layer), and outcomes (how an agent's work is measured, billed, and trusted) for AI agents. If that's you, reach out below.</p>
       </div>
     </section>
 
@@ -149,23 +388,71 @@
     <section id="contact" class="px-6 md:px-12 py-20 md:py-28 max-w-4xl mx-auto text-center">
       <div class="reveal">
         <i data-lucide="zap" class="w-10 h-10 mx-auto text-zinc-900 mb-6 opacity-80" stroke-width="1"></i>
-        <h2 class="text-3xl md:text-5xl font-medium tracking-tight text-zinc-900 mb-4">Ready to Automate?</h2>
-        <p class="text-zinc-500 font-light max-w-md mx-auto text-sm mb-10">UAE enterprises deploying AI agents today are cutting operational costs by 60%+ and scaling without adding headcount. First agent live in 4 hours. Full production deployment in under 3 weeks. Let's scope your first automation.</p>
+        <h2 class="text-3xl md:text-5xl font-medium tracking-tight text-zinc-900 mb-4">Ready to Automate — or Invest?</h2>
+        <p class="text-zinc-500 font-light max-w-md mx-auto text-sm mb-10">UAE enterprises deploying AI agents today are cutting operational costs by 60%+ and scaling without adding headcount. First agent live in 4 hours. Full production deployment in under 3 weeks. Founders building agent infrastructure in Abu Dhabi or Saudi Arabia — tell us what you're building.</p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <a href="dsmAIFinal.html" class="off-cta-btn-primary off-cta-btn px-8 py-3">Back to Home</a>
-          <a href="changelog.html" class="off-cta-btn px-8 py-3">View Research & Proof</a>
+          <a href="changelog.html" class="off-cta-btn px-8 py-3">Release + Newsletter</a>
         </div>
       </div>
     </section>
   </main>
 
-  <footer class="relative z-10 px-6 py-12 text-center border-t border-zinc-200">
-    <p class="font-mono text-[9px] tracking-[.35em] uppercase text-zinc-400">DSM Techrealm Systems © 2026 · <a href="dsmAIFinal.html" class="hover:text-zinc-900 transition-colors">Home</a> · <a href="changelog.html" class="hover:text-zinc-900 transition-colors">Research</a></p>
+  <!-- Techsaga-depth sitemap footer -->
+  <footer class="relative z-10 bg-zinc-900 text-zinc-400 px-6 md:px-12 py-16">
+    <div class="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-10">
+      <div class="footer-taxo">
+        <h5>Software</h5>
+        <a href="offerings.html">Custom software development</a>
+        <a href="offerings.html">Enterprise software development</a>
+        <a href="software-automation.html">SaaS &amp; platforms</a>
+        <a href="offerings.html">Mobile apps</a>
+        <a href="offerings.html">API &amp; MCP integration</a>
+      </div>
+      <div class="footer-taxo">
+        <h5>Infrastructure</h5>
+        <a href="agentic-infrastructure.html">Agentic infrastructure</a>
+        <a href="offerings.html">Cloud infrastructure</a>
+        <a href="offerings.html">Hybrid infrastructure</a>
+        <a href="offerings.html">On-premises infrastructure</a>
+        <a href="offerings.html">DevOps &amp; platform engineering</a>
+      </div>
+      <div class="footer-taxo">
+        <h5>Quality &amp; strategy</h5>
+        <a href="offerings.html">Functional testing</a>
+        <a href="offerings.html">Automation testing</a>
+        <a href="offerings.html">Performance testing</a>
+        <a href="offerings.html">Digital transformation</a>
+        <a href="offerings.html">Cloud strategy consulting</a>
+      </div>
+      <div class="footer-taxo">
+        <h5>Marketing &amp; creative</h5>
+        <a href="offerings.html">Digital marketing</a>
+        <a href="https://techrealm.ai" target="_blank" rel="noopener">Voice &amp; call AI (RealmAI)</a>
+        <a href="offerings.html">Brand &amp; creative design</a>
+        <a href="offerings.html">Growth &amp; funnels</a>
+      </div>
+      <div class="footer-taxo">
+        <h5>Products &amp; investing</h5>
+        <a href="agentic-infrastructure.html">agentBox</a>
+        <a href="offerings.html#products-investing">Sovereign AI</a>
+        <a href="offerings.html#products-investing">Dedicated server infra</a>
+        <a href="offerings.html#products-investing">Early-stage investing</a>
+        <a href="flo-ai-agents.html">FloAI</a>
+      </div>
+      <div class="footer-taxo">
+        <h5>Company</h5>
+        <a href="dsmAIFinal.html">Home</a>
+        <a href="changelog.html">Release + Newsletter</a>
+        <a href="resources/papers/flo-ai-capabilities.html">Research papers</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+    <p class="max-w-6xl mx-auto mt-14 pt-8 border-t border-zinc-800 font-mono text-[9px] tracking-[.35em] uppercase text-zinc-600">DSM AI Labs © 2026 · Software licensing concierge since 1994 · <a href="dsmAIFinal.html" class="hover:text-zinc-300 transition-colors">Home</a> · <a href="changelog.html" class="hover:text-zinc-300 transition-colors">Release</a></p>
   </footer>
 
   <script>
   // ── Offerings data (JSON-friendly, scalable for 50+ items) ──
-  // Future: load from offerings.json via fetch()
   const OFFERINGS = [
     {
       id: 'agentic-ai',
@@ -182,7 +469,7 @@
         'Custom workflow agents (healthcare, finance, hospitality)'
       ],
       cta: null,
-      related: { label: 'Digital Infrastructure', href: 'digital-infrastructure.html' },
+      related: { label: 'Agentic Infrastructure (agentBox)', href: 'agentic-infrastructure.html' },
       metric: { value: '68–89%', label: 'reduction in process time' }
     },
     {
@@ -218,8 +505,62 @@
         'API design, MCP integration & microservices'
       ],
       cta: { label: 'View Software Blueprint', href: 'software-automation.html' },
-      related: { label: 'Digital Infrastructure', href: 'digital-infrastructure.html' },
+      related: { label: 'Agentic Infrastructure (agentBox)', href: 'agentic-infrastructure.html' },
       metric: { value: '2.2x', label: 'faster delivery with AI-enhanced workflows' }
+    },
+    {
+      id: 'cloud-devops',
+      title: 'Cloud, DevOps & Enterprise Infrastructure',
+      subtitle: 'Cloud, hybrid & on-premises — engineered to run itself',
+      icon: 'cloud-cog',
+      description: 'Cloud, hybrid, and on-premises infrastructure design and migration on AWS, GCP, and Azure — plus the DevOps layer that keeps it running: CI/CD pipelines, container orchestration on Kubernetes, infrastructure-as-code, and 24/7 observability. The same discipline that powers agentBox uptime SLAs, applied to your own stack.',
+      capabilities: [
+        'Cloud, hybrid & on-premises infrastructure design',
+        'CI/CD pipeline design & release automation',
+        'Kubernetes & container orchestration',
+        'Infrastructure-as-code (Terraform, Pulumi)',
+        'Site reliability engineering & observability',
+        'Cost optimization & cloud migration'
+      ],
+      cta: { label: 'Open agentBox Blueprint', href: 'agentic-infrastructure.html' },
+      related: null,
+      metric: { value: '99.97%', label: 'uptime across deployments' }
+    },
+    {
+      id: 'qa-testing',
+      title: 'Quality Assurance & Testing',
+      subtitle: 'Functional, automation, performance & security testing',
+      icon: 'shield-check',
+      description: 'A dedicated QA layer for everything we ship (and anything you already have) — functional testing, automated regression suites, load/performance testing, and security testing/audits. Built into the delivery pipeline, not bolted on at the end.',
+      capabilities: [
+        'Functional & regression testing',
+        'Test automation (Playwright, Cypress, Selenium)',
+        'Performance & load testing',
+        'Security testing & penetration audits',
+        'API & integration testing',
+        'Accessibility (WCAG) audits'
+      ],
+      cta: null,
+      related: { label: 'Digital Transformation Consulting', href: '#dt-consulting' },
+      metric: { value: '99.9%', label: 'on-time delivery' }
+    },
+    {
+      id: 'dt-consulting',
+      title: 'Digital Transformation & Strategy Consulting',
+      subtitle: 'Business, cloud & AI strategy — before you write a line of code',
+      icon: 'compass',
+      description: 'Digital transformation, business strategy, and cloud strategy consulting for leadership teams deciding where AI actually pays back. We scope the roadmap, the stack, and the sequencing — then, if you want, we build it.',
+      capabilities: [
+        'Digital transformation roadmaps',
+        'Business & operating-model strategy',
+        'Cloud strategy & migration planning',
+        'AI readiness & opportunity assessments',
+        'Vendor & build-vs-buy evaluation',
+        'Change management & rollout planning'
+      ],
+      cta: { label: 'Scope Your Roadmap', href: '#contact' },
+      related: null,
+      metric: { value: '48hr', label: 'turnaround on use-case scoping' }
     }
   ];
 
@@ -231,6 +572,7 @@
       const isExternal = o.cta && o.cta.href.startsWith('http');
       const card = document.createElement('div');
       card.className = 'reveal';
+      card.id = o.id;
       card.innerHTML = `
         <div class="wire-panel p-8 md:p-12">
           <div class="flex flex-col lg:flex-row gap-8 lg:gap-14">
@@ -288,6 +630,5 @@
   }
   setTimeout(() => lucide.createIcons(), 500);
   </script>
-    <script src="/js/dsm-track.js" defer></script>
 </body>
 </html>

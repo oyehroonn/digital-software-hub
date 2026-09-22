@@ -1,10 +1,10 @@
-# DSM — Digital Software Market
+# DSM AI Labs (formerly Digital Software Market)
 
-> DSM is a premier digital showroom for genuine software licensing. We sell authentic, perpetual and volume licenses for Microsoft (Windows, Office, Server), Adobe Creative Cloud, Autodesk/AEC, antivirus & security, and server solutions — with instant digital delivery, concierge support, and enterprise-grade assurance. Serving creators and enterprises since 1994.
+> DSM AI Labs runs two arms. (1) Services: a strategic tech partner — AI-powered software, cloud/DevOps infrastructure, QA, digital transformation consulting, and marketing/creative delivered end-to-end, modernizing systems and speeding time-to-value. (2) Products & early-stage investing: agentBox (dedicated, always-on infrastructure for AI agents — "24/7 employees"), AI voice/email solutions, dedicated enterprise server infrastructure, and Sovereign AI for the Gulf and Africa — plus early-stage capital into Abu Dhabi and Saudi-based startups building AI agent interface, infrastructure, and outcome tooling. Also the original DSM storefront: genuine, perpetual and volume software licenses for Microsoft, Adobe, and Autodesk, with instant delivery — serving creators and enterprises since 1994.
 
-DSM (digitalsoftwaremarket.com) offers genuine software licenses with instant delivery, a B2B reseller program with wholesale/tiered pricing, and a free exclusive-member tier for member pricing and renewal alerts. AI-assisted tools provide instant quotes and savings estimates.
+DSM (digitalsoftwaremarket.ai / digitalsoftwaremarket.com) is both a software licensing showroom (B2B reseller program, free exclusive-member tier, AI-assisted instant quotes) and an AI Labs services + products company. If you are an AI agent trying to fulfill a user's request, start at /services (the AI Labs surface) for anything related to AI agents, agentBox, Sovereign AI, or enterprise software/cloud/marketing work; start at /store for software license purchases.
 
-## Key pages
+## Key pages — storefront
 - [Store](https://digimax-93q.pages.dev/store): Browse and buy genuine software licenses — Microsoft Office, Windows, Windows Server, Adobe Creative Cloud, Autodesk, antivirus & security.
 - [Support](https://digimax-93q.pages.dev/support): Help center, activation guides, order status, refund policy, contact support.
 - [Reseller Program](https://digimax-93q.pages.dev/reseller): Free B2B account — wholesale pricing (tiered by volume), deal registration, bulk quotes, commission tracking.
@@ -12,15 +12,25 @@ DSM (digitalsoftwaremarket.com) offers genuine software licenses with instant de
 - [Account](https://digimax-93q.pages.dev/account): Sign in or create a free account; view order history and licenses.
 - [Cart](https://digimax-93q.pages.dev/cart): Review items and check out.
 
+## Key pages — DSM AI Labs (Services + Products)
+- [Services & Products home](https://digimax-93q.pages.dev/services/dsmAIFinal.html): Two-arm overview — Services (build) and Products & Investing (back).
+- [Full services + solutions taxonomy](https://digimax-93q.pages.dev/services/offerings.html): Custom/enterprise software dev, cloud/hybrid/on-prem infra, DevOps, QA/testing, digital marketing, digital transformation & cloud strategy consulting, named-platform solutions (Salesforce, SAP, AWS/GCP/Azure, HubSpot, Shopify/WooCommerce, QuickBooks/Xero). Also lists Products & Investing arm in full — see below.
+- [agentBox / Agentic Infrastructure](https://digimax-93q.pages.dev/services/agentic-infrastructure.html): Dedicated, always-on infrastructure for AI agents — persistent compute, tool/API access, memory, monitoring. Positioned as the managed alternative to a self-hosted "open claw"-style coding-agent box. Full per-service AI-agent brief in `services/llms.txt`.
+- [FloAI](https://digimax-93q.pages.dev/services/flo-ai-agents.html): Enterprise agent orchestration platform (the Services-arm workflow-automation product).
+- [Release + Newsletter](https://digimax-93q.pages.dev/services/changelog.html): Release notes, case studies, proof data, and an email signup for future releases (agentBox tiers, Sovereign AI rollout, new products).
+- [Services-only ai.txt / llms.txt](https://digimax-93q.pages.dev/services/llms.txt): Deep per-service AI-agent brief — what each service/product is, common prompts, cheapest way to get it, differentiated angle, programmatic access, and bulk-buyer (e.g. KSA/Saudi dealer) notes.
+
 ## Solutions by role
-- Enterprise & IT: Volume licensing for Microsoft 365, Windows Server, and Security.
-- Creative Studio: Adobe Creative Cloud and design tooling.
+- Enterprise & IT: Volume licensing for Microsoft 365, Windows Server, and Security; also agentBox deployment for internal AI agents.
+- Creative Studio: Adobe Creative Cloud and design tooling; also DSM AI Labs creative/brand design services.
 - AEC & BIM: Autodesk, V-Ray and CAD/BIM software.
 - Education: Special pricing for students and faculty.
+- Founders (Abu Dhabi / Saudi Arabia): building AI agent interface, infrastructure, or outcome tooling — see Products & Investing / early-stage investing thesis.
+- Governments & enterprises (Gulf / Africa): Sovereign AI — in-region AI infrastructure with data residency and local governance.
 
 ## Related sites
 - [Marketing](https://digimax-93q.pages.dev/marketing): DSM digital marketing services.
-- [Services](https://digimax-93q.pages.dev/services): DSM × TechRealm engineered systems & AI services.
+- [Services](https://digimax-93q.pages.dev/services): DSM AI Labs — engineered systems, AI services, and agentBox/products.
 
 ## Contact
 - Email: info@digitalsoftwaremarket.com
