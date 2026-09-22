@@ -19,7 +19,7 @@ import { isValidEmail, signIn } from "@/lib/account";
 import { submitOrder } from "@/lib/stable/orders";
 import { sendProxyEmail } from "@/lib/emailProxy";
 import { isOwnProduct } from "@/data/ownProducts";
-import { oldWebProductUrl, OLD_WEB_BASE } from "@/lib/legacyStore";
+import { purchaseUrl, hasWooMatch, OLD_WEB_BASE } from "@/lib/legacyStore";
 import { track, reportAiOutage } from "@/lib/stable/analytics";
 
 const formatAED = (value: number) =>
@@ -47,7 +47,7 @@ interface LicensingResult {
   kind: "licensing";
   emailOk: boolean;
   /** Product name → old-web purchase URL for the license items. */
-  links: { name: string; url: string }[];
+  links: { name: string; url: string; matched: boolean }[];
   /** Where we auto-redirect the buyer to finish the purchase. */
   redirectUrl: string;
 }
@@ -165,11 +165,20 @@ export default function Checkout() {
         setResult({ kind: "own", emailOk: emailRes.ok });
         clearCart();
       } else {
+        // Precise add-to-cart-and-go-to-checkout deep-link when we have a
+        // confident WooCommerce match (see src/lib/legacyStore.ts), else the
+        // existing best-effort guessed product-page link — never a hard dead
+        // end. Both are UTM-tagged for sales attribution on the old site.
         const links = licenseItems.map((i) => ({
           name: i.name,
-          url: oldWebProductUrl({ id: i.id, name: i.name }),
+          url: purchaseUrl({ id: i.id, name: i.name }, i.quantity),
+          matched: hasWooMatch({ id: i.id, name: i.name }),
         }));
-        const redirectUrl = links[0]?.url ?? `${OLD_WEB_BASE}/`;
+        // Auto-redirect to the first item we have a confident Woo match for
+        // (lands directly on checkout, item already in cart) when one
+        // exists; otherwise fall back to the first item's guessed link.
+        const redirectUrl =
+          links.find((l) => l.matched)?.url ?? links[0]?.url ?? `${OLD_WEB_BASE}/`;
 
         const emailRes = await sendProxyEmail({
           to: cleanEmail,
