@@ -19,11 +19,69 @@ const SHOWROOM_SWEEP = 8;
 const SHOWROOM_CYCLE = 4200;
 const EASE_DURATION = 500;
 const DECEL_DURATION = 700;
-// H7: if a GLB never resolves (missing box / live API down), fall back to the
-// static icon instead of spinning forever.  Start this only after the
-// model-viewer module has registered: the first visible product cards trigger
-// the dynamic import and must not be treated as failed while it downloads.
-const LOAD_TIMEOUT = 20000;
+// H7 (revised): a GLB that's genuinely unreachable (dead link / API down)
+// should fall back to the static icon quickly, but a GLB that's still
+// downloading on a slow connection (mobile data, throttled wifi, a >1MB
+// model) shouldn't be punished by a short fixed timer — that was the root
+// cause of "sometimes doesn't load": a fixed 20s cutoff fired while the
+// model was still legitimately mid-download and would have finished fine
+// given a bit longer. Instead we watch model-viewer's `progress` event
+// (fires with detail.totalProgress 0..1) and only give up once progress has
+// genuinely STALLED for a while, with a generous absolute ceiling as a
+// last-resort safety net so a truly dead/looping load can't hang forever.
+// Reproduced against a real "Fast 3G"-equivalent throttle (1.6Mbps/750kbps,
+// Chrome's own DevTools preset — not a worst-case torture test): with a
+// couple of cards loading concurrently, individual `progress` ticks can
+// legitimately be >15s apart while a ~1.5MB GLB is still genuinely crawling
+// forward. A short stall window was mistaking "slow" for "stuck" and firing
+// the fallback while the model would have finished fine. Give real progress
+// much more room; only flag a load that has made literally zero headway in
+// a long time (a dead link, CORS block, or network drop — not just a slow
+// one).
+const STALL_TIMEOUT = 30000; // no download progress for this long => give up
+const ABSOLUTE_TIMEOUT = 90000; // hard ceiling regardless of progress
+const STALL_CHECK_INTERVAL = 2000;
+
+// Reproduced with Playwright (throttled CPU + network, several cards visible
+// at once — a normal grid page on a mid/low-end phone): letting every visible
+// card start fetching + parsing its GLB simultaneously starves them all of
+// main-thread time, so `progress` genuinely stops advancing for many of them
+// at once and they were timing out despite the model being fine. Cap how many
+// loads run concurrently; the rest wait for a free slot instead of fighting
+// for the CPU/GPU and losing.
+const MAX_CONCURRENT_LOADS = 3;
+let activeLoadSlots = 0;
+const slotWaiters: Array<() => void> = [];
+
+function acquireLoadSlot(onGranted: () => void): () => void {
+  let granted = false;
+  let released = false;
+  const grant = () => {
+    if (released) return;
+    granted = true;
+    activeLoadSlots++;
+    onGranted();
+  };
+  if (activeLoadSlots < MAX_CONCURRENT_LOADS) {
+    grant();
+  } else {
+    slotWaiters.push(grant);
+  }
+  // Idempotent: safe to call more than once (completion + unmount can both
+  // try to release the same slot).
+  return () => {
+    if (released) return;
+    released = true;
+    if (granted) {
+      activeLoadSlots = Math.max(0, activeLoadSlots - 1);
+      const next = slotWaiters.shift();
+      if (next) next();
+    } else {
+      const idx = slotWaiters.indexOf(grant);
+      if (idx !== -1) slotWaiters.splice(idx, 1);
+    }
+  };
+}
 
 function easeInCubic(t: number) {
   return t * t * t;
@@ -45,11 +103,18 @@ const ProductModelViewer = ({
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [modelAttempt, setModelAttempt] = useState(0);
+  const [hasSlot, setHasSlot] = useState(false);
+  const releaseSlotRef = useRef<(() => void) | null>(null);
   const animFrameRef = useRef<number>(0);
   const showroomFrameRef = useRef<number>(0);
   const snapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMobile = useRef(false);
   const retryCountRef = useRef(0);
+  // Tracks the model-viewer `progress` event so the stall-timeout below can
+  // tell "still genuinely downloading" apart from "actually stuck".
+  const lastProgressRef = useRef({ value: 0, at: 0 });
+  const loadStartedAtRef = useRef(0);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     isMobile.current = window.matchMedia("(hover: none)").matches;
@@ -61,16 +126,34 @@ const ProductModelViewer = ({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Keep WebGL scoped to cards that are actually on-screen. The old
-        // one-way activation kept every previously viewed model and animation
-        // alive for the rest of a long catalogue session.
-        setIsVisible(entry.isIntersecting);
+        if (entry.isIntersecting) {
+          if (hideTimeoutRef.current) {
+            clearTimeout(hideTimeoutRef.current);
+            hideTimeoutRef.current = null;
+          }
+          setIsVisible(true);
+          return;
+        }
+        // Debounce tear-down: scrolling a card a few px out of view and
+        // straight back in used to unmount <model-viewer> instantly, which
+        // aborted whatever was in flight and restarted the GLB fetch from
+        // zero on the way back — on a slow connection that restart loop
+        // could outrun a fixed timeout and never finish. Give it a couple of
+        // seconds of grace before actually releasing the WebGL context.
+        if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = setTimeout(() => {
+          hideTimeoutRef.current = null;
+          setIsVisible(false);
+        }, 2000);
       },
-      { rootMargin: "0px" }
+      { rootMargin: "200px 0px" }
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    };
   }, []);
 
   // Lazily register the <model-viewer> custom element the first time a card is
@@ -208,6 +291,17 @@ const ProductModelViewer = ({
     }
   }, [startShowroomMotion]);
 
+  // Track real download progress (model-viewer dispatches `progress` with
+  // detail.totalProgress in [0, 1]) so the stall-detector below can tell a
+  // slow-but-advancing load apart from one that's actually wedged.
+  const handleProgress = useCallback((e: Event) => {
+    const detail = (e as CustomEvent<{ totalProgress?: number }>).detail;
+    const value = detail?.totalProgress ?? 0;
+    if (value > lastProgressRef.current.value || lastProgressRef.current.at === 0) {
+      lastProgressRef.current = { value, at: performance.now() };
+    }
+  }, []);
+
   const handleError = useCallback(() => {
     // The first few concurrently mounted WebGL viewers can emit a transient
     // error while the custom element is initialising. Remount once before
@@ -223,21 +317,71 @@ const ProductModelViewer = ({
     setHasError(true);
   }, []);
 
-  // H7: guard against a GLB that never fires load/error (404s on model-viewer
-  // don't always emit an error event).  Crucially, do not begin the timeout
-  // until the dynamic import has registered the custom element. Otherwise the
-  // first cards on a store page can expire before they have even mounted it.
+  // Wait for a free concurrency slot before actually mounting <model-viewer>.
+  // Re-acquire on every fresh attempt (visibility regained, or the one
+  // auto-retry after an error swaps the element key).
   useEffect(() => {
-    if (!isVisible || !mvReady || isLoaded || hasError) return;
-    const t = setTimeout(() => setHasError(true), LOAD_TIMEOUT);
-    return () => clearTimeout(t);
-  }, [isVisible, mvReady, isLoaded, hasError]);
+    if (!isVisible || !mvReady) return;
+    setHasSlot(false);
+    let cancelled = false;
+    const release = acquireLoadSlot(() => {
+      if (!cancelled) setHasSlot(true);
+    });
+    releaseSlotRef.current = release;
+    return () => {
+      cancelled = true;
+      release();
+      if (releaseSlotRef.current === release) releaseSlotRef.current = null;
+    };
+  }, [isVisible, mvReady, modelAttempt]);
+
+  // Free the slot as soon as there's a result so the next queued card can
+  // start — the already-mounted viewer keeps rendering regardless.
+  useEffect(() => {
+    if (!isLoaded && !hasError) return;
+    releaseSlotRef.current?.();
+    releaseSlotRef.current = null;
+  }, [isLoaded, hasError]);
+
+  // Reset the progress/stall trackers every time a fresh load attempt
+  // actually starts (i.e. once a slot has been granted and the element is
+  // about to mount).
+  useEffect(() => {
+    if (!isVisible || !mvReady || !hasSlot) return;
+    lastProgressRef.current = { value: 0, at: performance.now() };
+    loadStartedAtRef.current = performance.now();
+  }, [isVisible, mvReady, hasSlot, modelAttempt]);
+
+  // H7 (revised): guard against a GLB that never fires load/error (404s on
+  // model-viewer don't always emit an error event) — but base the give-up
+  // decision on whether download PROGRESS has stalled, not a fixed clock.
+  // A model that's still advancing (slow connection, large file) keeps
+  // getting time, up to a generous absolute ceiling; one that stops
+  // advancing (dead link, CORS block, network drop) gets flagged quickly.
+  useEffect(() => {
+    if (!isVisible || !mvReady || !hasSlot || isLoaded || hasError) return;
+
+    const interval = window.setInterval(() => {
+      const now = performance.now();
+      const sinceProgress = now - (lastProgressRef.current.at || now);
+      const sinceStart = now - (loadStartedAtRef.current || now);
+
+      if (sinceProgress >= STALL_TIMEOUT || sinceStart >= ABSOLUTE_TIMEOUT) {
+        setHasError(true);
+      }
+    }, STALL_CHECK_INTERVAL);
+
+    return () => window.clearInterval(interval);
+  }, [isVisible, mvReady, hasSlot, isLoaded, hasError, modelAttempt]);
 
   useEffect(() => {
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (showroomFrameRef.current) cancelAnimationFrame(showroomFrameRef.current);
       if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+      releaseSlotRef.current?.();
+      releaseSlotRef.current = null;
     };
   }, []);
 
@@ -266,6 +410,11 @@ const ProductModelViewer = ({
               <div className="w-8 h-8 border-2 border-border border-t-crimson rounded-full animate-spin" />
             </div>
           )}
+          {/* Wait for a free concurrency slot before mounting the actual
+              WebGL element — see MAX_CONCURRENT_LOADS above. The spinner
+              above already covers this wait, so there's nothing else to
+              render here in the meantime. */}
+          {hasSlot && (
           <model-viewer
             key={modelAttempt}
             ref={(el: HTMLElement | null) => {
@@ -273,9 +422,18 @@ const ProductModelViewer = ({
               if (el) {
                 el.addEventListener("load", handleLoad);
                 el.addEventListener("error", handleError);
+                el.addEventListener("progress", handleProgress);
               }
             }}
-            src={glbSrc}
+            src={
+              // Cache-bust the single auto-retry: a failure that came from a
+              // transient bad response (a 5xx edge cache entry, a dropped
+              // CORS preflight) would otherwise just replay identically
+              // against the exact same URL.
+              modelAttempt > 0
+                ? `${glbSrc}${glbSrc.includes("?") ? "&" : "?"}dsm_retry=${modelAttempt}`
+                : glbSrc
+            }
             alt="3D product preview"
             camera-orbit="30deg 75deg 105%"
             min-camera-orbit="auto auto auto"
@@ -304,6 +462,7 @@ const ProductModelViewer = ({
               transition: "opacity 0.5s ease",
             }}
           />
+          )}
         </>
       ) : (
         <div className="w-full h-full flex items-center justify-center p-8">
