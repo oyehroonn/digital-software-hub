@@ -30,12 +30,14 @@ export const DEFAULT_CONFIG: AppConfig = {
   // telemetry reads). See ~/.rpidrive/notes/dsm-analytics-csv-api.md.
   ecommerce_url: "https://dsm-analytics.waleeds.world/",
   // Read key for the DSM Analytics API's GET ?action=telemetry|orders
-  // endpoints. Unlike the old Apps Script secret, this IS meant to ship in the
-  // public admin build — the previous design left it blank in production,
-  // which is exactly what caused the "No Apps Script secret set" banner and
-  // blank Orders/Heatmaps/Newsletter tabs. It can still be overridden via
-  // VITE_ECOM_SECRET (build env), the OS config file (desktop), or Settings.
-  ecommerce_secret: (import.meta.env.VITE_ECOM_SECRET as string) || "f07b384602bb68eb3e2ab2cb616689ee64af9e06",
+  // endpoints. NEVER hardcoded here (see CONSOLIDATION.md security notes —
+  // the old Apps Script secret was once committed to this public repo and had
+  // to be treated as compromised). The live production bundle gets a real key
+  // from the Cloudflare Pages project's VITE_ECOM_SECRET build env var (set
+  // via the CF API, not committed); local dev uses admin-app/.env.local; the
+  // desktop app uses the OS config file; anyone else pastes it once in
+  // Settings (persisted to that browser's localStorage only).
+  ecommerce_secret: (import.meta.env.VITE_ECOM_SECRET as string) || "",
   telemetry_read_url: "",
   telemetry_sheet_id: "telemetry",
   orders_sheet_id: "orders",
