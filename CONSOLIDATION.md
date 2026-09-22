@@ -16,6 +16,26 @@ built from this one repository (`oyehroonn/digital-software-hub`).
 | Services | `/services` | `public/services/` | static microsite |
 | Admin | `/admin` | `admin-app/` (Vite) | React SPA |
 
+## DSM AI Labs rebrand — subdomains (same deployment, no new project)
+
+Same reasoning, one level up: `marketing.`, `agentic.`, `creatives.` and
+`admin.digitalsoftwaremarket.ai` are attached as four more custom domains on
+this same `digimax` Pages project (see `public/_redirects` for the exact
+Host-header-scoped rules) rather than as new projects or a hostname router
+inside the app shell:
+
+| Subdomain | Serves | Mechanism |
+|---|---|---|
+| `marketing.digitalsoftwaremarket.ai` | `public/marketing/` | edge 200 rewrite (its assets are absolute-path) |
+| `agentic.digitalsoftwaremarket.ai` | `public/services/dsmAIFinal.html` | edge 302 redirect (its assets are relative-path, so the browser must actually land under `/services/`) |
+| `creatives.digitalsoftwaremarket.ai` | existing `RegisteredCreatives` page | in-app: `App.tsx` swaps the `/` route's component for this hostname; every other route is the same SPA |
+| `admin.digitalsoftwaremarket.ai` | `admin-app/` | edge 200 rewrite |
+
+DNS: each is a proxied CNAME to `digimax-93q.pages.dev`, same pattern as the
+existing `beta.digitalsoftwaremarket.ai`. The root domain and `www` are
+untouched (still point at the separate `dsm-agentic` project pending a later,
+separately-approved cutover).
+
 ## How it builds
 
 `npm run build` (the Cloudflare build command) runs, in order:
