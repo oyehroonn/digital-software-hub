@@ -11,11 +11,13 @@ interface ProductModelViewerProps {
 }
 
 const IDLE_SPEED = 0;
-// Use the true front as the resting position. A narrow camera sweep keeps the
-// cover legible on every imported model while still giving genuine 3D motion.
-const FRONT_ORBIT = "0deg 75deg 105%";
-const SHOWROOM_CENTER = 0;
-const SHOWROOM_SWEEP = 8;
+// Resting position is a genuine 3/4 tilt (30deg) so the cover AND spine both
+// read at rest, not a dead-flat front view. Restored per explicit request —
+// this was flattened to 0deg on 2026-07-24 ("keep 3D product motion
+// front-facing"), which is the regression being reverted here.
+const FRONT_ORBIT = "30deg 75deg 105%";
+const SHOWROOM_CENTER = 30;
+const SHOWROOM_SWEEP = 14;
 const SHOWROOM_CYCLE = 4200;
 const EASE_DURATION = 500;
 const DECEL_DURATION = 700;
