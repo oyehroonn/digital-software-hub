@@ -1,6 +1,31 @@
 <!doctype html>
 <html lang="en">
   <head>
+<script>
+  /* Subdomain routing: Cloudflare Pages' _redirects file cannot scope rules
+     to a specific custom domain (confirmed against Cloudflare's own docs —
+     "Domain-level redirects" are explicitly unsupported, and with multiple
+     custom domains on one project "all redirects apply uniformly across all
+     domains"). This one project serves marketing/agentic/admin/creatives via
+     separate custom domains, so subdomain differentiation has to happen
+     client-side instead, the same proven way `creatives.*` already works
+     (a hostname check in App.tsx). marketing/agentic/admin are separate
+     static bundles (not React routes), so they need an actual navigation,
+     done here, as early as possible, before the SPA bundle loads.
+     "beta.digitalsoftwaremarket.ai" and the *.pages.dev URL fall through
+     untouched — this only fires for the exact host it's asking about. */
+  (function () {
+    var h = location.hostname, p = location.pathname;
+    if (p !== '/') return;
+    if (h === 'marketing.digitalsoftwaremarket.ai') {
+      location.replace('/marketing/index.html');
+    } else if (h === 'agentic.digitalsoftwaremarket.ai') {
+      location.replace('/services/dsmAIFinal.html');
+    } else if (h === 'admin.digitalsoftwaremarket.ai') {
+      location.replace('/admin/index.html');
+    }
+  })();
+</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-5SFDF8VY5B"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
