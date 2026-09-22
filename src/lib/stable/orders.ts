@@ -1,11 +1,11 @@
 /**
  * Orders client — STABLE backend
  * -------------------------------
- * Submits orders to the Ecommerce Google Apps Script and (for the admin app /
+ * Submits orders to the DSM Analytics API and (for the admin app /
  * server bridge only) reads them back.
  *
  * Frontend rules (resilience contract):
- *  - The Apps Script SECRET is NEVER shipped in the browser bundle. Submitting
+ *  - The read key is NEVER shipped in this (storefront) browser bundle. Submitting
  *    an order does not require it (the web app accepts anonymous POSTs and the
  *    Orders sheet is the source of truth the admin app reads).
  *  - Submission is resilient: we first try a readable (CORS) POST so we can show
@@ -22,7 +22,7 @@ import { ANALYTICS_URL, STORE_NAME, getSessionId, getAnonymousId } from './analy
 
 const QUEUE_KIND = 'order';
 
-/** Fields accepted by the Apps Script `type:"order"` row. */
+/** Fields accepted by the DSM Analytics API `type:"order"` row. */
 export interface OrderPayload {
   storeName?: string;
   customerName: string;
@@ -46,9 +46,9 @@ export interface OrderPayload {
 export interface OrderResult {
   /** True if the order left the browser (either confirmed or queued). */
   ok: boolean;
-  /** True when we got a readable success response back from the Apps Script. */
+  /** True when we got a readable success response back from the DSM Analytics API. */
   confirmed: boolean;
-  /** Order id / row ref returned by the Apps Script, when available. */
+  /** Order id / row ref returned by the DSM Analytics API, when available. */
   orderId?: string;
   /** True when the order was parked in the offline queue instead of confirmed. */
   queued: boolean;
@@ -92,11 +92,11 @@ function buildEnvelope(order: OrderPayload, clientRef: string): OrderEnvelope {
  * was down and the caller/queue should retry.
  */
 async function postOrderNoCors(envelope: OrderEnvelope): Promise<void> {
-  // Flatten the order fields to the top level: the Apps Script `appendOrder_`
+  // Flatten the order fields to the top level: the DSM Analytics API's order builder
   // reads top-level keys (email / customerName / productName / price …). The
   // nested `order` is retained for raw_json. Without this, orders land blank.
-  // keepalive fetch (NOT sendBeacon — Apps Script's cross-origin 302 redirect
-  // makes sendBeacon drop the write). The caller awaits this before navigating.
+  // keepalive fetch so the write survives the page navigating away right after.
+  // The caller awaits this before navigating.
   await fetch(ANALYTICS_URL, {
     method: 'POST',
     mode: 'no-cors',
@@ -113,7 +113,7 @@ registerProcessor<OrderEnvelope>(QUEUE_KIND, (envelope) => postOrderNoCors(envel
  * Submit an order.
  *
  * Strategy:
- *  1. Try a readable POST (default CORS mode). Apps Script returns JSON we can
+ *  1. Try a readable POST (default CORS mode). The DSM Analytics API returns JSON we can
  *     parse to confirm + capture an order id.
  *  2. If that throws (network/CORS/timeout), fall back to a `no-cors` submit and
  *     ALSO enqueue for retry — the customer sees an accepted state either way.
@@ -138,9 +138,9 @@ export async function submitOrder(order: OrderPayload, opts: { timeoutMs?: numbe
       clearTimeout(t);
     }
 
-    if (!res.ok) throw new Error(`Apps Script responded ${res.status}`);
+    if (!res.ok) throw new Error(`DSM Analytics API responded ${res.status}`);
 
-    // Apps Script returns JSON for readable requests.
+    // The DSM Analytics API returns JSON for readable requests.
     let orderId: string | undefined;
     try {
       const data = (await res.json()) as { orderId?: string; id?: string; row?: number; ok?: boolean };
@@ -168,14 +168,14 @@ export async function submitOrder(order: OrderPayload, opts: { timeoutMs?: numbe
 
 // ── Read helpers (ADMIN APP / SERVER BRIDGE ONLY) ─────────────────────────────
 //
-// These require the Apps Script secret and MUST be called from the admin app or
+// These require the DSM Analytics API read key and MUST be called from the admin app or
 // a server bridge that holds the secret in local/OS-keychain config — never from
 // committed frontend code with an inline secret.
 
 export interface OrderReadConfig {
-  /** Apps Script web-app URL. Defaults to the shared ANALYTICS_URL. */
+  /** DSM Analytics API base URL. Defaults to the shared ANALYTICS_URL. */
   url?: string;
-  /** The Apps Script secret. Supplied by the admin app's local config. */
+  /** The DSM Analytics API read key. Supplied by the admin app's local config. */
   secret: string;
 }
 
@@ -202,7 +202,7 @@ export async function fetchOrders(
   return Array.isArray(data) ? data : data.orders ?? [];
 }
 
-/** Read the Apps Script schema (public; no secret required). */
+/** Read the DSM Analytics API schema (public; no secret required). */
 export async function fetchSchema(url: string = ANALYTICS_URL): Promise<Record<string, unknown>> {
   const res = await fetch(`${url}?action=schema`);
   if (!res.ok) throw new Error(`Failed to read schema (${res.status})`);

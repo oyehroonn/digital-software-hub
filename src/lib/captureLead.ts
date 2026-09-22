@@ -1,9 +1,9 @@
 /**
- * captureLead — universal email/lead capture to the STABLE Ecommerce Apps Script.
+ * captureLead — universal email/lead capture to the STABLE DSM Analytics API.
  * ------------------------------------------------------------------------------
  * EVERY place a visitor gives us an email should ALSO fire this, in addition to
  * whatever the form already does. It writes a lightweight `type:"order"` lead
- * record into the same Orders sheet the admin app reads, so every email address
+ * record into the same orders.csv the admin app reads, so every email address
  * a visitor submits — newsletter, account sign-in, reseller registration, quote,
  * savings estimate, callback booking — surfaces in the admin Customers view,
  * tagged with WHERE it came from (`source`).
@@ -98,8 +98,8 @@ function safeJson(value: unknown): string {
 }
 
 /**
- * Capture an email as a lead/customer record in the Ecommerce Apps Script Orders
- * sheet. Never throws. Returns a promise that resolves once the write request has
+ * Capture an email as a lead/customer record in the DSM Analytics API's Orders
+ * CSV. Never throws. Returns a promise that resolves once the write request has
  * been dispatched — callers that navigate / close a modal immediately after can
  * `await` it so the lead isn't dropped mid-flight.
  */
@@ -152,13 +152,13 @@ export function captureLead(input: CaptureLeadInput): Promise<void> {
   };
 
   // Send the order fields at the TOP LEVEL too (not only nested under `order`),
-  // because the Apps Script `appendOrder_` reads top-level keys (email /
+  // because the DSM Analytics API's order builder reads top-level keys (email /
   // customerName / productName / price / notes). The nested `order` stays for
   // raw_json.
   const body = JSON.stringify({ ...envelope, ...order });
 
-  // keepalive fetch (NOT sendBeacon — Apps Script's cross-origin 302 redirect
-  // makes sendBeacon silently drop the write). Returns the promise so callers
+  // keepalive fetch (NOT sendBeacon, for consistency with the other STABLE
+  // transports in this codebase). Returns the promise so callers
   // that immediately navigate / close a modal can `await` it and guarantee the
   // lead lands (reseller sign-in + footer do this).
   if (typeof fetch === 'undefined') return Promise.resolve();

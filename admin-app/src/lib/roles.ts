@@ -8,7 +8,7 @@
  * so the header switcher, the nav, and every view stay in lockstep.
  *
  * This is an operator-convenience access layer (who sees what in this desktop
- * shell), NOT a security boundary — the STABLE Apps Script secret still gates
+ * shell), NOT a security boundary — the STABLE DSM Analytics API read key still gates
  * the real data reads. It keeps finance-only revenue away from an area manager's
  * screen, scopes an area manager to their region, and hides destructive catalog
  * controls from read-only roles.

@@ -36,7 +36,7 @@ async function timed(fn: () => Promise<unknown>): Promise<{ ok: boolean; ms: num
 
 export async function checkEcommerce(cfg: AppConfig): Promise<ServiceStatus> {
   const r = await timed(() => httpGet(`${cfg.ecommerce_url}?action=schema`, { timeoutMs: 5000 }));
-  return status("ecommerce", "Ecommerce (Apps Script)", "stable", r);
+  return status("ecommerce", "Ecommerce (DSM Analytics API)", "stable", r);
 }
 
 export async function checkEmail(cfg: AppConfig): Promise<ServiceStatus> {

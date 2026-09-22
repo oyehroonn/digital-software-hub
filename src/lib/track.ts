@@ -2,7 +2,7 @@
  * track.ts — site-wide passive analytics capture layer.
  * ----------------------------------------------------------------------------
  * Auto-instruments the whole SPA and streams behavioural telemetry to the
- * STABLE Ecommerce Apps Script sink. It is a thin DOM layer on top of the
+ * STABLE DSM Analytics API sink. It is a thin DOM layer on top of the
  * existing fire-and-forget transport in `stable/analytics.ts` (no-cors,
  * keepalive, offline-queued) — this file adds NO new network code, it only
  * decides *what* to observe and *when* to emit.
@@ -399,7 +399,7 @@ export function initTracker(): () => void {
 export default initTracker;
 
 /* ───────────────────────────────────────────────────────────────────────────
- * EVENT SCHEMA (POST type:"telemetry" to the Ecommerce Apps Script)
+ * EVENT SCHEMA (POST type:"telemetry" to the DSM Analytics API)
  * Envelope added by stable/analytics.ts on every event:
  *   { type:"telemetry", storeName, sessionId, anonymousId, userAgent, pageUrl }
  *

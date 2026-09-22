@@ -190,8 +190,8 @@ export default function App() {
         </div>
       </header>
 
-      {/* Data won't load without the Apps Script secret — make that explicit
-          instead of every view showing a bare "No data yet". */}
+      {/* Data won't load without the DSM Analytics API read key — make that
+          explicit instead of every view showing a bare "No data yet". */}
       {config && !config.ecommerce_secret && (
         <button
           onClick={() => goto("settings")}
@@ -199,8 +199,8 @@ export default function App() {
         >
           <AlertTriangle className="size-3.5 shrink-0 text-amber-400" />
           <span>
-            <b>No Apps Script secret set</b> — orders, telemetry, heatmaps &amp; reports won't load until you add it.
-            Click here to open <b>Settings</b> and paste your read secret.
+            <b>No DSM Analytics API read key set</b> — orders, telemetry, heatmaps &amp; reports won't load until you add it.
+            Click here to open <b>Settings</b> and paste your read key.
           </span>
         </button>
       )}

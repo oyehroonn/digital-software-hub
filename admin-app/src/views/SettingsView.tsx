@@ -7,11 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { runtime } from "@/lib/rpc";
 
 const FIELDS: { key: keyof AppConfig; label: string; secret?: boolean; hint?: string }[] = [
-  { key: "ecommerce_url", label: "Ecommerce Apps Script URL" },
-  { key: "ecommerce_secret", label: "Ecommerce secret", secret: true, hint: "Gates order/telemetry reads." },
-  { key: "telemetry_read_url", label: "Telemetry read-proxy URL", hint: "Optional. Blank = read rows straight from the Apps Script GET." },
-  { key: "telemetry_sheet_id", label: "Telemetry Sheet id", hint: "Google Sheet read directly as CSV. Share it 'anyone with link: Viewer'." },
-  { key: "orders_sheet_id", label: "Orders Sheet id", hint: "Google Sheet read directly as CSV. Share it 'anyone with link: Viewer'." },
+  { key: "ecommerce_url", label: "DSM Analytics API URL" },
+  { key: "ecommerce_secret", label: "DSM Analytics API read key", secret: true, hint: "Gates order/telemetry reads." },
+  { key: "telemetry_read_url", label: "Telemetry read-proxy URL", hint: "Optional. Blank = read rows straight from the DSM Analytics API GET." },
+  { key: "telemetry_sheet_id", label: "Telemetry read action key", hint: "Leave as 'telemetry' — no longer a Google Sheet id, just selects the read action." },
+  { key: "orders_sheet_id", label: "Orders read action key", hint: "Leave as 'orders' — no longer a Google Sheet id, just selects the read action." },
   { key: "vps_base", label: "VPS Flask API base", hint: "Unstable — product catalog & box regen. Also hosts /api/sheet CSV proxy." },
   { key: "codex_base", label: "codex-proxy base" },
   { key: "codex_key", label: "codex-proxy key", secret: true },

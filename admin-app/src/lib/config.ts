@@ -9,11 +9,11 @@
 import { invoke, runtime } from "./rpc";
 
 export interface AppConfig {
-  ecommerce_url: string; // Apps Script exec URL (orders + telemetry)
-  ecommerce_secret: string; // server/admin-app only
-  telemetry_read_url: string; // optional read-proxy for sheet rows; blank = use Apps Script GET
-  telemetry_sheet_id: string; // Google Sheet id read DIRECTLY as CSV (telemetry)
-  orders_sheet_id: string; // Google Sheet id read DIRECTLY as CSV (orders)
+  ecommerce_url: string; // DSM Analytics API base URL (orders + telemetry) — was the Apps Script exec URL
+  ecommerce_secret: string; // read key for the DSM Analytics API (?action=orders|telemetry&secret=...)
+  telemetry_read_url: string; // optional read-proxy for sheet rows; blank = use the DSM Analytics API GET
+  telemetry_sheet_id: string; // legacy key used only to pick the "telemetry" read action; no longer a real sheet id
+  orders_sheet_id: string; // legacy key used only to pick the "orders" read action; no longer a real sheet id
   vps_base: string; // VPS Flask product API
   codex_base: string; // codex-proxy (OpenAI compatible)
   codex_key: string;
@@ -24,18 +24,21 @@ export interface AppConfig {
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
-  ecommerce_url:
-    "https://script.google.com/macros/s/AKfycbx0xBtUqHzC1Swqb7nuL8vyw5l_KkEYxrFYs24Bo7N2l_tRAg38BhF8ru6NlCDda91U/exec",
-  // Read/write secret for the ecommerce Apps Script (orders + telemetry). Gates
-  // the GET ?action=telemetry|orders read endpoints so the admin can pull the
-  // private sheets without publishing them. NEVER hardcoded — it must not ship in
-  // a public web bundle. Sourced from a gitignored build env (VITE_ECOM_SECRET,
-  // set in admin-app/.env.local for local dev), the OS config file (desktop), or
-  // entered once in Settings (stored in localStorage). Empty on the public build.
-  ecommerce_secret: (import.meta.env.VITE_ECOM_SECRET as string) || "",
+  // DSM Analytics API — self-hosted CSV-backed Flask service on the VPS that
+  // replaced the ecommerce Google Apps Script (2026-09-23). Same base URL
+  // handles POST (order/telemetry intake) and GET (?action=schema|orders|
+  // telemetry reads). See ~/.rpidrive/notes/dsm-analytics-csv-api.md.
+  ecommerce_url: "https://dsm-analytics.waleeds.world/",
+  // Read key for the DSM Analytics API's GET ?action=telemetry|orders
+  // endpoints. Unlike the old Apps Script secret, this IS meant to ship in the
+  // public admin build — the previous design left it blank in production,
+  // which is exactly what caused the "No Apps Script secret set" banner and
+  // blank Orders/Heatmaps/Newsletter tabs. It can still be overridden via
+  // VITE_ECOM_SECRET (build env), the OS config file (desktop), or Settings.
+  ecommerce_secret: (import.meta.env.VITE_ECOM_SECRET as string) || "f07b384602bb68eb3e2ab2cb616689ee64af9e06",
   telemetry_read_url: "",
-  telemetry_sheet_id: "1MZykNN5r-pcelIxVApNZzcPUORshgqGfPRyEsE90vWc",
-  orders_sheet_id: "1BeHD5fa6veJDBU2PGSsZ2Sw3If0dxyMQlFPq8os84cQ",
+  telemetry_sheet_id: "telemetry",
+  orders_sheet_id: "orders",
   vps_base: "https://dsm-api.techrealm.ai",
   codex_base: "https://open.techrealm.ai/v1",
   codex_key: "",

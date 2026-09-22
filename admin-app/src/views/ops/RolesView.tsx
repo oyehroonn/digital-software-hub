@@ -8,7 +8,7 @@
  *
  * Purely operator-facing: switching role here re-gates the whole shell via the
  * shared session store. This is convenience access control, not a security
- * boundary — the Apps Script secret still gates the underlying data.
+ * boundary — the DSM Analytics API read key still gates the underlying data.
  */
 import { Fragment, useEffect, useMemo, useState } from "react";
 import {

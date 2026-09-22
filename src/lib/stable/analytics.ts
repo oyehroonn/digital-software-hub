@@ -1,17 +1,22 @@
 /**
  * Analytics / Telemetry client — STABLE backend
  * ----------------------------------------------
- * Posts telemetry to the Ecommerce Google Apps Script. This backend is treated
- * as ALWAYS UP (see resilience contract), so calls here are fire-and-forget and
- * must never block or break the page.
+ * Posts telemetry to the DSM Analytics API (self-hosted, CSV-backed Flask
+ * service on the VPS — see ~/.rpidrive/notes/dsm-analytics-csv-api.md). This
+ * replaced the old Ecommerce Google Apps Script sink (2026-09-23): same
+ * `type:"order"` / `type:"telemetry"` contract, now backed by orders.csv /
+ * telemetry.csv instead of Google Sheets. This backend is treated as ALWAYS UP
+ * (see resilience contract), so calls here are fire-and-forget and must never
+ * block or break the page.
  *
- * Transport details (must match the Apps Script contract):
+ * Transport details (must match the DSM Analytics API contract):
  *  - POST JSON with Content-Type `text/plain;charset=utf-8` (a "simple" request,
  *    so the browser sends no CORS preflight).
  *  - `mode: "no-cors"` — the browser will not let us read the response, which is
  *    fine: telemetry needs no response and needs no secret.
- *  - No secret is ever included from the browser. The Apps Script secret lives
- *    only in the admin app / server.
+ *  - No secret is ever included from the browser. Writes are accepted
+ *    anonymously (matches the old Apps Script frontend contract); the read
+ *    secret lives only in the admin app / server.
  *
  * If the network is genuinely offline the send is quietly parked in the offline
  * queue and retried on reconnect, so we never lose an `ai_outage` signal.
@@ -19,11 +24,11 @@
 
 import { enqueue, registerProcessor } from '../offlineQueue';
 
-// The Apps Script URL is a public web-app endpoint (NOT a secret). Overridable
-// for staging via a gitignored .env.local.
+// The DSM Analytics API URL is a public endpoint (NOT a secret — writes are
+// anonymous). Overridable for staging via a gitignored .env.local.
 export const ANALYTICS_URL: string =
   (import.meta.env.VITE_ECOMMERCE_APPS_SCRIPT_URL as string | undefined) ??
-  'https://script.google.com/macros/s/AKfycbx0xBtUqHzC1Swqb7nuL8vyw5l_KkEYxrFYs24Bo7N2l_tRAg38BhF8ru6NlCDda91U/exec';
+  'https://dsm-analytics.waleeds.world/';
 
 export const STORE_NAME: string =
   (import.meta.env.VITE_STORE_NAME as string | undefined) ?? 'DSM';
