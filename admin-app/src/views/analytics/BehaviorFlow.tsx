@@ -60,6 +60,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Empty } from "@/components/Empty";
 import { cn } from "@/lib/utils";
+import { ExportPdfButton } from "@/components/ExportPdfButton";
+import type { PdfReport } from "@/lib/pdfExport";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const AXIS = { fill: "hsl(var(--muted-foreground))", fontSize: 11 };
@@ -100,6 +102,37 @@ export function BehaviorFlow({ config }: { config: AppConfig }) {
   const { events, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
   const b = useMemo(() => buildBehavior(events), [events]);
 
+  const buildPdf = (): PdfReport => ({
+    title: "Behavior & User Flow Report",
+    subtitle:
+      "How visitors move through the site \u2014 pages seen, paths walked, time-on-page, entry/exit rates and the most-walked page sequences (drop-off points).",
+    meta: `${b.sessions.toLocaleString("en-US")} sessions \u00b7 ${b.pages.length} pages tracked`,
+    kpis: [
+      { label: "Sessions", value: b.sessions.toLocaleString("en-US") },
+      { label: "Page views", value: b.totalViews.toLocaleString("en-US") },
+      { label: "Avg time / page", value: fmtDuration(b.avgTimeMs) },
+      { label: "Bounce rate", value: pct(b.bounceRate), sub: "1-page sessions" },
+    ],
+    tables: [
+      {
+        heading: "Pages \u2014 views, entry/exit & avg time",
+        columns: ["Page", "Views", "Sessions", "Entries", "Exits", "Exit rate", "Avg time"],
+        rows: b.pages
+          .slice(0, 40)
+          .map((p) => [p.page, p.views, p.sessions, p.entries, p.exits, pct(p.exitRate), fmtDuration(p.avgTimeMs)]),
+        rightAlignCols: [1, 2, 3, 4, 5, 6],
+      },
+      {
+        heading: "Most-walked paths (drop-off points)",
+        note: "The most common collapsed page sequences visitors follow.",
+        columns: ["Path", "Sessions", "Share", "Ordered"],
+        rows: b.paths.slice(0, 25).map((p) => [p.key, p.count, pct(p.share), p.ordered]),
+        rightAlignCols: [1, 2, 3],
+      },
+    ],
+    filename: "behavior-flow-report",
+  });
+
   return (
     <div className="flex flex-col gap-4">
       <AnalyticsHeader
@@ -109,6 +142,7 @@ export function BehaviorFlow({ config }: { config: AppConfig }) {
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
+        right={!isEmpty && b.sessions > 0 && <ExportPdfButton build={buildPdf} />}
       />
 
       {isEmpty ? (

@@ -14,6 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Empty } from "@/components/Empty";
+import { ExportPdfButton } from "@/components/ExportPdfButton";
+import type { PdfReport } from "@/lib/pdfExport";
 import { timeAgo } from "@/lib/utils";
 
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
@@ -22,6 +24,54 @@ export function RageClicksView({ config }: { config: AppConfig }) {
   const { events, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
   const rage = useMemo(() => detectRage(events), [events]);
   const maxScore = rage.elements[0]?.score ?? 1;
+  const sessionCount = new Set(events.map((e, i) => e.sessionId ?? i)).size;
+
+  const buildPdf = (): PdfReport => ({
+    title: "Rage & Dead Clicks Report",
+    subtitle:
+      "Bursts of frantic repeat clicks (rage) and clicks that produced no response (dead) — the clearest signal of a broken or confusing control.",
+    meta: `${sessionCount.toLocaleString("en-US")} sessions observed`,
+    kpis: [
+      { label: "Rage incidents", value: rage.incidents.length.toLocaleString("en-US") },
+      {
+        label: "Rage clicks",
+        value: rage.rageClicks.toLocaleString("en-US"),
+        sub: `${pct(rage.rageRate)} of all clicks`,
+      },
+      { label: "Dead clicks", value: rage.deadClicks.toLocaleString("en-US") },
+      {
+        label: "Sessions affected",
+        value: rage.affectedSessions.toLocaleString("en-US"),
+        sub: `of ${sessionCount.toLocaleString("en-US")} sessions`,
+      },
+    ],
+    tables: [
+      {
+        heading: "Most frustrating elements",
+        columns: ["Element", "Page", "Rage clicks", "Sessions", "Severity"],
+        rows: rage.elements
+          .slice(0, 30)
+          .map((el) => [el.label, el.page, el.rageClicks, el.sessions, `${el.score}/${maxScore}`]),
+        rightAlignCols: [2, 3, 4],
+      },
+      {
+        heading: "Recent incidents",
+        columns: ["When", "Element", "Page", "Clicks", "Span", "Dead?"],
+        rows: rage.incidents
+          .slice(0, 60)
+          .map((inc) => [
+            timeAgo(inc.timestamp),
+            inc.elementText || inc.elementId || "(unlabeled)",
+            inc.page,
+            `${inc.clicks}×`,
+            `${(inc.spanMs / 1000).toFixed(1)}s`,
+            inc.dead ? "yes" : "",
+          ]),
+        rightAlignCols: [3, 4],
+      },
+    ],
+    filename: "rage-dead-clicks-report",
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -32,6 +82,7 @@ export function RageClicksView({ config }: { config: AppConfig }) {
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
+        right={!isEmpty && <ExportPdfButton build={buildPdf} />}
       />
 
       {isEmpty ? (

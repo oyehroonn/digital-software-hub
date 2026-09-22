@@ -29,6 +29,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Empty } from "@/components/Empty";
+import { ExportPdfButton } from "@/components/ExportPdfButton";
+import type { PdfReport } from "@/lib/pdfExport";
 import { cn } from "@/lib/utils";
 
 const STAGE_ICON: Record<string, typeof Eye> = {
@@ -76,6 +78,52 @@ export function FunnelChart({ events }: { events: TelemetryEvent[] }) {
   const views = active[0].count;
   const orders = active[active.length - 1].count;
 
+  const buildPdf = (): PdfReport => {
+    const productRows = products.filter((p) => p.stages[0].count > 0).slice(0, 25);
+    return {
+      title: "Conversion Funnel Report",
+      subtitle:
+        "Distinct visitors reaching each stage (view → click → add-to-cart → checkout → order), with the drop-off between steps, overall and per product.",
+      meta: `Scope: ${activeName}`,
+      kpis: [
+        { label: "Overall conversion", value: views ? pct(orders / views) : "—", sub: `${num(orders)} of ${num(views)} visitors` },
+        {
+          label: "Biggest drop-off",
+          value: dropIdx > 0 ? pct(active[dropIdx].dropOffPct, 0) : "—",
+          sub: dropIdx > 0 ? `${active[dropIdx - 1].label} → ${active[dropIdx].label}` : undefined,
+        },
+        { label: "Reached checkout", value: views ? pct(active[3].count / views) : "—" },
+        { label: "Views (top of funnel)", value: num(views) },
+      ],
+      tables: [
+        {
+          heading: `Funnel stages — ${activeName}`,
+          columns: ["Stage", "Visitors", "% of views", "Lost vs prev", "Drop-off"],
+          rows: active.map((s, i) => [
+            s.label,
+            num(s.count),
+            pct(s.rate, 1),
+            i === 0 ? "—" : num(s.lost),
+            i === 0 ? "—" : pct(s.dropOffPct, 1),
+          ]),
+          rightAlignCols: [1, 2, 3, 4],
+        },
+        {
+          heading: "Funnel by product",
+          note: "Ranked by views.",
+          columns: ["Product", "View", "Click", "Cart", "Checkout", "Order", "Conversion"],
+          rows: productRows.map((p) => [
+            p.name,
+            ...p.stages.map((s) => num(s.count)),
+            pct(p.conversion, 1),
+          ]),
+          rightAlignCols: [1, 2, 3, 4, 5, 6],
+        },
+      ],
+      filename: `conversion-funnel-${selected || "overall"}`,
+    };
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -86,21 +134,24 @@ export function FunnelChart({ events }: { events: TelemetryEvent[] }) {
               Distinct visitors per stage · <span className="text-foreground/80">{activeName}</span>
             </p>
           </div>
-          <div className="relative">
-            <select
-              value={selected}
-              onChange={(e) => setSelected(e.target.value)}
-              className="h-8 appearance-none rounded-md border border-border bg-card pl-3 pr-8 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
-              title="Scope the funnel"
-            >
-              <option value="">Overall (all products)</option>
-              {products.map((p) => (
-                <option key={p.productId} value={p.productId}>
-                  {p.name} · {num(p.stages[0].count)} views
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-2 h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <select
+                value={selected}
+                onChange={(e) => setSelected(e.target.value)}
+                className="h-8 appearance-none rounded-md border border-border bg-card pl-3 pr-8 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
+                title="Scope the funnel"
+              >
+                <option value="">Overall (all products)</option>
+                {products.map((p) => (
+                  <option key={p.productId} value={p.productId}>
+                    {p.name} · {num(p.stages[0].count)} views
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-2 h-4 w-4 text-muted-foreground" />
+            </div>
+            <ExportPdfButton build={buildPdf} disabled={!hasFunnel} />
           </div>
         </CardHeader>
 
