@@ -38,6 +38,18 @@ const AIFeature = lazy(() => import("./components/ai/AIFeature"));
 
 const queryClient = new QueryClient();
 
+// ── DSM AI Labs rebrand: subdomain-aware home route ────────────────────────
+// creatives.digitalsoftwaremarket.ai is served from this SAME build/deploy
+// (single Pages project, see public/_redirects) — its "/" should land on the
+// existing creative-box gallery instead of the main storefront landing page.
+// marketing.* and agentic.* are handled entirely at the edge (public/_redirects
+// rewrites/redirects to the existing static microsites) and admin.* to the
+// separate admin-app bundle, so no in-app check is needed for those hosts.
+// Every other route (/store, /cart, /account, ...) is unaffected on every
+// host — this only swaps out what mounts at "/".
+const isCreativesHost = () =>
+  typeof window !== "undefined" && window.location.hostname.startsWith("creatives.");
+
 const AppContent = () => {
   const { state, setNavigate } = useApp();
   const navigate = useNavigate();
@@ -87,7 +99,7 @@ const AppContent = () => {
                 vendor set. */}
             <Suspense fallback={null}>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={isCreativesHost() ? <RegisteredCreatives /> : <Index />} />
                 <Route path="/store" element={<Storefront />} />
                 <Route path="/marketing" element={<Marketing />} />
                 <Route path="/services" element={<Services />} />
