@@ -4,13 +4,18 @@
  * A dimension ranking table with a magnitude meter behind the label and a
  * vs-previous delta chip per row, bound to the `DimRow` shape from ./salesData.
  * Uses the shared table primitives + delta chip so it reads as one system with
- * the rest of the analytics suite.
+ * the rest of the analytics suite. Also the single insertion point for
+ * "Export PDF" on every report built on top of it (Sales by product / SKU /
+ * channel / location / referrer / discount, Taxes, Returns) — one professional,
+ * branded PDF covering whatever ranking is currently on screen.
  */
 import type { ReactNode } from "react";
 import { Download } from "lucide-react";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { ExportPdfButton } from "@/components/ExportPdfButton";
 import { fmtMoney } from "@/lib/utils";
+import type { PdfReport } from "@/lib/pdfExport";
 import { MeterBar } from "../shell";
 import { Delta } from "./reportKit";
 import type { DimRow } from "./salesData";
@@ -73,9 +78,44 @@ export function DimTable({
     downloadCsv(`${labelHeader.toLowerCase().replace(/\s+/g, "-")}-report.csv`, headers, body);
   };
 
+  const buildPdf = (): PdfReport => {
+    const totalValue = shown.reduce((a, r) => a + r[valueKey], 0);
+    const totalOrders = shown.reduce((a, r) => a + r.orders, 0);
+    const top = shown[0];
+    return {
+      title: `${labelHeader} Report`,
+      subtitle: `Full ranking by ${valueHeader.toLowerCase()}, with orders, units, AOV, share of total and the vs-previous-period delta for each row.`,
+      meta: `${shown.length} row(s) · currency ${currency}`,
+      kpis: [
+        { label: valueHeader, value: money(totalValue) },
+        { label: "Orders", value: nf(totalOrders) },
+        { label: `Distinct ${labelHeader.toLowerCase()}`, value: nf(shown.length) },
+        { label: `Top ${labelHeader.toLowerCase()}`, value: top ? top.label.slice(0, 22) : "—", sub: top ? money(top[valueKey]) : undefined },
+      ],
+      tables: [
+        {
+          columns: ["#", labelHeader, valueHeader, "Orders", "Units", "AOV", "Share", "Δ vs prev"],
+          rows: shown.map((r, i) => [
+            i + 1,
+            r.label,
+            r[valueKey] ? money(r[valueKey]) : emptyLabel,
+            nf(r.orders),
+            nf(r.units),
+            r.orders ? money(r.aov) : emptyLabel,
+            `${(r.share * 100).toFixed(1)}%`,
+            r.delta == null ? "new" : `${r.delta >= 0 ? "+" : ""}${(r.delta * 100).toFixed(1)}%`,
+          ]),
+          rightAlignCols: [0, 2, 3, 4, 5, 6, 7],
+        },
+      ],
+      filename: `${labelHeader.toLowerCase().replace(/\s+/g, "-")}-report`,
+    };
+  };
+
   return (
     <div className="overflow-x-auto">
-      <div className="mb-2 flex justify-end">
+      <div className="mb-2 flex justify-end gap-2">
+        <ExportPdfButton build={buildPdf} disabled={!shown.length} />
         <Button size="sm" variant="outline" onClick={exportCsv} disabled={!shown.length}>
           <Download className="size-3.5" /> Export CSV
         </Button>

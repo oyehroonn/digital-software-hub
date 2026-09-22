@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Empty } from "@/components/Empty";
+import { ExportPdfButton } from "@/components/ExportPdfButton";
+import type { PdfReport } from "@/lib/pdfExport";
 import { cn } from "@/lib/utils";
 
 const ACCENT = "#4b93ff";
@@ -79,6 +81,43 @@ export function ScrollMap({
 
   const hasData = pages.length > 0;
 
+  const buildPdf = (): PdfReport => {
+    const bottomReach = (p: PageScroll) => p.bands[p.bands.length - 1]?.reach ?? 0;
+    const totalSessions = pages.reduce((a, p) => a + p.sessions, 0);
+    return {
+      title: "Scroll-Depth Report",
+      subtitle:
+        "% of each page's sessions that scrolled past every depth band (top 0% to bottom 100%), derived from the stable Telemetry sheet.",
+      meta: `${pages.length} page(s) tracked · ${totalSessions.toLocaleString("en-US")} sessions`,
+      kpis: [
+        { label: "Pages tracked", value: pages.length.toLocaleString("en-US") },
+        { label: "Total sessions", value: totalSessions.toLocaleString("en-US") },
+        {
+          label: "Deepest page",
+          value: page ? page.page.slice(0, 22) : "—",
+          sub: page ? `median depth ${pct(page.medianDepth)}` : undefined,
+        },
+      ],
+      tables: [
+        {
+          heading: "All pages · depth reach",
+          columns: ["Page", "Sessions", "Median depth", "25%", "50%", "75%", "Reached bottom"],
+          rows: pages.map((p) => [
+            p.page,
+            p.sessions,
+            pct(p.medianDepth),
+            pct(p.reach25),
+            pct(p.reach50),
+            pct(p.reach75),
+            pct(bottomReach(p)),
+          ]),
+          rightAlignCols: [1, 2, 3, 4, 5, 6],
+        },
+      ],
+      filename: "scroll-depth-report",
+    };
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -91,11 +130,14 @@ export function ScrollMap({
             bottom (100%). Derived from the stable Telemetry sheet.
           </p>
         </div>
-        {selfFetch && (
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={loading ? "animate-spin" : ""} /> Refresh
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {hasData && <ExportPdfButton build={buildPdf} />}
+          {selfFetch && (
+            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+              <RefreshCw className={loading ? "animate-spin" : ""} /> Refresh
+            </Button>
+          )}
+        </div>
       </div>
 
       {error ? (

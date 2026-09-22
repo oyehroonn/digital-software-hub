@@ -23,6 +23,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Empty } from "@/components/Empty";
+import { ExportPdfButton } from "@/components/ExportPdfButton";
+import type { PdfReport } from "@/lib/pdfExport";
 import {
   ALL_PAGES,
   clamp01,
@@ -211,6 +213,40 @@ export function ClickHeatmap({
 
   const totalClicks = points.length;
 
+  const buildPdf = (): PdfReport => {
+    const pageLabel = page && page !== ALL_PAGES ? page : "All pages";
+    return {
+      title: "Click Heatmap Report",
+      subtitle:
+        "Where visitors click on the selected page — ranked by click count. Positions are captured as a percentage of the viewport so the report reads consistently across devices.",
+      meta: `Page: ${pageLabel} · ${pages.length} page(s) tracked`,
+      kpis: [
+        { label: "Total clicks", value: totalClicks.toLocaleString("en-US") },
+        { label: "Distinct elements", value: ranked.length.toLocaleString("en-US") },
+        {
+          label: "Top element",
+          value: ranked[0]?.label?.slice(0, 24) || "—",
+          sub: ranked[0] ? `${ranked[0].count} clicks` : undefined,
+        },
+        { label: "Pages tracked", value: pages.length.toLocaleString("en-US") },
+      ],
+      tables: [
+        {
+          heading: "Most-clicked elements",
+          columns: ["#", "Element", "Clicks", "Share"],
+          rows: ranked.map((r, i) => [
+            i + 1,
+            r.label || "(unlabeled)",
+            r.count,
+            totalClicks ? `${((r.count / totalClicks) * 100).toFixed(1)}%` : "—",
+          ]),
+          rightAlignCols: [0, 2, 3],
+        },
+      ],
+      filename: `click-heatmap-${pageLabel === "All pages" ? "all-pages" : pageLabel.replace(/\//g, "-")}`,
+    };
+  };
+
   return (
     <Card className={className}>
       <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
@@ -235,6 +271,7 @@ export function ClickHeatmap({
             ))}
             {pages.length === 0 && <option value="">No pages</option>}
           </select>
+          <ExportPdfButton build={buildPdf} disabled={totalClicks === 0} />
         </div>
       </CardHeader>
 

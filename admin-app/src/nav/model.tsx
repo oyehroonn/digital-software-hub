@@ -237,6 +237,7 @@ export const SECTIONS: Section[] = [
     pages: [
       { key: "inbox", label: "Lead inbox", icon: Inbox, desc: "Unified inbox of inbound leads." },
       { key: "siteleads", label: "Site leads", icon: Share2, desc: "Every email the site captured, grouped by contact & source.", keywords: "footer popup reseller quote savings callback newsletter aggregation" },
+      { key: "newsletter", label: "Newsletter", icon: Mail, desc: "Newsletter / release-list signups \u2014 email, timestamp & source page.", keywords: "release research signups subscribers mailing list" },
       { key: "scoring", label: "Scoring", icon: Gauge, desc: "Lead scoring and grades." },
       { key: "customers", label: "Customer 360", icon: Users, desc: "Full customer profiles." },
       { key: "licenses", label: "Licences", icon: KeyRound, desc: "License renewals tracker." },

@@ -20,6 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Empty } from "@/components/Empty";
+import { ExportPdfButton } from "@/components/ExportPdfButton";
+import type { PdfReport } from "@/lib/pdfExport";
 import {
   ALL_PAGES,
   clamp01,
@@ -251,6 +253,42 @@ export function LookMap({ events, pageUrl, onPageUrlChange, className }: LookMap
   };
 
   const samples = points.length;
+  const totalAttention = ranked.reduce((a, b) => a + b.count, 0);
+
+  const buildPdf = (): PdfReport => {
+    const pageLabel = page && page !== ALL_PAGES ? page : "All pages";
+    return {
+      title: "Attention (Look Map) Report",
+      subtitle:
+        "Where visitor attention rests on the selected page, weighted by cursor/gaze dwell time — a spot stared at for seconds outranks one merely swept past.",
+      meta: `Page: ${pageLabel} · ${pages.length} page(s) tracked`,
+      kpis: [
+        { label: "Attention samples", value: samples.toLocaleString("en-US") },
+        { label: "Distinct elements", value: ranked.length.toLocaleString("en-US") },
+        {
+          label: "Most-looked-at",
+          value: ranked[0]?.label?.slice(0, 24) || "—",
+          sub: ranked[0] ? `${ranked[0].count.toFixed(1)} dwell-wt` : undefined,
+        },
+        { label: "Pages tracked", value: pages.length.toLocaleString("en-US") },
+      ],
+      tables: [
+        {
+          heading: "Most-looked-at elements",
+          note: "\"Attention\" is summed dwell weight, not click count.",
+          columns: ["#", "Element", "Attention", "Share"],
+          rows: ranked.map((r, i) => [
+            i + 1,
+            r.label || "(unlabeled)",
+            r.count.toFixed(1),
+            totalAttention ? `${((r.count / totalAttention) * 100).toFixed(1)}%` : "—",
+          ]),
+          rightAlignCols: [0, 2, 3],
+        },
+      ],
+      filename: `attention-map-${pageLabel === "All pages" ? "all-pages" : pageLabel.replace(/\//g, "-")}`,
+    };
+  };
 
   return (
     <Card className={className}>
@@ -262,19 +300,22 @@ export function LookMap({ events, pageUrl, onPageUrlChange, className }: LookMap
             {samples} samples
           </Badge>
         </div>
-        <select
-          value={page || ""}
-          onChange={(e) => setPage(e.target.value)}
-          className="h-8 max-w-[220px] truncate rounded-md border border-border bg-secondary px-2 text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          {pages.length > 1 && <option value={ALL_PAGES}>All pages ({pages.length})</option>}
-          {pages.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-          {pages.length === 0 && <option value="">No pages</option>}
-        </select>
+        <div className="flex items-center gap-2">
+          <select
+            value={page || ""}
+            onChange={(e) => setPage(e.target.value)}
+            className="h-8 max-w-[220px] truncate rounded-md border border-border bg-secondary px-2 text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            {pages.length > 1 && <option value={ALL_PAGES}>All pages ({pages.length})</option>}
+            {pages.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+            {pages.length === 0 && <option value="">No pages</option>}
+          </select>
+          <ExportPdfButton build={buildPdf} disabled={samples === 0} />
+        </div>
       </CardHeader>
 
       <CardContent>

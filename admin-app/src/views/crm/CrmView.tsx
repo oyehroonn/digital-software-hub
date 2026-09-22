@@ -14,11 +14,13 @@ import { SegmentBuilder } from "./SegmentBuilder";
 import { FollowUps } from "./FollowUps";
 import { WinBack } from "./WinBack";
 import { UnifiedLeadInbox } from "./UnifiedLeadInbox";
+import { NewsletterSignups } from "./NewsletterSignups";
 import { LegacyWoo } from "./LegacyWoo";
 
 type CrmTab =
   | "inbox"
   | "siteleads"
+  | "newsletter"
   | "scoring"
   | "customers"
   | "licenses"
@@ -56,6 +58,7 @@ export function CrmView({
   const tabs: { key: CrmTab; label: string; badge?: number }[] = [
     { key: "inbox", label: "Lead Inbox", badge: hot },
     { key: "siteleads", label: "Site leads" },
+    { key: "newsletter", label: "Newsletter" },
     { key: "scoring", label: "Scoring" },
     { key: "customers", label: "Customer 360" },
     { key: "licenses", label: "Licences", badge: data.renewals.length },
@@ -105,6 +108,8 @@ export function CrmView({
         <LeadInbox leads={data.leads} onOpenCustomer={openCustomer} />
       ) : tab === "siteleads" ? (
         <UnifiedLeadInbox config={config} onOpenCustomer={openCustomer} onRefresh={data.refresh} />
+      ) : tab === "newsletter" ? (
+        <NewsletterSignups config={config} />
       ) : tab === "scoring" ? (
         <LeadScoring leads={data.leads} />
       ) : tab === "customers" ? (

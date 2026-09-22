@@ -44,6 +44,8 @@ import { Button } from "@/components/ui/button";
 import { Empty } from "@/components/Empty";
 import { StatusDot } from "@/components/StatusDot";
 import { fmtMoney, timeAgo } from "@/lib/utils";
+import { ExportPdfButton } from "@/components/ExportPdfButton";
+import type { PdfReport } from "@/lib/pdfExport";
 import type { NavCtx } from "@/nav/model";
 
 const DAY = 86_400_000;
@@ -195,6 +197,44 @@ export function DashboardView({ ctx }: { ctx: NavCtx }) {
     };
   }, [events, orders]);
 
+  const buildPdf = (): PdfReport => ({
+    title: "Dashboard Snapshot",
+    subtitle: "Today's sales, orders, traffic and conversion at a glance, with the 14-day sales trend, top products and most-recent orders.",
+    meta: `Currency ${m.currency}`,
+    kpis: [
+      { label: "Sales today", value: fmtMoney(m.salesToday, m.currency) },
+      { label: "Orders today", value: nf(m.ordersToday) },
+      { label: "Sessions today", value: nf(m.sessionsToday) },
+      { label: "Conversion today", value: pct(m.rateToday) },
+    ],
+    tables: [
+      {
+        heading: "Sales \u2014 last 14 days",
+        columns: ["Day", "Sales"],
+        rows: m.trend.map((t) => [t.label, fmtMoney(t.sales, m.currency)]),
+        rightAlignCols: [1],
+      },
+      {
+        heading: "Top products",
+        columns: ["#", "Product", "Revenue"],
+        rows: m.topProducts.map((p, i) => [i + 1, p.name, p.revenue ? fmtMoney(p.revenue, p.currency) : "\u2014"]),
+        rightAlignCols: [0, 2],
+      },
+      {
+        heading: "Recent orders",
+        columns: ["Item", "Customer", "When", "Value"],
+        rows: m.recent.map((o) => [
+          o.productName || o.sku || "(item)",
+          o.customerName || o.email || "\u2014",
+          timeAgo(o.timestamp ?? ""),
+          fmtMoney(orderValue(o), o.currency || m.currency),
+        ]),
+        rightAlignCols: [3],
+      },
+    ],
+    filename: "dashboard-snapshot",
+  });
+
   const maxSales = Math.max(...m.trend.map((t) => t.sales), 1);
   const maxProdRev = Math.max(...m.topProducts.map((p) => p.revenue), 1);
   const anyDown = statuses.some((s) => s.health === "down");
@@ -210,9 +250,12 @@ export function DashboardView({ ctx }: { ctx: NavCtx }) {
             Today at a glance — sales, orders, traffic and backend health.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
-          <RefreshCw className={loading ? "animate-spin" : ""} /> Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportPdfButton build={buildPdf} />
+          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
+            <RefreshCw className={loading ? "animate-spin" : ""} /> Refresh
+          </Button>
+        </div>
       </div>
 
       {/* AI-outage / health callout */}

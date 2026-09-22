@@ -61,6 +61,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Empty } from "@/components/Empty";
 import { cn, fmtMoney } from "@/lib/utils";
+import { ExportPdfButton } from "@/components/ExportPdfButton";
+import type { PdfReport } from "@/lib/pdfExport";
 
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 
@@ -433,6 +435,43 @@ function CampaignTracking({ config }: { config: AppConfig }) {
 
   const overallConv = data.sessions ? data.conversions / data.sessions : 0;
 
+  const buildPdf = (): PdfReport => ({
+    title: "UTM & Campaign Tracking Report",
+    subtitle:
+      "First-touch UTM attribution \u2014 utm_* parsed from the landing page_url query and event metadata, joined to the Orders sheet by session & email.",
+    meta: `${data.sessions.toLocaleString("en-US")} sessions \u00b7 ${data.campaigns.length} campaigns`,
+    kpis: [
+      { label: "Sessions", value: data.sessions.toLocaleString("en-US") },
+      { label: "UTM-tagged", value: pct(data.sessions ? data.taggedSessions / data.sessions : 0), sub: `${data.taggedSessions.toLocaleString("en-US")} sessions` },
+      { label: "Conversions", value: data.conversions.toLocaleString("en-US"), sub: `${pct(overallConv)} rate` },
+      { label: "Revenue", value: fmtMoney(data.revenue) },
+    ],
+    tables: [
+      {
+        heading: "Campaign performance",
+        columns: ["Campaign", "Source", "Medium", "Sessions", "Clicks", "Orders", "Conv. rate", "Revenue"],
+        rows: data.campaigns.map((c) => [
+          c.campaign,
+          c.source,
+          c.medium,
+          c.sessions,
+          c.clicks,
+          c.conversions,
+          pct(c.conversionRate),
+          fmtMoney(c.revenue),
+        ]),
+        rightAlignCols: [3, 4, 5, 6, 7],
+      },
+      {
+        heading: "Traffic sources",
+        columns: ["Source", "Sessions", "Clicks", "Orders", "Conv. rate", "Revenue"],
+        rows: data.sources.map((s) => [s.source, s.sessions, s.clicks, s.conversions, pct(s.conversionRate), fmtMoney(s.revenue)]),
+        rightAlignCols: [1, 2, 3, 4, 5],
+      },
+    ],
+    filename: "utm-campaign-report",
+  });
+
   // Chart datasets.
   const topBySessions = data.campaigns.slice(0, 8).map((c) => ({
     name: c.campaign,
@@ -456,6 +495,7 @@ function CampaignTracking({ config }: { config: AppConfig }) {
         loading={loading}
         liveCount={liveCount}
         onRefresh={refresh}
+        right={!isEmpty && data.sessions > 0 && <ExportPdfButton build={buildPdf} />}
       />
 
       {isEmpty ? (
