@@ -34,6 +34,16 @@
  *   3. Everything else is left out of the map entirely — the storefront
  *     falls back to the existing (pre-existing, unchanged) guessed
  *     product-page link, or a "contact us" flow, per src/lib/legacyStore.ts.
+ *   4. VARIABLE Woo products (parent products with per-tier variations, e.g.
+ *     a MAK license sold in "20 / 150 / 2500 / 5000 user" tiers) are a trap:
+ *     `?add-to-cart=<parent-id>` silently fails on the live store and
+ *     bounces the buyer to an EMPTY cart (confirmed empirically against the
+ *     live store) — worse than the fallback, since it looks like a real
+ *     checkout link. For these we resolve down to the specific child
+ *     VARIATION whose price matches the DSM row's price closely (each DSM
+ *     tier row lines up 1:1 with one Woo variation) and use THAT id. No
+ *     confident variation price match → dropped, same as any other
+ *     unmatched product.
  *
  * The actual price CHARGED is always whatever Woo has for the matched
  * product id — the DSM-side price is only used here as a same-product sanity
@@ -106,6 +116,62 @@ async function fetchAllWooProducts() {
   return all;
 }
 
+// WooCommerce's `?add-to-cart=<id>` URL trick ONLY works for a SIMPLE product
+// id, or a specific VARIATION id of a variable product (confirmed empirically
+// against the live store: add-to-cart=<variable-parent-id> silently fails and
+// bounces to an EMPTY cart -- worse than the pre-existing fallback, since it
+// looks like a real checkout link but has nothing in it). For a "variable"
+// type match we must resolve down to the correct child variation.
+const variationsCache = new Map();
+async function fetchVariations(parentId) {
+  if (variationsCache.has(parentId)) return variationsCache.get(parentId);
+  const all = [];
+  let page = 1;
+  for (;;) {
+    const { data } = await fetchJson(
+      `${WOO_SITE}/wp-json/wc/v3/products/${parentId}/variations?per_page=100&page=${page}`,
+      { Authorization: AUTH },
+    );
+    all.push(...data);
+    if (data.length < 100) break;
+    page++;
+  }
+  variationsCache.set(parentId, all);
+  return all;
+}
+
+/**
+ * For a "variable" Woo parent match, find the ONE variation whose price
+ * matches the DSM row's price closely -- DSM's catalog already splits each
+ * quantity/license tier into its own row with its own price (e.g. "... - 20"
+ * vs "... - 150"), which lines up 1:1 with each Woo variation's price (each
+ * tier is a separate variation under one parent). Requires a tight price
+ * match; returns null (no confident resolution) otherwise -- never falls
+ * back to the parent id, since that's the broken/empty-cart case.
+ */
+async function resolveVariation(parent, dsmPrice) {
+  if (dsmPrice == null) return null;
+  let variations;
+  try {
+    variations = await fetchVariations(parent.id);
+  } catch {
+    return null;
+  }
+  let best = null, bestDiff = Infinity;
+  for (const v of variations) {
+    if (v.status !== "publish" || v.purchasable === false) continue;
+    const vp = priceToFloat(v.price);
+    if (vp == null) continue;
+    const diff = Math.abs(vp - dsmPrice);
+    if (diff < bestDiff) { bestDiff = diff; best = v; }
+  }
+  if (!best) return null;
+  const pct = dsmPrice > 0 ? bestDiff / dsmPrice : Infinity;
+  if (bestDiff > 1.0 && pct > 0.02) return null; // not a confident price match
+  const label = (best.attributes || []).map((a) => a.option).filter(Boolean).join(" / ");
+  return { id: best.id, price: best.price, label, priceDiff: bestDiff };
+}
+
 // ── Matching ─────────────────────────────────────────────────────────────
 const STOPWORDS = new Set([
   "the", "a", "an", "and", "for", "with", "of", "edition", "license",
@@ -150,7 +216,7 @@ function seqRatio(a, b) {
   return (2 * lcs) / (la + lb);
 }
 
-function buildMap(dsmProducts, wooProducts) {
+async function buildMap(dsmProducts, wooProducts) {
   const purchasable = wooProducts.filter((w) => w.status === "publish" && w.purchasable);
   const byNorm = new Map();
   for (const w of purchasable) {
@@ -160,7 +226,7 @@ function buildMap(dsmProducts, wooProducts) {
   }
 
   const result = {};
-  let nHigh = 0, nMedium = 0, nNone = 0;
+  let nHigh = 0, nMedium = 0, nNone = 0, nVariableDropped = 0;
 
   for (const p of dsmProducts) {
     const dnorm = norm(p.name);
@@ -214,21 +280,52 @@ function buildMap(dsmProducts, wooProducts) {
       }
     }
 
-    if (match) {
-      if (confidence === "high") nHigh++; else nMedium++;
-      result[String(p.id)] = {
-        wooId: match.id,
-        wooName: match.name,
-        wooPrice: match.price,
-        confidence,
-        method,
-      };
-    } else {
+    if (match && match.type === "variable") {
+      // Never use a variable PARENT id directly -- add-to-cart silently fails
+      // for those (confirmed against the live store) and bounces the buyer to
+      // an empty cart. Resolve to the specific child variation by price, or
+      // drop the match entirely rather than risk that broken redirect.
+      const variation = await resolveVariation(match, dprice);
+      if (!variation) {
+        nVariableDropped++;
+        match = null;
+      } else {
+        result[String(p.id)] = {
+          wooId: variation.id,
+          wooName: variation.label ? `${match.name} (${variation.label})` : match.name,
+          wooPrice: variation.price,
+          wooParentId: match.id,
+          wooType: "variation",
+          confidence: variation.priceDiff <= 1.0 ? "high" : confidence,
+          method: `${method}+variation_price_match`,
+        };
+        if (result[String(p.id)].confidence === "high") nHigh++; else nMedium++;
+        match = "handled"; // don't fall through to the simple-product branch below
+      }
+    }
+
+    if (match && match !== "handled") {
+      if (match.type && match.type !== "simple") {
+        // Unhandled Woo product type (grouped/external/etc) -- add-to-cart
+        // behavior for these isn't verified, so don't risk it.
+        nNone++;
+      } else {
+        if (confidence === "high") nHigh++; else nMedium++;
+        result[String(p.id)] = {
+          wooId: match.id,
+          wooName: match.name,
+          wooPrice: match.price,
+          wooType: "simple",
+          confidence,
+          method,
+        };
+      }
+    } else if (!match) {
       nNone++;
     }
   }
 
-  return { result, nHigh, nMedium, nNone };
+  return { result, nHigh, nMedium, nNone, nVariableDropped };
 }
 
 const [dsmProducts, wooProducts] = await Promise.all([
@@ -236,7 +333,7 @@ const [dsmProducts, wooProducts] = await Promise.all([
   fetchAllWooProducts(),
 ]);
 
-const { result, nHigh, nMedium, nNone } = buildMap(dsmProducts, wooProducts);
+const { result, nHigh, nMedium, nNone, nVariableDropped } = await buildMap(dsmProducts, wooProducts);
 
 const out = {
   _generatedAt: new Date().toISOString(),
@@ -246,7 +343,13 @@ const out = {
     dsmCount: dsmProducts.length,
     wooCount: wooProducts.length,
   },
-  _stats: { matched: nHigh + nMedium, high: nHigh, medium: nMedium, unmatched: nNone },
+  _stats: {
+    matched: nHigh + nMedium,
+    high: nHigh,
+    medium: nMedium,
+    unmatched: nNone,
+    variableParentDroppedNoVariationMatch: nVariableDropped,
+  },
   products: result,
 };
 
@@ -257,5 +360,7 @@ console.log(
   `  dsm products:   ${dsmProducts.length}\n` +
   `  woo products:   ${wooProducts.length}\n` +
   `  matched:        ${nHigh + nMedium} (${nHigh} high, ${nMedium} medium confidence)\n` +
-  `  unmatched:      ${nNone} (falls back to guessed product-page link / contact flow)`,
+  `  unmatched:      ${nNone} (falls back to guessed product-page link / contact flow)\n` +
+  `    of which ${nVariableDropped} were a variable-product name/price match with no ` +
+  `confident variation-level price resolution (dropped rather than risk an empty-cart redirect)`,
 );

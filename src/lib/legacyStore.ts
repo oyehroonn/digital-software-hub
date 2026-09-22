@@ -100,9 +100,20 @@ export function oldWebProductUrl(ref: CatalogRef): string {
 // ── Woo product-id map (static, generated) ──────────────────────────────────
 
 interface WooMapEntry {
+  /** The id to put in `?add-to-cart=`. For a "variation" match this is the
+   *  child VARIATION id, NOT the parent product id — WooCommerce's
+   *  add-to-cart URL trick silently no-ops on a variable-product's parent id
+   *  (confirmed against the live store), so the generator resolves down to
+   *  the correct variation by price before this file is ever written. */
   wooId: number;
   wooName: string;
   wooPrice?: string;
+  /** "simple" (plain product, wooId is its own id) or "variation" (wooId is
+   *  a child variation id resolved from a variable parent by price match). */
+  wooType?: 'simple' | 'variation';
+  /** Present only for wooType "variation" — the parent product's id, kept
+   *  for reference (never used in the URL itself). */
+  wooParentId?: number;
   /** "high" = exact/near-exact name match (+ price agreement when ambiguous).
    *  "medium" = strong fuzzy name match with price agreement within 15%. Both
    *  tiers are used — see scripts/generate-woo-product-map.mjs for exactly
