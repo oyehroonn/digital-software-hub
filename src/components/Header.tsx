@@ -203,7 +203,7 @@ const Header = () => {
     { label: "Enterprise", desc: "Volume licensing & procurement", icon: Building2, to: "/store" },
     { label: "Resellers", desc: "Partner portal & wholesale pricing", icon: Users, onClick: goReseller },
     { label: "Support", desc: "Help center, FAQs & contact", icon: LifeBuoy, to: "/support" },
-    { label: "About", desc: "Who we are & what we do", icon: Info, to: "/services" },
+    { label: "About", desc: "Who we are & what we do", icon: Info, to: "/about" },
   ];
 
   useEffect(() => {

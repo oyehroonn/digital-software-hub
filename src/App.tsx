@@ -27,6 +27,7 @@ const ExclusiveMembers = lazy(() => import("./pages/ExclusiveMembers"));
 const ResellerPortal = lazy(() => import("./pages/ResellerPortal"));
 const RegisteredCreatives = lazy(() => import("./pages/RegisteredCreatives"));
 const Support = lazy(() => import("./pages/Support"));
+const About = lazy(() => import("./pages/About"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 // Site-wide floating concierge (feature 06) — deferred so the LLM chat code
 // never sits in the entry bundle; AIFeature still gates it on proxy health.
@@ -110,6 +111,7 @@ const AppContent = () => {
                 <Route path="/reseller" element={<ResellerPortal />} />
                 <Route path="/creatives" element={<RegisteredCreatives />} />
                 <Route path="/support" element={<Support />} />
+                <Route path="/about" element={<About />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
