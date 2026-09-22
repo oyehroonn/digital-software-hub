@@ -154,70 +154,76 @@ function isMove(e: TelemetryEvent): boolean {
   return /hover|mousemove|attention|dwell|(^|_)move/.test(n);
 }
 
-interface RawPt {
-  x: number;
-  y: number;
-  vw?: number;
-  dh?: number;
-  weight: number;
-  elementId: string;
-  elementText: string;
-}
-
 /**
- * Build normalized [0,1] heat points per screenshot slot for the events passing
- * `keep`. Width divides by captured viewport (meta.vw / innerWidth, else the
- * observed extent ≈ 1440); height divides by document height (meta.dh, else the
- * observed extent) — the "% of page" normalization the overlay registers on.
+ * Build normalized [0,1] heat points per screenshot slot for the events
+ * passing `keep`.
+ *
+ * Two real event shapes from src/lib/track.ts land here:
+ *   - "click" events carry per-event x,y already as a 0-100 PERCENTAGE of the
+ *     viewport (not raw pixels — there is no vw/innerWidth on a click's
+ *     metadata to divide by). This used to be treated as raw-pixel data and
+ *     normalized against whatever max x/y happened to be observed in the
+ *     sample, which stretched any cluster that didn't reach the page edges
+ *     into the wrong place.
+ *   - "attention" events carry NO per-event x,y at all — dwell is
+ *     pre-aggregated client-side into a cols×rows grid
+ *     (metadata: { grid: {"col,row": ms}, cols, rows }) flushed every ~12s.
+ *     Reading `field(e, "x"/"y")` on these is always undefined, so the "Move"
+ *     layer was silently dropping every attention event it received.
+ * Both are handled below; a plain per-event x,y sample (percentage, or raw
+ * pixels when real viewport metadata is attached) remains supported for any
+ * other producer.
  */
 function buildPoints(
   events: TelemetryEvent[],
   keep: (e: TelemetryEvent) => boolean,
   weightOf: (e: TelemetryEvent) => number,
 ): Record<string, HeatPoint[]> {
-  const rawBySlug: Record<string, RawPt[]> = {};
+  const out: Record<string, HeatPoint[]> = {};
+  const push = (slug: string, pt: HeatPoint) => (out[slug] ??= []).push(pt);
+
   for (const e of events) {
     if (!keep(e)) continue;
+    const slug = matchSlug(String(field(e, "pageUrl", "page_url") ?? ""));
+    const m = meta(e);
+
+    const grid = m.grid;
+    if (grid && typeof grid === "object") {
+      const cols = num(m.cols) || 20;
+      const rows = num(m.rows) || 20;
+      for (const [key, msRaw] of Object.entries(grid as Record<string, unknown>)) {
+        const [colStr, rowStr] = key.split(",");
+        const col = Number(colStr);
+        const row = Number(rowStr);
+        const ms = num(msRaw);
+        if (!Number.isFinite(col) || !Number.isFinite(row) || ms == null) continue;
+        push(slug, {
+          nx: clamp01((col + 0.5) / cols),
+          ny: clamp01((row + 0.5) / rows),
+          weight: Math.min(6, Math.max(0.6, ms / 1200)),
+          elementId: `cell ${key}`,
+          elementText: "",
+        });
+      }
+      continue;
+    }
+
     const x = num(field(e, "x"));
     const y = num(field(e, "y"));
     if (x == null || y == null) continue;
-    const slug = matchSlug(String(field(e, "pageUrl", "page_url") ?? ""));
-    const m = meta(e);
     const vw = num(m.vw ?? m.viewportWidth ?? m.innerWidth ?? m.vpW);
     const dh = num(
       m.dh ?? m.docHeight ?? m.pageHeight ?? m.scrollHeight ?? m.vh ?? m.viewportHeight ?? m.innerHeight,
     );
-    (rawBySlug[slug] ??= []).push({
-      x,
-      y,
-      vw: vw && vw > 0 ? vw : undefined,
-      dh: dh && dh > 0 ? dh : undefined,
+    push(slug, {
+      nx: vw && vw > 0 ? clamp01(x / vw) : clamp01(x / 100),
+      ny: dh && dh > 0 ? clamp01(y / dh) : clamp01(y / 100),
       weight: weightOf(e),
       elementId: String(field(e, "elementId", "element_id") ?? ""),
       elementText: String(field(e, "elementText", "element_text") ?? ""),
     });
   }
 
-  const out: Record<string, HeatPoint[]> = {};
-  for (const [slug, raw] of Object.entries(rawBySlug)) {
-    // Observed extents cover events with no viewport hint (raw-pixel data);
-    // ≈1440 for desktop pixels, ≈100 when the site already sends percentages.
-    let maxX = 1;
-    let maxY = 1;
-    for (const r of raw) {
-      if (!r.vw) maxX = Math.max(maxX, r.x);
-      if (!r.dh) maxY = Math.max(maxY, r.y);
-    }
-    maxX = Math.max(maxX * 1.02, 1);
-    maxY = Math.max(maxY * 1.02, 1);
-    out[slug] = raw.map((r) => ({
-      nx: clamp01(r.x / (r.vw ?? maxX)),
-      ny: clamp01(r.y / (r.dh ?? maxY)),
-      weight: r.weight,
-      elementId: r.elementId,
-      elementText: r.elementText,
-    }));
-  }
   return out;
 }
 
@@ -373,14 +379,23 @@ export function HeatmapOverlay({ config }: { config: AppConfig }) {
   const [dispW, setDispW] = useState(0);
   const dispH = dispW * (page.imgH / page.imgW);
 
+  // `wrapRef` only exists in the DOM once `isEmpty` is false (the screenshot +
+  // canvases are behind that ternary below). On first mount `isEmpty` is still
+  // true — data hasn't loaded yet — so an effect that only ran on `[]` found
+  // `wrapRef.current` null, bailed out before ever calling `ro.observe()`, and
+  // never got another chance: dispW stayed 0 forever, so the canvases kept
+  // their default 300×150 buffer and the screenshot's height (driven by
+  // `dispH = dispW * ratio`) collapsed to 0 — the whole overlay silently
+  // rendered nothing. Re-run once real content (and the ref) actually mounts.
   useEffect(() => {
+    if (isEmpty) return;
     const el = wrapRef.current;
     if (!el) return;
     const ro = new ResizeObserver(() => setDispW(el.clientWidth));
     ro.observe(el);
     setDispW(el.clientWidth);
     return () => ro.disconnect();
-  }, []);
+  }, [isEmpty]);
 
   // (Re)draw every layer whenever inputs change.
   useEffect(() => {

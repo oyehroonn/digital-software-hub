@@ -78,57 +78,77 @@ function clampDwell(n: number): number {
   return n > MAX_DWELL ? MAX_DWELL : n;
 }
 
-/** Turn attention events for one page into normalized [0,1] points weighted by dwell. */
+/**
+ * Turn attention events for one page into normalized [0,1] points weighted
+ * by dwell.
+ *
+ * The site's tracker (src/lib/track.ts) does NOT emit one x,y sample per
+ * "attention" event — cursor dwell is pre-aggregated client-side into a
+ * cols×rows grid (default 20×20) and flushed every ~12s as
+ * `metadata: { grid: {"col,row": ms, ...}, cols, rows }`. This function used
+ * to look for top-level `x`/`y` fields on the event itself, which real
+ * attention events never carry — every single one was silently skipped, so
+ * the Look map always rendered its empty state even with real dwell data
+ * flowing. Read the grid payload directly; still accept a plain per-event
+ * x,y sample as a fallback for any other producer that emits one that way.
+ */
 export function extractAttentionPoints(events: TelemetryEvent[], page: string): HeatPoint[] {
-  const raw: {
-    x: number;
-    y: number;
-    w: number;
-    vw?: number;
-    vh?: number;
-    elementId: string;
-    elementText: string;
-  }[] = [];
+  const raw: { nx: number; ny: number; w: number; elementId: string; elementText: string }[] = [];
 
   for (const e of events) {
     if (!isAttentionEvent(e)) continue;
     const url = normalizePath(String(field(e, "pageUrl", "page_url") ?? ""));
     if (page !== ALL_PAGES && url !== page) continue;
+    const m = meta(e);
+
+    const grid = m.grid;
+    if (grid && typeof grid === "object") {
+      const cols = num(m.cols) || 20;
+      const rows = num(m.rows) || 20;
+      for (const [key, msRaw] of Object.entries(grid as Record<string, unknown>)) {
+        const [colStr, rowStr] = key.split(",");
+        const col = Number(colStr);
+        const row = Number(rowStr);
+        const ms = num(msRaw);
+        if (!Number.isFinite(col) || !Number.isFinite(row) || ms == null) continue;
+        raw.push({
+          nx: clamp01((col + 0.5) / cols),
+          ny: clamp01((row + 0.5) / rows),
+          w: clampDwell(ms / 1000),
+          // No per-element identity in the grid format — key the ranked
+          // table by cell so distinct hotspots still stay distinguishable.
+          elementId: `cell ${key}`,
+          elementText: "",
+        });
+      }
+      continue;
+    }
+
+    // Fallback: a per-event x,y sample (percentage of viewport, matching the
+    // click tracker's convention — see extractClickPoints).
     const x = num(field(e, "x"));
     const y = num(field(e, "y"));
     if (x == null || y == null) continue;
-    const m = meta(e);
     const vw = num(m.vw ?? m.viewportWidth ?? m.innerWidth ?? m.vpW);
     const vh = num(
       m.dh ?? m.docHeight ?? m.pageHeight ?? m.scrollHeight ?? m.vh ?? m.viewportHeight ?? m.innerHeight,
     );
     raw.push({
-      x,
-      y,
+      nx: vw && vw > 0 ? clamp01(x / vw) : clamp01(x / 100),
+      ny: vh && vh > 0 ? clamp01(y / vh) : clamp01(y / 100),
       w: dwellSeconds(m),
-      vw: vw && vw > 0 ? vw : undefined,
-      vh: vh && vh > 0 ? vh : undefined,
       elementId: String(field(e, "elementId", "element_id") ?? ""),
       elementText: String(field(e, "elementText", "element_text") ?? ""),
     });
   }
   if (!raw.length) return [];
 
-  let maxX = 1;
-  let maxY = 1;
-  for (const r of raw) {
-    if (!r.vw) maxX = Math.max(maxX, r.x);
-    if (!r.vh) maxY = Math.max(maxY, r.y);
-  }
-  maxX *= 1.02;
-  maxY *= 1.02;
-
   // Normalize dwell weights to a sane blob range so one long stare doesn't wash
   // the whole field out, while still ranking hotter than a quick sweep.
   const maxW = Math.max(...raw.map((r) => r.w), 1);
   return raw.map((r) => ({
-    nx: clamp01(r.x / (r.vw ?? maxX)),
-    ny: clamp01(r.y / (r.vh ?? maxY)),
+    nx: r.nx,
+    ny: r.ny,
     weight: 0.35 + (r.w / maxW) * 1.65, // 0.35..2.0
     elementId: r.elementId,
     elementText: r.elementText,

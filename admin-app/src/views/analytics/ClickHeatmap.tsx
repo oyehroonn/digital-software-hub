@@ -56,19 +56,22 @@ export function pageUrlsFromClicks(events: TelemetryEvent[]): string[] {
 
 /**
  * Turn click events for one page into normalized [0,1] points.
- * Coordinate space, in priority order:
- *   1. per-event viewport from metadata (vw/vh, innerWidth/innerHeight, docHeight…)
- *   2. observed max extent across the page's clicks (padded), for raw-px data
+ *
+ * The site's tracker (src/lib/track.ts, `onClick`) already sends x/y as a
+ * 0-100 PERCENTAGE of the viewport — see its EVENT SCHEMA comment — not raw
+ * pixels. This used to be mis-read as raw pixel coordinates needing a
+ * viewport-derived divisor, which the click producer never actually attaches
+ * (its metadata carries rawX/rawY + tag/href/button, no vw/vh/viewportWidth).
+ * With no viewport hint the old code fell back to normalizing by the
+ * OBSERVED max x/y among the page's own clicks — which silently stretched
+ * any click cluster that didn't happen to reach the page edges out into the
+ * corners, so the heatmap rendered real clicks in the wrong place (or, worst
+ * case, every point piled into one corner). Trust the documented percentage
+ * scale directly; still honour genuine pixel + viewport metadata for any
+ * other/future producer that supplies it explicitly.
  */
 export function extractClickPoints(events: TelemetryEvent[], page: string): HeatPoint[] {
-  const raw: {
-    x: number;
-    y: number;
-    vw?: number;
-    vh?: number;
-    elementId: string;
-    elementText: string;
-  }[] = [];
+  const points: HeatPoint[] = [];
 
   for (const e of events) {
     if (!isClickEvent(e)) continue;
@@ -77,37 +80,28 @@ export function extractClickPoints(events: TelemetryEvent[], page: string): Heat
     const x = num(field(e, "x"));
     const y = num(field(e, "y"));
     if (x == null || y == null) continue;
+
     const m = meta(e);
     const vw = num(m.vw ?? m.viewportWidth ?? m.innerWidth ?? m.vpW);
     const vh = num(
       m.dh ?? m.docHeight ?? m.pageHeight ?? m.scrollHeight ?? m.vh ?? m.viewportHeight ?? m.innerHeight,
     );
-    raw.push({
-      x,
-      y,
-      vw: vw && vw > 0 ? vw : undefined,
-      vh: vh && vh > 0 ? vh : undefined,
+
+    // Explicit viewport metadata present → treat x/y as raw pixels against
+    // it. Otherwise x/y are already the 0-100 percentage the tracker sends.
+    const nx = vw && vw > 0 ? clamp01(x / vw) : clamp01(x / 100);
+    const ny = vh && vh > 0 ? clamp01(y / vh) : clamp01(y / 100);
+
+    points.push({
+      nx,
+      ny,
+      weight: 1,
       elementId: String(field(e, "elementId", "element_id") ?? ""),
       elementText: String(field(e, "elementText", "element_text") ?? ""),
     });
   }
-  if (!raw.length) return [];
 
-  // Fallback extent for events that carry no viewport hint.
-  let maxX = 1;
-  let maxY = 1;
-  for (const r of raw) {
-    if (!r.vw) maxX = Math.max(maxX, r.x);
-    if (!r.vh) maxY = Math.max(maxY, r.y);
-  }
-  maxX *= 1.02;
-  maxY *= 1.02;
-
-  return raw.map((r) => {
-    const nx = clamp01(r.x / (r.vw ?? maxX));
-    const ny = clamp01(r.y / (r.vh ?? maxY));
-    return { nx, ny, weight: 1, elementId: r.elementId, elementText: r.elementText };
-  });
+  return points;
 }
 
 /* ------------------------------------------------------------------ */
