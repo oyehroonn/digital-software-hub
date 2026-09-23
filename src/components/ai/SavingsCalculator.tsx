@@ -52,7 +52,70 @@ import { captureLead as captureLeadRecord } from '@/lib/captureLead';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
+
+/** Max the spend slider covers before handing off to typed entry for outliers. */
+const SPEND_SLIDER_MAX = 100_000;
+const SPEND_SLIDER_STEP = 500;
+
+/**
+ * Quick-pick slider for "current software spend" paired with the existing
+ * free-text field, so most people never have to guess-type a number but
+ * anyone with spend above the slider's range (or wanting an exact figure)
+ * can still type it directly — the two stay in sync either way.
+ */
+function SpendSliderField({
+  id,
+  label,
+  spendRaw,
+  onChange,
+  disabled,
+  placeholder,
+}: {
+  id: string;
+  label: string;
+  spendRaw: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  placeholder: string;
+}) {
+  const numeric = parseSpend(spendRaw);
+  const sliderValue = Number.isFinite(numeric) ? Math.min(numeric, SPEND_SLIDER_MAX) : 0;
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between">
+        <Label htmlFor={id}>{label}</Label>
+        <span className="text-sm font-medium text-foreground">
+          {spendRaw.trim() ? `AED ${formatMoney(numeric)}` : '—'}
+        </span>
+      </div>
+      <Slider
+        className="mt-3"
+        min={0}
+        max={SPEND_SLIDER_MAX}
+        step={SPEND_SLIDER_STEP}
+        value={[sliderValue]}
+        onValueChange={([v]) => onChange(String(v))}
+        disabled={disabled}
+        aria-label={label}
+      />
+      <Input
+        id={id}
+        inputMode="decimal"
+        placeholder={placeholder}
+        value={spendRaw}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className="mt-2.5"
+      />
+      <p className="mt-1 text-xs text-muted-foreground">
+        Drag to estimate, or type an exact number{spendRaw && numeric > SPEND_SLIDER_MAX ? ' (above slider range)' : ''}.
+      </p>
+    </div>
+  );
+}
 
 // ── Offline-resilient lead email ─────────────────────────────────────────────
 //
@@ -837,18 +900,14 @@ function SavingsCalculatorInner({ className }: { className?: string }) {
           </div>
         </div>
 
-        <div>
-          <Label htmlFor={`${fieldId}-spend`}>Current software spend</Label>
-          <Input
-            id={`${fieldId}-spend`}
-            inputMode="decimal"
-            placeholder="e.g. 12,000 or 1.2k"
-            value={lead.spendRaw}
-            onChange={(e) => update({ spendRaw: e.target.value })}
-            disabled={busy}
-            className="mt-1.5"
-          />
-        </div>
+        <SpendSliderField
+          id={`${fieldId}-spend`}
+          label="Current software spend"
+          spendRaw={lead.spendRaw}
+          onChange={(spendRaw) => update({ spendRaw })}
+          disabled={busy}
+          placeholder="e.g. 12,000 or 1.2k"
+        />
 
         <div>
           <Label htmlFor={`${fieldId}-cadence`}>Billed</Label>
@@ -1044,17 +1103,13 @@ function SavingsBetaSignup({ className }: { className?: string }) {
             />
           </div>
         </div>
-        <div>
-          <Label htmlFor={`${fieldId}-spend`}>Current spend (optional)</Label>
-          <Input
-            id={`${fieldId}-spend`}
-            inputMode="decimal"
-            placeholder="e.g. 12,000/yr"
-            value={lead.spendRaw}
-            onChange={(e) => setLead((p) => ({ ...p, spendRaw: e.target.value }))}
-            className="mt-1.5"
-          />
-        </div>
+        <SpendSliderField
+          id={`${fieldId}-spend`}
+          label="Current spend (optional)"
+          spendRaw={lead.spendRaw}
+          onChange={(spendRaw) => setLead((p) => ({ ...p, spendRaw }))}
+          placeholder="e.g. 12,000/yr"
+        />
       </div>
 
       {errorMsg && (
