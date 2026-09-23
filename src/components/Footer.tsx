@@ -155,10 +155,10 @@ const Footer = () => {
           <div>
             <h4 className="text-[#FEFEFE] text-sm font-semibold uppercase tracking-[0.14em] mb-6">Legal</h4>
             <ul className="space-y-3 text-sm">
-              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Terms of Service</a></li>
-              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Privacy Policy</a></li>
-              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Cookie Policy</a></li>
-              <li><a href="/store" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Reseller Certificate</a></li>
+              <li><a href="/terms" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Terms of Service</a></li>
+              <li><a href="/privacy" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Privacy Policy</a></li>
+              <li><a href="/cookies" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Cookie Policy</a></li>
+              <li><a href="/reseller-certificate" className="text-[#B1B2B3]/70 hover:text-crimson transition-colors duration-300">Reseller Certificate</a></li>
             </ul>
           </div>
         </div>
