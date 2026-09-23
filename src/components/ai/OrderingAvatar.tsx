@@ -507,7 +507,8 @@ function OrderingConversation({ voiced, className }: OrderingConversationProps) 
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Tell me what you'd like to order…"
+          placeholder={streaming ? 'Waiting for a reply…' : "Tell me what you'd like to order…"}
+          disabled={streaming}
           className="flex-1 border-white/10 bg-white/[0.03] text-[#FEFEFE] placeholder:text-[#B1B2B3]/50 focus-visible:ring-crimson/40"
         />
         <Button

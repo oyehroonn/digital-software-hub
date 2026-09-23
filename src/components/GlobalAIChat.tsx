@@ -320,8 +320,9 @@ export default function GlobalAIChat() {
                   handleSend();
                 }
               }}
-              placeholder="Ask me anything..."
-              className="min-h-[60px] resize-none bg-white/[0.02] border-white/[0.06] text-[#FEFEFE] placeholder:text-[#B1B2B3]/50"
+              disabled={isLoading}
+              placeholder={isLoading ? 'Waiting for a reply…' : 'Ask me anything...'}
+              className="min-h-[60px] resize-none bg-white/[0.02] border-white/[0.06] text-[#FEFEFE] placeholder:text-[#B1B2B3]/50 disabled:cursor-not-allowed disabled:opacity-60"
             />
             <div className="flex items-center justify-between">
               <div className="flex flex-wrap gap-2">

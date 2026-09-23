@@ -163,6 +163,43 @@ function newMessage(role: Role, content: string): Message {
   return { id: `m_${Date.now().toString(36)}_${msgSeq}`, role, content };
 }
 
+// ── Minimal markdown rendering (bold + line breaks + simple lists) ───────────
+// The system prompt doesn't explicitly ask for markdown, but the model still
+// reaches for it sometimes (e.g. "**Subscription:**"). No markdown library is
+// used anywhere else in this codebase, so this is a tiny, dependency-free,
+// injection-safe renderer: it never uses dangerouslySetInnerHTML, it only
+// turns `**bold**` into <strong> and `- item` lines into bullets, and
+// everything else stays as plain React text nodes.
+
+/** Render a single line's inline `**bold**` spans as React nodes. */
+function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g).filter((p) => p.length > 0);
+  return parts.map((part, i) =>
+    part.startsWith('**') && part.endsWith('**') ? (
+      <strong key={`${keyPrefix}_${i}`} className="font-semibold">
+        {part.slice(2, -2)}
+      </strong>
+    ) : (
+      <span key={`${keyPrefix}_${i}`}>{part}</span>
+    ),
+  );
+}
+
+/** Render a full message body: line breaks preserved, `- ` lines bulleted. */
+function renderMessageContent(content: string): React.ReactNode {
+  const lines = content.split('\n');
+  return lines.map((line, i) => {
+    const bulletMatch = line.match(/^(\s*)[-*]\s+(?!\*)(.+)$/);
+    const lineText = bulletMatch ? bulletMatch[2] : line;
+    return (
+      <span key={i} className="block">
+        {bulletMatch && <span className="mr-1.5 text-muted-foreground">•</span>}
+        {lineText ? renderInline(lineText, `l${i}`) : ' '}
+      </span>
+    );
+  });
+}
+
 // ── Chat persistence (survives reloads / route changes; NOT a backend) ────────
 // The transcript lives in localStorage so a returning buyer keeps their thread.
 // Stale threads are dropped after CHAT_TTL_MS so we never resurface an ancient
@@ -506,7 +543,13 @@ function ConciergeWidget() {
                       : 'rounded-bl-sm bg-muted text-foreground',
                   )}
                 >
-                  {m.content || (
+                  {m.content ? (
+                    m.role === 'assistant' ? (
+                      renderMessageContent(m.content)
+                    ) : (
+                      m.content
+                    )
+                  ) : (
                     <span className="inline-flex items-center gap-1 text-muted-foreground">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" /> typing…
                     </span>
@@ -562,11 +605,14 @@ function ConciergeWidget() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
               rows={1}
-              placeholder="Ask about a license, seats, or a price…"
+              disabled={streaming}
+              placeholder={
+                streaming ? 'Waiting for a reply…' : 'Ask about a license, seats, or a price…'
+              }
               className={cn(
                 'max-h-28 min-h-[2.5rem] flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2',
                 'text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none',
-                'focus-visible:ring-2 focus-visible:ring-ring',
+                'focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60',
               )}
             />
             <Button

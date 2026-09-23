@@ -378,8 +378,9 @@ export default function ProductModal({ product }: ProductModalProps) {
                       handleSend();
                     }
                   }}
-                  placeholder="Ask about this product..."
-                  className="min-h-[60px] resize-none bg-white/[0.02] border-white/[0.06] text-[#FEFEFE] placeholder:text-[#B1B2B3]/50"
+                  disabled={isLoading}
+                  placeholder={isLoading ? 'Waiting for a reply…' : 'Ask about this product...'}
+                  className="min-h-[60px] resize-none bg-white/[0.02] border-white/[0.06] text-[#FEFEFE] placeholder:text-[#B1B2B3]/50 disabled:cursor-not-allowed disabled:opacity-60"
                 />
                 <Button
                   onClick={() => handleSend()}

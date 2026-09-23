@@ -28,7 +28,7 @@ import { Search, Sparkles, Loader2, ArrowRight, WifiOff, Tag } from 'lucide-reac
 
 import { cn } from '@/lib/utils';
 import AIFeature from '@/components/ai/AIFeature';
-import { searchProducts, aiSearch, type Product } from '@/lib/api';
+import { searchProducts, aiSearch, getProducts, type Product } from '@/lib/api';
 import { checkCodex } from '@/lib/health';
 import { chat } from '@/lib/llm';
 import { track, reportAiOutage } from '@/lib/stable/analytics';
@@ -156,6 +156,25 @@ function saleReason(price?: string, oldPrice?: string, category?: string): strin
 }
 
 /**
+ * Core term-overlap relevance score against a `name + category` haystack.
+ * Shared by the offline static ranker AND the live-search re-ranker below —
+ * a single, tested heuristic instead of two implementations drifting apart.
+ */
+function scoreHaystack(terms: string[], raw: string, haystack: string, tokens: Set<string>): number {
+  let score = 0;
+
+  // Whole-phrase substring is the strongest signal.
+  if (raw && haystack.includes(raw)) score += 12;
+
+  for (const term of terms) {
+    if (tokens.has(term)) score += 5; // exact token
+    else if (haystack.includes(term)) score += 2; // partial
+  }
+
+  return score;
+}
+
+/**
  * Rank the bundled catalogue against a natural-language query. Pure, fast,
  * dependency-free — this is what keeps search alive when every backend is down.
  */
@@ -165,15 +184,7 @@ function staticRank(query: string, limit = 6): SmartSearchResult[] {
   if (!raw) return [];
 
   const scored = STATIC_INDEX.map((doc) => {
-    let score = 0;
-
-    // Whole-phrase substring is the strongest signal.
-    if (doc.haystack.includes(raw)) score += 12;
-
-    for (const term of terms) {
-      if (doc.tokens.has(term)) score += 5; // exact token
-      else if (doc.haystack.includes(term)) score += 2; // partial
-    }
+    let score = scoreHaystack(terms, raw, doc.haystack, doc.tokens);
 
     // Nudge names over category-only matches.
     if (terms.some((t) => doc.product.name.toLowerCase().includes(t))) score += 2;
@@ -197,6 +208,22 @@ function staticRank(query: string, limit = 6): SmartSearchResult[] {
     reason: saleReason(doc.product.price, doc.product.oldPrice, doc.product.category),
     score,
   }));
+}
+
+/**
+ * Re-score an already-fetched live result against the query using the SAME
+ * heuristic as `staticRank` — see `liveSearch` for why this is necessary:
+ * the `/search` backend does naive full-text matching against long product
+ * descriptions, so a wordy, repetitive listing can easily outrank a short,
+ * genuinely relevant one. Re-scoring against just `name + category` (a much
+ * smaller, less frequency-inflated signal) gives a trustworthy local order.
+ */
+function scoreLiveResult(terms: string[], raw: string, result: SmartSearchResult): number {
+  const haystack = `${result.name} ${result.category}`.toLowerCase();
+  const tokens = new Set(tokenize(haystack));
+  let score = scoreHaystack(terms, raw, haystack, tokens);
+  if (terms.some((t) => result.name.toLowerCase().includes(t))) score += 2;
+  return score;
 }
 
 function staticSuggestions(query: string): string[] {
@@ -321,9 +348,33 @@ function mapProduct(p: Product): SmartSearchResult {
 
 /**
  * Live search: ask the VPS for both keyword results (`/search`) and the AI
- * intent parse (`/ai-search`), then fuse them — AI-identified products float
- * to the top. If the VPS blips mid-session we report the outage and fall
- * straight through to the static index so the shopper never hits a dead end.
+ * intent parse (`/ai-search`), then fuse them.
+ *
+ * ROOT-CAUSE FIX (civil-engineering products outranking photo/logo-editing
+ * software on natural-language queries): `/search` does naive full-text
+ * matching against long product descriptions. A wordy, repetitive listing
+ * (e.g. an Autodesk Civil 3D blurb that repeats the word "design" several
+ * times) can dominate its top results even when it has nothing to do with
+ * the query. `/ai-search` correctly infers the right brand/category (e.g.
+ * brand "Adobe", category "Adobe") for these queries, but its `productIds`
+ * are NOT trustworthy — verified against the live API, they are placeholder
+ * values (e.g. "SQL001", "A001", "101") that don't resolve to any real
+ * product (404s). The previous code only used `productIds` to *reorder*
+ * whatever `/search` happened to return, so when the correct category was
+ * entirely missing from those keyword results (as with Civil 3D dominating
+ * a photo/logo query), nothing could ever promote it — the genuinely
+ * relevant products never appeared as "Best matches", only as plain-text
+ * `suggestions` chips (from `/ai-search`'s `suggestions` field, which IS
+ * reliable).
+ *
+ * The fix: when the AI's inferred brand/category isn't already reflected in
+ * the keyword results, fetch the REAL matching products for that brand/
+ * category straight from the catalog (`/products?brand=&category=`, which
+ * verifiably returns correct results), merge them in, and re-rank the whole
+ * candidate pool with a local relevance score (shared with the offline
+ * fallback) plus a boost for matching the AI's brand/category. This is not
+ * a query-specific special case — it runs for every query and is driven
+ * entirely by whatever brand/category the AI backend infers.
  */
 const liveSearch: SearchFn = async (query, signal) => {
   const [kw, ai] = await Promise.allSettled([searchProducts(query), aiSearch(query)]);
@@ -334,24 +385,76 @@ const liveSearch: SearchFn = async (query, signal) => {
     return { results: staticRank(query), suggestions: staticSuggestions(query), mode: 'offline' };
   }
 
-  const products = kw.status === 'fulfilled' ? kw.value.products : [];
-  let results = products.map(mapProduct);
+  const byId = new Map<string, SmartSearchResult>();
+  const addResult = (r: SmartSearchResult) => {
+    if (!byId.has(String(r.id))) byId.set(String(r.id), r);
+  };
+  if (kw.status === 'fulfilled') kw.value.products.forEach((p) => addResult(mapProduct(p)));
 
   const suggestions = new Set<string>();
   if (kw.status === 'fulfilled') kw.value.suggestions?.forEach((s) => suggestions.add(s));
 
+  let aiBrand: string[] = [];
+  let aiCategory: string[] = [];
   if (ai.status === 'fulfilled') {
     ai.value.suggestions?.forEach((s) => suggestions.add(s));
-    // Reorder so AI-preferred product ids lead, preserving the rest.
-    const priority = new Map(ai.value.productIds.map((id, i) => [String(id), i]));
-    results = [...results].sort((a, b) => {
-      const ra = priority.has(String(a.id)) ? priority.get(String(a.id))! : Number.MAX_SAFE_INTEGER;
-      const rb = priority.has(String(b.id)) ? priority.get(String(b.id))! : Number.MAX_SAFE_INTEGER;
-      return ra - rb;
-    });
+    aiBrand = ai.value.filters?.brand ?? [];
+    aiCategory = ai.value.filters?.category ?? [];
+
+    const aiBrandLower = aiBrand.map((b) => b.toLowerCase());
+    const aiCategoryLower = aiCategory.map((c) => c.toLowerCase());
+    const haveAiMatch = [...byId.values()].some(
+      (r) =>
+        (r.brand && aiBrandLower.includes(r.brand.toLowerCase())) ||
+        aiCategoryLower.includes(r.category.toLowerCase()),
+    );
+
+    // The keyword results don't reflect what the AI thinks this query is
+    // about — pull the real products for that brand/category so they can
+    // actually compete for "Best matches" instead of being stuck as a
+    // suggestion chip. Best-effort: a failure here just means we fall back
+    // to whatever the keyword search already gave us.
+    if (!haveAiMatch && (aiBrand.length > 0 || aiCategory.length > 0)) {
+      try {
+        const enriched = await getProducts({ brand: aiBrand, category: aiCategory, limit: 6 });
+        if (signal.aborted) throw new DOMException('aborted', 'AbortError');
+        enriched.products.forEach((p) => addResult(mapProduct(p)));
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') throw err;
+        // codex/VPS is unstable — degrade silently, keyword results still stand.
+      }
+    }
   }
 
-  // Belt-and-braces: if the live keyword search returned nothing, still help
+  if (signal.aborted) throw new DOMException('aborted', 'AbortError');
+
+  // Re-rank the merged candidate pool locally instead of trusting the
+  // keyword backend's order, with a boost for matching the AI's inferred
+  // brand/category — this is what actually fixes the ranking, not just the
+  // reorder-by-productIds pass that used to be a no-op in practice.
+  const terms = tokenize(query);
+  const raw = query.trim().toLowerCase();
+  const aiBrandLower = aiBrand.map((b) => b.toLowerCase());
+  const aiCategoryLower = aiCategory.map((c) => c.toLowerCase());
+
+  const scored = [...byId.values()]
+    .map((r) => {
+      let score = scoreLiveResult(terms, raw, r);
+      if (r.brand && aiBrandLower.includes(r.brand.toLowerCase())) score += 6;
+      if (aiCategoryLower.includes(r.category.toLowerCase())) score += 4;
+      return { r, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  // Once at least one candidate has a genuine relevance signal, drop the
+  // zero-score noise (e.g. unrelated keyword-search hits) instead of padding
+  // "Best matches" out with them — a single strong match beats six
+  // irrelevant ones. If NOTHING scored (a genuinely ambiguous query), keep
+  // the full set so the shopper still sees something.
+  const hasSignal = scored.length > 0 && scored[0].score > 0;
+  const results = (hasSignal ? scored.filter((s) => s.score > 0) : scored).map(({ r }) => r);
+
+  // Belt-and-braces: if the live search returned nothing at all, still help
   // the shopper with the bundled index rather than an empty box.
   if (results.length === 0) {
     return {

@@ -833,9 +833,11 @@ function AdvisorStage() {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about licensing, compliance, or an edition…"
+              placeholder={
+                streaming ? 'Waiting for a reply…' : 'Ask about licensing, compliance, or an edition…'
+              }
               className="pl-9"
-              disabled={connecting}
+              disabled={connecting || streaming}
             />
           </div>
           <Button type="submit" size="icon" aria-label="Ask" disabled={streaming || input.trim().length === 0}>
