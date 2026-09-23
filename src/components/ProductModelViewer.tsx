@@ -8,6 +8,11 @@ interface ProductModelViewerProps {
   glbSrc: string;
   fallbackIcon: React.ReactNode;
   className?: string;
+  // Skip the shared concurrency queue and start loading immediately. Use
+  // for the single foreground viewer the user is actually looking at (the
+  // product-detail modal) — never for grid/list thumbnails, or it defeats
+  // the point of the queue.
+  priority?: boolean;
 }
 
 const IDLE_SPEED = 0;
@@ -55,7 +60,18 @@ const MAX_CONCURRENT_LOADS = 3;
 let activeLoadSlots = 0;
 const slotWaiters: Array<() => void> = [];
 
-function acquireLoadSlot(onGranted: () => void): () => void {
+// H8: the product-detail modal reuses this same viewer, but it used to queue
+// for a slot behind whatever's-off-screen the background product grid was
+// still loading — measured with Playwright against the live site: the
+// modal's own GLB would finish downloading in well under a second, yet the
+// spinner sat there for 7+ seconds because <model-viewer> never even got
+// mounted until a slot freed up, stuck in the same FIFO queue as ~20
+// concurrently-loading grid thumbnails the user isn't looking at (the grid
+// is behind the modal's backdrop). A `priority` request (the modal is a
+// singleton — at most one is ever open) skips the queue and gets a slot
+// immediately instead of waiting its turn, so the foreground view the user
+// actually opened isn't held hostage by background thumbnail loads.
+function acquireLoadSlot(onGranted: () => void, priority = false): () => void {
   let granted = false;
   let released = false;
   const grant = () => {
@@ -64,7 +80,7 @@ function acquireLoadSlot(onGranted: () => void): () => void {
     activeLoadSlots++;
     onGranted();
   };
-  if (activeLoadSlots < MAX_CONCURRENT_LOADS) {
+  if (priority || activeLoadSlots < MAX_CONCURRENT_LOADS) {
     grant();
   } else {
     slotWaiters.push(grant);
@@ -97,6 +113,7 @@ const ProductModelViewer = ({
   glbSrc,
   fallbackIcon,
   className = "",
+  priority = false,
 }: ProductModelViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const modelRef = useRef<HTMLElement | null>(null);
@@ -328,14 +345,14 @@ const ProductModelViewer = ({
     let cancelled = false;
     const release = acquireLoadSlot(() => {
       if (!cancelled) setHasSlot(true);
-    });
+    }, priority);
     releaseSlotRef.current = release;
     return () => {
       cancelled = true;
       release();
       if (releaseSlotRef.current === release) releaseSlotRef.current = null;
     };
-  }, [isVisible, mvReady, modelAttempt]);
+  }, [isVisible, mvReady, modelAttempt, priority]);
 
   // Free the slot as soon as there's a result so the next queued card can
   // start — the already-mounted viewer keeps rendering regardless.

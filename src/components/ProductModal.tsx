@@ -192,6 +192,7 @@ export default function ProductModal({ product }: ProductModalProps) {
               {product.link ? (
                 <ProductModelViewer
                   glbSrc={product.link}
+                  priority
                   fallbackIcon={
                     <div className="w-24 h-24 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
                       <span className="text-3xl font-serif text-[#FEFEFE]/30">

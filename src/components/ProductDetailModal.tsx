@@ -384,6 +384,13 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
             ) : detail.link ? (
               <ProductModelViewer
                 glbSrc={detail.link}
+                // This is the one viewer on the page the user is actually
+                // looking at right now — don't make it queue behind the
+                // background product grid's thumbnail loads (see the
+                // `priority` bypass in ProductModelViewer: without it this
+                // spinner measured 7+ seconds even though the GLB itself
+                // downloads in well under a second).
+                priority
                 fallbackIcon={
                   <div className="flex h-24 w-24 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04]">
                     <span className="font-serif text-3xl text-[#FEFEFE]/30">

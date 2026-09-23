@@ -44,29 +44,40 @@ const categoryBrands: Record<string, { name: string; desc: string; icon: typeof 
   ],
 };
 
+// Nav-dropdown "Featured" card art, per category. These used to point at 5 hardcoded
+// static files under public/models/*_FIXED.glb — a separate system from the real catalogue
+// that nobody kept in sync: every one of those files turned out to have the wrong box art
+// baked in (e.g. the "Microsoft 365 Business Premium" entry rendered a 3ds Max 2026 box),
+// and none had the current slim (0.12-deep) box geometry. Instead of maintaining a second,
+// driftable asset system, point straight at real, verified-matching catalogue products
+// served live from the DSM 3D API (same source PopularProducts/dsmChoices use), so this
+// card automatically gets whatever geometry/art the catalogue has.
+const CATALOG_MODEL_API = "https://dsm-api.techrealm.ai/models";
+const catalogModelGlb = (id: number, folder: string) => `${CATALOG_MODEL_API}/${id}/${folder}/model.glb`;
+
 const categoryFeaturedModel: Record<string, { glb: string; title: string; desc: string }> = {
   "Operating Systems": {
-    glb: "/models/Windows_11_Enterprise_FIXED.glb",
+    glb: catalogModelGlb(99033, "99033_Windows_11_Enterprise_front"),
     title: "Windows 11 Enterprise",
     desc: "The most secure Windows for business and enterprise.",
   },
   "Productivity & Office": {
-    glb: "/models/Microsoft_365_Business_Premium_FIXED.glb",
+    glb: catalogModelGlb(99083, "99083_Microsoft_365_Business_Premium_Front"),
     title: "Microsoft 365 Business Premium",
     desc: "Complete productivity suite for modern teams.",
   },
   "Design & Creativity": {
-    glb: "/models/Adobe_Creative_Cloud_FIXED.glb",
+    glb: catalogModelGlb(8358, "8358_Adobe_Creative_Cloud_All_Apps_1_Year_Subscription"),
     title: "Adobe Creative Cloud",
     desc: "Industry-leading creative tools for designers.",
   },
   "CAD & Engineering": {
-    glb: "/models/AutoCAD_2026_FIXED.glb",
+    glb: catalogModelGlb(99120, "99120_AutoCAD_2026"),
     title: "AutoCAD 2026",
     desc: "Industry-standard CAD software for professionals.",
   },
   "Security & Utility": {
-    glb: "/models/SQL_Server_2025_Standard_FIXED.glb",
+    glb: catalogModelGlb(99173, "99173_SQL_Server_2025_Standard_front"),
     title: "SQL Server 2025 Standard",
     desc: "Enterprise database management and security.",
   },
