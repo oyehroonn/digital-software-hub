@@ -265,7 +265,15 @@ export function outagesByService(outages: OutageEvent[]): OutageBucket[] {
  * site never throws, it just under-counts a stage rather than breaking the UI.
  * ------------------------------------------------------------------ */
 
-const PRODUCT_VIEW_RE = /product_?view|view_?product|pdp|product_?detail|view_?item/;
+// NOTE: this SPA has no dedicated product-detail *page* route — products
+// open in a modal (see src/contexts/ProductModalContext.tsx), which already
+// fires a `product_modal_open` telemetry event carrying the real productId
+// on every open. That event just never matched this regex (it doesn't
+// contain "view"), so every product's view count silently stayed 0 no
+// matter how much real traffic it got. The other alternatives below are
+// kept for forward-compat in case a real product-page route + view event is
+// ever added.
+const PRODUCT_VIEW_RE = /product_?view|view_?product|pdp|product_?detail|view_?item|product_?modal_?open/;
 const CLICK_RE = /click|tap|add_?to_?cart|cart_?add|select_?item/;
 
 export interface ProductStat {

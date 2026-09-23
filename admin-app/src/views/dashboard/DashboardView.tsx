@@ -147,8 +147,19 @@ export function DashboardView({ ctx }: { ctx: NavCtx }) {
     const rateToday = sessToday.size ? (ordersToday / sessToday.size) * 100 : 0;
     const rateYest = sessYest.size ? (ordersYest / sessYest.size) * 100 : 0;
 
-    const delta = (a: number, b: number): number | null =>
-      b === 0 ? (a > 0 ? null : 0) : ((a - b) / b) * 100;
+    // Percent change is only meaningful when the prior-period baseline is a
+    // real number — a near-zero baseline (e.g. yesterday had one small test
+    // order) turns any absolute swing into a nonsense four-digit percentage
+    // (a single AED 363k order the day after an AED 11,911 baseline reads as
+    // "+3151%"). Cap the magnitude and fall back to "—" (same as the b===0
+    // case) above the cap — the raw KPI value is still shown and is honest;
+    // a huge/meaningless ratio next to it is not.
+    const MAX_ABS_DELTA_PCT = 500;
+    const delta = (a: number, b: number): number | null => {
+      if (b === 0) return a > 0 ? null : 0;
+      const p = ((a - b) / b) * 100;
+      return Math.abs(p) > MAX_ABS_DELTA_PCT ? null : p;
+    };
 
     // 14-day sales trend.
     const byDay = new Map<string, number>();

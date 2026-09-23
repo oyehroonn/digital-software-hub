@@ -64,13 +64,78 @@ function isOwnStore(storeName: unknown): boolean {
   return s === "" || s.includes(OWN_STORE);
 }
 
+// ── Data-quality filters ────────────────────────────────────────────────────
+//
+// The live checkout / Instant Quote / Savings Calculator forms are real,
+// unauthenticated endpoints — anyone exercising those features (a Playwright
+// suite, an e2e smoke test, or the site owner manually clicking through a
+// product to verify the redirect flow) posts a REAL row into orders.csv,
+// indistinguishable at the transport level from a genuine customer. Admin
+// dashboards must not report those as sales. Detected by the reserved/
+// synthetic email domains and name prefixes the QA tooling actually uses
+// (verified against orders.csv 2026-09-23: every current row matches one of
+// these), plus the owner's own account.
+//
+// This is a stopgap pattern-match over historical rows, not a durable fix —
+// the durable fix is tagging QA submissions with an explicit `source: test`
+// field at capture time (Checkout.tsx / InstantQuote.tsx / the Savings
+// Calculator) so this filter can key off that instead of guessing from
+// email shape. Nothing here mutates orders.csv itself — rows are excluded
+// at read-time only, so no historical data is destroyed.
+const TEST_EMAIL_DOMAINS = new Set(["example.com", "example.org", "example.net", "dsm-test.example"]);
+const TEST_EMAIL_LOCAL_RE = /^(qa\+|e2e[-_]|playwright)/i;
+const TEST_NAME_RE = /^(playwright|e2e[-_])/i;
+// The store owner's own account — used only to manually verify the licensing
+// redirect flow end to end (see dsm-analytics-csv-api notes), never a real
+// purchase. Hardcoded because, unlike QA tooling, it doesn't use a
+// recognizable synthetic email shape.
+const OWNER_TEST_EMAILS = new Set(["ajmalwaleed107@gmail.com"]);
+
+function emailDomain(email: string): string {
+  const at = email.lastIndexOf("@");
+  return at === -1 ? "" : email.slice(at + 1).trim().toLowerCase();
+}
+
+/** True when an order row is a QA/test submission, not a real customer. */
+export function isTestOrder(o: Pick<Order, "email" | "customerName">): boolean {
+  const email = String(o.email ?? "").trim().toLowerCase();
+  const name = String(o.customerName ?? "").trim();
+  if (!email && !name) return false;
+  if (OWNER_TEST_EMAILS.has(email)) return true;
+  const domain = emailDomain(email);
+  if (domain && TEST_EMAIL_DOMAINS.has(domain)) return true;
+  const local = email.split("@")[0] ?? "";
+  if (local && TEST_EMAIL_LOCAL_RE.test(local)) return true;
+  if (name && TEST_NAME_RE.test(name)) return true;
+  return false;
+}
+
+/**
+ * An Instant Quote ESTIMATE row — posted by the "unmatched product" quote
+ * flow (see src/pages/Checkout.tsx / components/ai/InstantQuote.tsx on the
+ * main site) alongside a sibling `lead-quote` lead row for the same
+ * submission. It carries an *estimated* price ("Instant Quote — Your Quote
+ * for …") but no purchase ever happened, so it must not be counted as
+ * revenue — doing so both double-books the estimate against its own lead
+ * row and, because it can share a productId with a real matched product,
+ * blends an unconfirmed estimate into that product's real revenue/name.
+ */
+export function isQuoteEstimate(o: Pick<Order, "productName" | "notes">): boolean {
+  return (
+    /^instant quote\s*—/i.test(String(o.productName ?? "").trim()) ||
+    /\[checkout-unmatched-product\]/.test(String(o.notes ?? ""))
+  );
+}
+
 export async function fetchOrders(cfg: AppConfig, limit = 2000): Promise<Order[]> {
   // Generous timeout: the Apps Script read follows a 302 → googleusercontent
   // redirect and serialises up to `limit` rows, which can take 10-20s.
   const rows = await fetchSheetRows(cfg, cfg.orders_sheet_id, { timeoutMs: 25000 });
   const mapped = rows
     .map((r) => normalizeOrder(r as unknown as Order))
-    .filter((o) => isOwnStore(o.storeName));
+    .filter((o) => isOwnStore(o.storeName))
+    .filter((o) => !isTestOrder(o))
+    .filter((o) => !isQuoteEstimate(o));
   return limit && mapped.length > limit ? mapped.slice(-limit) : mapped;
 }
 
@@ -143,6 +208,25 @@ function normalizeEvent(raw: TelemetryEvent): TelemetryEvent {
   return e;
 }
 
+/**
+ * A `price` string sometimes carries its own currency marker (e.g. an
+ * Instant Quote estimate formatted client-side as `"AED 1,999.00"`) that can
+ * disagree with a separately-supplied `currency` column — seen in the wild
+ * as an AED-formatted quote tagged `currency: "USD"`, which made the admin
+ * dashboard render it with a `$` sign on an AED amount. The marker in the
+ * price string is what was actually shown to the customer, so prefer it.
+ */
+const CURRENCY_PREFIX_RE = /^\s*(AED|USD|EUR|GBP|SAR|PKR)\b/i;
+function currencyFromPriceString(price: unknown): string | undefined {
+  if (typeof price !== "string") return undefined;
+  const m = price.match(CURRENCY_PREFIX_RE);
+  if (m) return m[1].toUpperCase();
+  if (/^\s*\$/.test(price)) return "USD";
+  if (/^\s*£/.test(price)) return "GBP";
+  if (/^\s*€/.test(price)) return "EUR";
+  return undefined;
+}
+
 /** Map snake_case Orders columns onto the camelCase Order shape (leaves camelCase intact). */
 function normalizeOrder(raw: Order): Order {
   const bag = raw as Record<string, unknown>;
@@ -155,5 +239,6 @@ function normalizeOrder(raw: Order): Order {
   o.postalCode = (pick(bag, "postalCode", "postal_code") as string) ?? o.postalCode;
   o.productId = (pick(bag, "productId", "product_id") as string) ?? o.productId;
   o.productName = (pick(bag, "productName", "product_name") as string) ?? o.productName;
+  o.currency = currencyFromPriceString(o.price) ?? o.currency;
   return o;
 }
