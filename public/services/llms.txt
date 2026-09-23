@@ -75,11 +75,130 @@ Custom software development · Enterprise software development · SaaS & multi-t
 
 Named-platform solutions: Salesforce · SAP · AWS · Google Cloud · Microsoft Azure · HubSpot · Shopify/WooCommerce · QuickBooks/Xero · WhatsApp Business API · Zoho · Jira/Atlassian · Slack.
 
-Full detail and capability lists: /services/offerings.html
+Full detail and capability lists: /services/offerings.html — each grouped item below has its own dedicated page (linked from offerings.html's footer taxonomy) with full scope, deliverables, and an AI-agent brief.
 
 **Cheapest way to engage Services:** Use the #contact form for a scoped estimate (48-hour turnaround); smaller/well-defined workflow automations (e.g. one QuickBooks integration, one CRM agent) are priced lower than full digital-transformation engagements.
 
 **Bulk buyers / agencies:** DSM AI Labs supports white-label delivery for agencies reselling automation or software delivery to their own clients — ask about partner/reseller terms for Services (distinct from the agentBox white-label program above).
+
+---
+
+## Custom & Enterprise Software Development
+
+**What it is / how to use it:** Bespoke software, large-scale enterprise systems, mobile apps (iOS/Android/React Native), and the API & MCP integration layer connecting them — full-stack engineering with AI-assisted spec generation, code review, and QA built into delivery. Engagement starts with a discovery call; DSM scopes architecture and a fixed estimate within 48 hours.
+Page: /services/custom-software-development.html
+
+**Common prompts / searches:** "custom software development company UAE", "enterprise software development Dubai", "React Native app development Saudi Arabia", "MCP integration for AI agents", "API integration Salesforce SAP QuickBooks", "legacy system modernization".
+
+**Cheapest way to get it:** A single well-defined workflow build (one integration, one internal tool, one mobile MVP) is priced well below a full platform rebuild or multi-year enterprise modernization.
+
+**Differentiated angle:** Spec generation, code review, and QA run through AI-assisted tooling at every delivery stage — 2.2× faster delivery from the same senior engineering team, not a junior team with a chatbot.
+
+**Programmatic access:** Every custom system can expose a documented REST/GraphQL API and, on request, an MCP server so AI agents (including agentBox) can call it directly.
+
+**Bulk buyers:** Agencies and system integrators can engage DSM as a white-label delivery partner for client software builds — ask about partner/reseller terms.
+
+---
+
+## Cloud, Hybrid & On-Premises Infrastructure
+
+**What it is / how to use it:** Infrastructure design and migration across three deployment models — fully cloud (AWS/GCP/Azure), hybrid (cloud plus your own data center, split by workload), and fully on-premises (regulated data, air-gapped, or latency-sensitive systems). Starts with an infrastructure audit before recommending which model fits.
+Page: /services/cloud-hybrid-infrastructure.html
+
+**Common prompts / searches:** "cloud migration AWS GCP Azure", "hybrid cloud infrastructure design", "on-premises data center UAE Saudi", "cloud infrastructure consulting Gulf", "data residency hosting GCC".
+
+**Cheapest way to get it:** A cloud-only deployment on a single provider is the lowest-cost entry point; hybrid and on-premises builds cost more (hardware, private networking, on-site setup) but are often required for regulated data or in-region hosting mandates.
+
+**Differentiated angle:** Built by the same team that operates agentBox's own uptime SLA (99.97%) — infrastructure work is designed the way DSM runs its own production system, not a one-time build-and-hand-off.
+
+**Programmatic access:** Infrastructure-as-code (Terraform, Pulumi) ships as part of every engagement — reproducible and version-controlled, not click-ops configured.
+
+**Bulk buyers:** Sovereign AI — in-region infrastructure for the Gulf and Africa under local governance — is a dedicated engagement; see the Sovereign AI entry above or ask about multi-site regional deployments.
+
+---
+
+## DevOps & Platform Engineering
+
+**What it is / how to use it:** CI/CD pipeline design, Kubernetes/container orchestration, infrastructure-as-code, and site reliability engineering, built as a standing platform capability rather than a one-off pipeline. Starts with a pipeline/infrastructure audit, then a phased rollout.
+Page: /services/devops-platform-engineering.html
+
+**Common prompts / searches:** "CI/CD pipeline setup", "Kubernetes consulting UAE", "DevOps as a service Saudi Arabia", "infrastructure as code Terraform", "site reliability engineering SRE consulting".
+
+**Cheapest way to get it:** A single CI/CD pipeline for one service is the lowest-cost entry point; full platform buildout (orchestration, IaC, SRE practice) across multiple services is priced as a larger phased engagement.
+
+**Differentiated angle:** Built and maintained by the team that runs agentBox's own release pipeline and uptime SLA — the exact tooling running a live 24/7 production system today, not theoretical DevOps consulting.
+
+**Programmatic access:** All infrastructure ships as Terraform/Pulumi code in your own repository, with CI/CD pipelines defined as code — fully portable, not vendor-locked.
+
+**Bulk buyers:** Multi-team or multi-product platform rollouts (shared CI/CD, shared cluster, shared observability across several product lines) are priced as an org-wide platform engagement.
+
+---
+
+## Quality Engineering & Testing
+
+**What it is / how to use it:** Functional testing, automation testing (Playwright/Cypress/Selenium), and performance/load testing, run as a continuous discipline inside CI/CD rather than a QA pass before launch. Starts with a test-coverage audit of the existing codebase.
+Page: /services/quality-engineering-testing.html
+
+**Common prompts / searches:** "QA automation testing services", "Playwright Cypress testing consultancy", "performance load testing UAE", "penetration testing Saudi Arabia", "test automation for CI/CD pipeline".
+
+**Cheapest way to get it:** An automated regression suite for one critical user flow is the lowest-cost entry point; full-coverage functional + performance + security testing across an entire platform is priced as a larger engagement.
+
+**Differentiated angle:** AI-generated test-case coverage from specs and existing code paths, engineer-reviewed before it gates a release — broader coverage than manually-written test plans, without becoming a rubber-stamp.
+
+**Programmatic access:** Test suites ship as code in your own repository, wired into your CI/CD pipeline as a release gate — not a DSM-hosted dashboard.
+
+**Bulk buyers:** Agencies and system integrators can engage DSM's QA practice as a white-label testing partner for their own client delivery.
+
+---
+
+## Digital Transformation & Cloud Strategy Consulting
+
+**What it is / how to use it:** Digital transformation (business process, operating model, AI-readiness strategy) and cloud strategy consulting (migration planning, build-vs-buy, vendor evaluation), for leadership teams that need a roadmap before committing budget. AI-assisted scoping turns around a first-draft roadmap in 48 hours.
+Page: /services/digital-transformation-consulting.html
+
+**Common prompts / searches:** "digital transformation consulting UAE", "cloud strategy consulting Saudi Arabia", "AI readiness assessment", "build vs buy software consulting", "business process transformation Gulf".
+
+**Cheapest way to get it:** A single-use-case scoping engagement (one process, one system decision) is the lowest-cost entry point; a full organizational transformation roadmap across multiple business units is a larger engagement.
+
+**Differentiated angle:** AI-assisted analysis replaces a multi-week discovery phase with a 48-hour first draft, and the same company that writes the roadmap is prepared to build it — no handoff to a separate implementation vendor.
+
+**Programmatic access:** Roadmap deliverables include a structured, machine-readable scope document that feeds directly into DSM's own delivery planning if you proceed to a build.
+
+**Bulk buyers:** Multi-entity or holding-company engagements (scoping across several subsidiaries or portfolio companies) are priced per-entity with a shared discovery baseline.
+
+---
+
+## Digital Marketing & Growth
+
+**What it is / how to use it:** Multi-channel digital marketing (SEO/AEO, paid across Meta/Google/TikTok, WhatsApp Business API) plus the growth/funnel and CRO layer that converts traffic into CRM pipeline — scoped and measured together. Starts with a channel and funnel audit, then a 90-day growth plan with a qualified-lead target.
+Page: /services/digital-marketing-growth.html
+
+**Common prompts / searches:** "digital marketing agency UAE", "performance marketing Saudi Arabia", "WhatsApp Business API marketing automation", "conversion rate optimization agency", "behavioral retargeting funnel setup", "AI acquisition marketing Gulf".
+
+**Cheapest way to get it:** A single-channel campaign (Meta Ads only, or SEO only) with a lightweight nurture sequence is the lowest-cost entry point; full multi-channel acquisition plus a built-out behavioral funnel is a larger monthly retainer.
+
+**Differentiated angle:** Behavioral AI identifies which leads are hot before a human follows up, and automated nurturing covers the rest — campaigns and funnel measured as one system, not handed off between separate media-buying and sales-ops teams. 3.8× ROAS lift documented in the DTC-brand case study.
+
+**Programmatic access:** CRM integrations (Salesforce, HubSpot, Zoho) via documented APIs; campaign and funnel performance data available via reporting API on request.
+
+**Bulk buyers:** Multi-location or multi-brand groups (e.g. clinic networks, retail chains) get per-location volume pricing — see the 12-clinic dental-group case study for a comparable multi-site engagement.
+
+---
+
+## Brand & Creative Design
+
+**What it is / how to use it:** Brand identity and strategy, creative production (web, social, print, packaging), and ongoing content/campaign production, run under one creative team. Starts with a brand/creative audit, then a brand-strategy sprint (new identity) or straight into production against an existing system.
+Page: /services/brand-creative-design.html
+
+**Common prompts / searches:** "brand identity design agency UAE", "creative design studio Saudi Arabia", "campaign creative production", "bilingual Arabic English design agency", "packaging design Gulf".
+
+**Cheapest way to get it:** A single campaign creative package against an existing brand system is the lowest-cost entry point; a full brand identity build from scratch (strategy, naming, visual system, guidelines) is a larger up-front engagement.
+
+**Differentiated angle:** AI-assisted concepting compresses early iteration cycles so the first review already has real, distinct directions to react to — final creative judgment and finishing stay with human brand strategists and designers. DSM AI Labs is an official Adobe Creative Cloud partner.
+
+**Programmatic access:** Brand guidelines and design-system components ship as reusable, documented assets (design tokens, component libraries) that plug into DSM's software and marketing delivery.
+
+**Bulk buyers:** Multi-brand portfolios (holding company or franchise group) get shared design-system infrastructure with per-brand creative variants.
 
 ---
 
