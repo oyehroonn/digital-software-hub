@@ -35,6 +35,7 @@ import {
 import type { Product } from '@/lib/api';
 import { getProductById } from '@/lib/api';
 import { VPS_BASE } from '@/lib/health';
+import { hasWooMatch } from '@/lib/legacyStore';
 import { reportAiOutage, track } from '@/lib/stable/analytics';
 import {
   displayPrice,
@@ -177,6 +178,27 @@ function needsQuote(p: ProductLike): boolean {
   return !hasNumber;
 }
 
+/**
+ * True when Buy Now / Add to Cart is safe to offer: a real price AND a
+ * confident WooCommerce checkout match (`wooProductMap.json`, via
+ * `hasWooMatch`). Having a price does NOT by itself mean a real checkout
+ * exists — the live pricing API and the generated Woo product map are two
+ * independently-built systems that are never guaranteed to agree (e.g. a
+ * product can get a price filled in on the pricing side with no matching
+ * entry in wooProductMap.json). wooProductMap.json is the source of truth
+ * for whether a purchase can actually complete, so it gates the CTA here
+ * too, not just the checkout page.
+ *
+ * Evaluated on the CARD-SUPPLIED `product` prop rather than the
+ * async-enriched `detail` state, and `hasWooMatch` reads a static bundled
+ * JSON import — both are available synchronously on the very first render,
+ * so this never has a "wrong guess, then flip" moment: the CTA is correct
+ * from the first paint and doesn't change again once the modal is open.
+ */
+function canBuyNow(p: ProductLike): boolean {
+  return !needsQuote(p) && hasWooMatch(p);
+}
+
 // ── External-assistant deep links ─────────────────────────────────────────────
 function deepLinks(p: ProductLike) {
   const prompt = `Describe this software product and who it's for: ${p.name} — ${shortBlurb(p)}`;
@@ -210,7 +232,10 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
   const links = deepLinks(detail);
   const image = productImage(detail);
   const outOfStock = isOutOfStock(detail);
-  const quoteOnly = needsQuote(detail);
+  // Decided from the original card-supplied `product`, not the enriched
+  // `detail` state — see `canBuyNow` for why: it keeps this synchronous and
+  // stable across the enrichment re-render instead of a "guess, then flip".
+  const quoteOnly = !canBuyNow(product);
 
   // ── Purchase actions ────────────────────────────────────────────────────────
   const pushToCart = useCallback(() => {
