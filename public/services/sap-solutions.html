@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5SFDF8VY5B"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-5SFDF8VY5B');
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAP Solutions | DSM AI Labs</title>
+  <meta name="description" content="SAP implementation, integration, and modernization — connecting SAP to the rest of your stack without a multi-year monolithic rollout.">
+  <link rel="canonical" href="sap-solutions.html">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#fafafa; --text:#09090b; --line:#18181b; --muted:#71717a; --dsm-red:#c0504d; --dsm-yellow:#e5b13a; --dsm-blue:#4f81bd; }
+    *,*::before,*::after { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); margin:0; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+    .font-mono { font-family:'JetBrains Mono',monospace; }
+    .sketch-grid { position:fixed; inset:0; background-image:linear-gradient(rgba(0,0,0,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.028) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+    .wire-panel { background:rgba(255,255,255,.88); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:1.5rem; box-shadow:8px 8px 0 rgba(0,0,0,.03); transition:all .4s ease; }
+    .wire-panel:hover { box-shadow:14px 14px 0 rgba(0,0,0,.05); transform:translate(-2px,-2px); }
+    .pill-label { border:1px solid var(--line); border-radius:9999px; padding:.25rem .75rem; font-size:.75rem; text-transform:uppercase; letter-spacing:.1em; background:white; display:inline-flex; align-items:center; gap:.5rem; font-family:'JetBrains Mono',monospace; }
+    .reveal { opacity:0; transform:translateY(28px); }
+    #svc-progress { position:fixed; top:0; left:0; width:2px; height:0; z-index:50; background:linear-gradient(180deg,var(--dsm-red) 0%,var(--dsm-yellow) 50%,var(--dsm-blue) 100%); opacity:.75; }
+    .off-cap-item { display:flex; align-items:center; gap:.5rem; font-family:'JetBrains Mono',monospace; font-size:11px; color:#52525b; padding:.35rem 0; border-bottom:1px dashed rgba(24,24,27,.08); }
+    .off-cap-item:last-child { border-bottom:none; }
+    .off-cap-dot { width:5px; height:5px; border-radius:50%; background:var(--line); flex-shrink:0; }
+    .off-cta-btn { display:inline-flex; align-items:center; gap:.4rem; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; text-decoration:none; color:var(--line); border:1px solid var(--line); border-radius:4px; padding:.55rem .85rem; background:#fff; transition:all .3s ease; }
+    .off-cta-btn:hover { background:var(--line); color:white; }
+    .off-cta-btn-primary { background:var(--line); color:white; }
+    .off-cta-btn-primary:hover { background:white; color:var(--line); }
+    .svc-section { position:relative; overflow:hidden; }
+    .svc-section::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:linear-gradient(180deg,var(--dsm-blue),var(--dsm-yellow)); border-radius:0 2px 2px 0; }
+    .svc-section--r::before { background:linear-gradient(180deg,var(--dsm-red),var(--dsm-yellow)); }
+    .industry-pill { border:1px solid rgba(24,24,27,.15); border-radius:9999px; padding:.3rem .7rem; font-size:10px; font-family:'JetBrains Mono',monospace; letter-spacing:.08em; text-transform:uppercase; color:#52525b; background:white; transition:all .3s; }
+    .industry-pill:hover { border-color:var(--line); color:var(--text); }
+    .cred-strip { border-top:1px dashed rgba(24,24,27,.15); border-bottom:1px dashed rgba(24,24,27,.15); }
+    .ai-brief summary { cursor:pointer; list-style:none; }
+    .ai-brief summary::-webkit-details-marker { display:none; }
+    .ai-brief[open] summary .ai-brief-chevron { transform:rotate(90deg); }
+    .ai-brief-chevron { transition:transform .25s ease; display:inline-block; }
+    .ai-brief-grid dt { font-family:'JetBrains Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.15em; color:#a1a1aa; margin-top:1rem; }
+    .ai-brief-grid dt:first-child { margin-top:0; }
+    .ai-brief-grid dd { font-size:12.5px; color:#3f3f46; font-weight:300; line-height:1.6; margin:.25rem 0 0; }
+    .svc-card { border:1px solid rgba(24,24,27,.14); border-radius:1.1rem; background:rgba(255,255,255,.7); transition:border-color .3s ease, transform .3s ease, box-shadow .3s ease; }
+    .svc-card:hover { border-color:var(--line); transform:translateY(-2px); box-shadow:6px 8px 0 rgba(0,0,0,.035); }
+    .svc-num { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.2em; color:#a1a1aa; text-transform:uppercase; }
+    @media (prefers-reduced-motion:reduce) { .reveal { opacity:1; transform:none; } }
+</style>
+</head>
+<body class="relative z-10">
+  <div class="sketch-grid" aria-hidden="true"></div>
+  <div id="svc-progress" aria-hidden="true"></div>
+
+  <header class="fixed top-0 left-0 right-0 z-40 px-4 md:px-10 py-4 flex justify-between items-center pointer-events-none bg-[#fafafa]/85 backdrop-blur-md border-b border-zinc-200/80">
+    <a href="offerings.html" class="pointer-events-auto pill-label text-[10px] tracking-[.15em] hover:bg-zinc-900 hover:text-white transition-colors duration-300">
+      <i data-lucide="arrow-left" class="w-3 h-3" stroke-width="1.5"></i> Offerings
+    </a>
+    <a href="dsmAIFinal.html" class="pointer-events-auto" aria-label="DSM Home">
+      <img src="assets/dsm-logo.png" alt="DSM" class="h-6 md:h-7 w-auto object-contain opacity-90" width="180" height="48"/>
+    </a>
+    <span class="pointer-events-auto font-mono text-[8px] tracking-[.3em] text-zinc-400 uppercase hidden sm:block">SOLUTIONS</span>
+  </header>
+
+  <main class="relative z-10 pt-28 pb-16">
+
+    <!-- Hero -->
+    <section class="px-6 md:px-12 pb-14 md:pb-16 max-w-6xl mx-auto">
+      <div class="reveal">
+        <div class="pill-label mb-6"><i data-lucide="boxes" class="w-3.5 h-3.5" stroke-width="1.5"></i> DSM AI Labs · Solutions · SAP</div>
+        <h1 class="text-4xl sm:text-5xl md:text-7xl font-medium tracking-tight text-zinc-900 leading-[1.02] mb-6">SAP integrated with the rest of your stack, not an isolated island.</h1>
+        <p class="text-lg md:text-xl text-zinc-500 font-light max-w-2xl leading-relaxed">SAP integration and implementation support — connecting SAP modules (FI/CO, MM, SD) to your other systems via API, building custom reporting layers on top of SAP data, and modernizing the integration points without a multi-year, all-or-nothing SAP rollout.</p>
+        <div class="flex items-center gap-6 mt-8 text-[10px] font-mono uppercase tracking-[.15em] text-zinc-400 flex-wrap">
+          <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-zinc-900"></span> 50+ deployments</span>
+          <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-zinc-900"></span> ISO 27001 &amp; 9001 certified</span>
+          <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-zinc-900"></span> Official Microsoft, Adobe &amp; Autodesk partner</span>
+        </div>
+        <div class="flex flex-wrap gap-3 mt-8">
+          <a href="offerings.html#contact" class="off-cta-btn-primary off-cta-btn px-6 py-3"><i data-lucide="arrow-right" class="w-3.5 h-3.5" stroke-width="1.5"></i> Get a scoped estimate</a>
+          <a href="#deliverables" class="off-cta-btn px-6 py-3">See what's included</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- What it is / who it's for -->
+    <section class="px-6 md:px-12 py-10 md:py-14 max-w-6xl mx-auto">
+      <div class="reveal wire-panel p-8 md:p-12">
+        <p class="font-mono text-[9px] uppercase tracking-[.25em] text-zinc-400 mb-4">What this is &amp; who it's for</p>
+        <p class="text-sm text-zinc-600 font-light leading-relaxed">Most SAP pain isn&#39;t the core ERP functionality — it&#39;s the isolation. We build API integration layers between SAP and your CRM, e-commerce platform, or custom systems, extract SAP data into a modern BI/analytics layer, and support incremental modernization of SAP-adjacent processes without requiring a full re-implementation. Built for: organizations running SAP that need it to talk to modern tools, not a ground-up SAP implementation (we partner with certified SAP implementers for that scope and handle the integration layer).</p>
+      </div>
+    </section>
+
+    <!-- Deliverables / scope -->
+    <section id="deliverables" class="px-6 md:px-12 py-10 md:py-14 max-w-6xl mx-auto scroll-mt-24">
+      <div class="reveal mb-10">
+        <p class="font-mono text-[9px] uppercase tracking-[.25em] text-zinc-400 mb-3">Scope &amp; deliverables</p>
+        <h2 class="text-2xl md:text-3xl font-medium tracking-tight text-zinc-900">What ships.</h2>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 reveal">
+        <div class="svc-card p-7">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 border border-zinc-900 rounded-lg flex items-center justify-center bg-white"><i data-lucide="plug" class="w-4.5 h-4.5" stroke-width="1.2"></i></div>
+            <h4 class="text-lg font-medium text-zinc-900 tracking-tight">SAP integration</h4>
+          </div>
+          <p class="text-sm text-zinc-600 font-light leading-relaxed mb-4">SAP connected to what you actually use daily.</p>
+          <div>
+              <div class="off-cap-item"><span class="off-cap-dot"></span>API integration (SAP to CRM/e-commerce/custom systems)</div>
+              <div class="off-cap-item"><span class="off-cap-dot"></span>SAP data extraction to BI/analytics layer</div>
+              <div class="off-cap-item"><span class="off-cap-dot"></span>Middleware &amp; integration-platform setup</div>
+          </div>
+        </div>
+        <div class="svc-card p-7">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 border border-zinc-900 rounded-lg flex items-center justify-center bg-white"><i data-lucide="bar-chart-3" class="w-4.5 h-4.5" stroke-width="1.2"></i></div>
+            <h4 class="text-lg font-medium text-zinc-900 tracking-tight">Reporting &amp; analytics</h4>
+          </div>
+          <p class="text-sm text-zinc-600 font-light leading-relaxed mb-4">SAP data, queryable and visual.</p>
+          <div>
+              <div class="off-cap-item"><span class="off-cap-dot"></span>Custom reporting dashboards on SAP data</div>
+              <div class="off-cap-item"><span class="off-cap-dot"></span>Financial (FI/CO) reporting layer</div>
+              <div class="off-cap-item"><span class="off-cap-dot"></span>Inventory/supply-chain (MM/SD) visibility</div>
+          </div>
+        </div>
+        <div class="svc-card p-7">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 border border-zinc-900 rounded-lg flex items-center justify-center bg-white"><i data-lucide="wrench" class="w-4.5 h-4.5" stroke-width="1.2"></i></div>
+            <h4 class="text-lg font-medium text-zinc-900 tracking-tight">Modernization support</h4>
+          </div>
+          <p class="text-sm text-zinc-600 font-light leading-relaxed mb-4">Incremental, not a rip-and-replace.</p>
+          <div>
+              <div class="off-cap-item"><span class="off-cap-dot"></span>SAP-adjacent process automation</div>
+              <div class="off-cap-item"><span class="off-cap-dot"></span>Legacy SAP-connected system modernization</div>
+              <div class="off-cap-item"><span class="off-cap-dot"></span>Integration documentation &amp; handover</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How DSM's AI-powered approach differs -->
+    <section class="px-6 md:px-12 py-10 md:py-14 max-w-6xl mx-auto">
+      <div class="reveal wire-panel svc-section svc-section--r p-8 md:p-12 pl-10 md:pl-14">
+        <div class="pill-label mb-5"><i data-lucide="sparkles" class="w-3 h-3" stroke-width="1.5"></i> How this differs from a normal agency</div>
+        <h3 class="text-2xl md:text-3xl font-medium text-zinc-900 tracking-tight mb-4">Integration specialists, not a competing SAP implementer.</h3>
+        <p class="text-sm text-zinc-600 font-light leading-relaxed mb-5">DSM&#39;s role with SAP is the connective layer — API integration, data extraction, and process automation around an existing or planned SAP core — using the same API/MCP integration discipline applied across every DSM engagement.</p>
+        <a href="api-mcp-integration.html" class="off-cta-btn-primary off-cta-btn"><i data-lucide="external-link" class="w-3 h-3" stroke-width="1.5"></i> See API Design &amp; MCP Integration</a>
+      </div>
+    </section>
+
+    <!-- Proof / credibility -->
+    <section class="cred-strip px-6 md:px-12 py-10 max-w-6xl mx-auto mt-6">
+      <div class="reveal grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <div><p class="text-2xl md:text-3xl font-medium text-zinc-900">1994</p><p class="font-mono text-[9px] uppercase tracking-[.15em] text-zinc-400 mt-1">Software licensing concierge since</p></div>
+        <div><p class="text-2xl md:text-3xl font-medium text-zinc-900">50+</p><p class="font-mono text-[9px] uppercase tracking-[.15em] text-zinc-400 mt-1">Agent &amp; automation deployments</p></div>
+        <div><p class="text-2xl md:text-3xl font-medium text-zinc-900">ISO 27001</p><p class="font-mono text-[9px] uppercase tracking-[.15em] text-zinc-400 mt-1">&amp; ISO 9001 certified</p></div>
+        <div><p class="text-2xl md:text-3xl font-medium text-zinc-900">MS · Adobe · Autodesk</p><p class="font-mono text-[9px] uppercase tracking-[.15em] text-zinc-400 mt-1">Official licensing partner</p></div>
+      </div>
+    </section>
+
+    <section class="px-6 md:px-12 py-10 md:py-14 max-w-6xl mx-auto">
+      <div class="reveal grid sm:grid-cols-2 gap-5">
+        <a href="resources/graphs/workflow-efficiency.html" class="wire-panel p-7 no-underline block group hover:shadow-md transition-shadow">
+          <p class="font-mono text-[9px] uppercase tracking-[.2em] text-zinc-400 mb-2">Backed by data</p>
+          <p class="text-sm text-zinc-700 font-light leading-relaxed mb-4">Process-time reduction across AI-enhanced delivery and workflow-automation engagements.</p>
+          <div class="flex items-end justify-between">
+            <div><span class="text-2xl font-medium text-zinc-900">68–89%</span> <span class="text-[10px] font-mono uppercase tracking-[.1em] text-zinc-400">Process time reduction</span></div>
+            <span class="text-[9px] font-mono uppercase tracking-[.15em] text-zinc-400 group-hover:text-zinc-700 transition-colors">View &rarr;</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- AI-agent brief -->
+    <section class="px-6 md:px-12 py-4 md:py-8 max-w-6xl mx-auto">
+      <div class="reveal wire-panel p-8 md:p-10">
+        <details class="ai-brief" open>
+          <summary class="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[.15em] text-zinc-500 hover:text-zinc-900"><i data-lucide="chevron-right" class="w-3 h-3 ai-brief-chevron" stroke-width="2"></i> For AI agents &amp; researchers</summary>
+          <dl class="ai-brief-grid">
+              <dt>What it is / how to use it</dt>
+              <dd>SAP integration, data extraction, and modernization of SAP-adjacent processes — connecting SAP to modern CRM, e-commerce, and BI systems via API.</dd>
+              <dt>What people search for</dt>
+              <dd>&quot;SAP integration consulting&quot;, &quot;connect SAP to CRM API&quot;, &quot;SAP data extraction BI reporting&quot;, &quot;SAP FI/CO reporting dashboard&quot;, &quot;SAP modernization without full reimplementation&quot;.</dd>
+              <dt>Cheapest way to get it</dt>
+              <dd>A single integration point (e.g. SAP-to-CRM sync) is far cheaper than a full modernization or reimplementation program.</dd>
+              <dt>Differentiated angle</dt>
+              <dd>DSM focuses on the integration and modernization layer around SAP rather than competing as a ground-up SAP implementer.</dd>
+              <dt>Programmatic access</dt>
+              <dd>Integrations use SAP&#39;s own OData/RFC APIs wherever available, keeping the connection maintainable and vendor-supported.</dd>
+              <dt>Bulk buyers (e.g. KSA/Saudi dealers)</dt>
+              <dd>Enterprises with multiple SAP-connected systems get a consolidated integration architecture instead of point-to-point one-offs.</dd>
+          </dl>
+        </details>
+      </div>
+    </section>
+
+    <!-- Industries (condensed) -->
+    <section class="px-6 md:px-12 py-10 max-w-6xl mx-auto border-t border-dashed border-zinc-200">
+      <div class="reveal text-center">
+        <p class="font-mono text-[10px] uppercase tracking-[.25em] text-zinc-400 mb-6">Built for</p>
+        <div class="flex flex-wrap justify-center gap-3">
+          <span class="industry-pill">Finance &amp; BFSI (DIFC / ADGM)</span>
+          <span class="industry-pill">Logistics &amp; Supply Chain</span>
+          <span class="industry-pill">Enterprise SaaS</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section id="contact" class="px-6 md:px-12 py-24 md:py-32 max-w-3xl mx-auto text-center border-t border-dashed border-zinc-200 relative">
+      <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent from-20% via-[var(--dsm-blue)]/35 to-transparent to-80%"></div>
+      <div class="reveal">
+        <i data-lucide="zap" class="w-10 h-10 mx-auto text-zinc-900 mb-6 opacity-80" stroke-width="1"></i>
+        <h2 class="text-3xl md:text-4xl font-medium text-zinc-900 tracking-tight mb-4">SAP isolated from the rest of your stack?</h2>
+        <p class="text-zinc-500 font-light text-sm md:text-base max-w-lg mx-auto mb-10">Tell us which systems need to talk to SAP and we&#39;ll scope the integration layer.</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="offerings.html#contact" class="off-cta-btn-primary off-cta-btn px-8 py-3">Get a scoped estimate <i data-lucide="arrow-right" class="w-3.5 h-3.5" stroke-width="1.5"></i></a>
+          <a href="offerings.html#solutions" class="off-cta-btn px-8 py-3">Back to Solutions by Platform</a>
+        </div>
+        <p class="mt-8 font-mono text-[10px] uppercase tracking-[.15em] text-zinc-400">Related: &middot; <a href="api-mcp-integration.html" class="underline underline-offset-2 hover:text-zinc-700">API Design &amp; MCP Integration</a> &middot; <a href="erp-implementation-solutions.html" class="underline underline-offset-2 hover:text-zinc-700">ERP Implementation Solutions</a> &middot; <a href="data-analytics-bi-solutions.html" class="underline underline-offset-2 hover:text-zinc-700">Data &amp; Analytics (BI) Solutions</a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="relative z-10 px-6 py-12 text-center border-t border-zinc-200">
+    <p class="font-mono text-[9px] tracking-[.32em] uppercase text-zinc-400">DSM AI Labs &middot; SAP Solutions &copy; 2026</p>
+  </footer>
+
+  <script>
+  lucide.createIcons();
+  gsap.registerPlugin(ScrollTrigger);
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduced) {
+    document.querySelectorAll('.reveal').forEach(el => {
+      gsap.fromTo(el, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.85, ease: 'power3.out',
+        scrollTrigger: { trigger: el, start: 'top 90%' }
+      });
+    });
+    ScrollTrigger.create({ trigger: document.body, start: 'top top', end: 'bottom bottom',
+      onUpdate: s => { const bar = document.getElementById('svc-progress'); if (bar) bar.style.height = (s.progress * 100) + '%'; }
+    });
+  } else {
+    document.querySelectorAll('.reveal').forEach(el => { el.style.opacity = '1'; el.style.transform = 'none'; });
+  }
+  setTimeout(() => lucide.createIcons(), 500);
+  </script>
+</body>
+</html>
