@@ -391,8 +391,14 @@ function ConciergeWidget() {
           },
         });
       } finally {
-        if (abortRef.current === controller) abortRef.current = null;
-        setStreaming(false);
+        // Only the most recent request may clear the shared streaming flag —
+        // if a stale closure let a second send() slip through while the
+        // first was still in flight, the first one finishing early must not
+        // flip the UI back to "ready" while the second is still pending.
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+          setStreaming(false);
+        }
         inputRef.current?.focus();
       }
     },
