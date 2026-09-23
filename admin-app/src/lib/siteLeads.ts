@@ -72,8 +72,13 @@ const SOURCE_MATCHERS: { source: SiteSource; test: RegExp }[] = [
   { source: "reseller", test: /resell|partner|dealer|wholesale|distributor|affiliate/ },
   { source: "quote", test: /quote|estimate|instant[\s_-]?quote|get[\s_-]?my[\s_-]?quote|pricing[\s_-]?request/ },
   { source: "savings", test: /saving|roi|calculator|cost[\s_-]?calc|see[\s_-]?my[\s_-]?savings/ },
-  { source: "popup", test: /pop[\s_-]?up|member|modal|welcome|join|signup|sign[\s_-]?up|register/ },
+  // footer BEFORE popup: the footer newsletter capture's own productName is
+  // literally "Newsletter signup" (see src/components/Footer.tsx), and
+  // popup's `signup` alternative would otherwise match that text first and
+  // misclassify every footer signup as "popup" — which then silently drops
+  // it from the admin's Newsletter Signups view (source==="footer" only).
   { source: "footer", test: /footer|news[\s_-]?letter|subscribe|subscription|mailing[\s_-]?list|updates/ },
+  { source: "popup", test: /pop[\s_-]?up|member|modal|welcome|join|signup|sign[\s_-]?up|register/ },
   { source: "order", test: /^order$|purchase|checkout|store|cart|payment|paid/ },
 ];
 
