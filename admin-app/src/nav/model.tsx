@@ -38,6 +38,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   LineChart,
+  Lock,
   Mail,
   Megaphone,
   MonitorDown,
@@ -75,6 +76,7 @@ import { SettingsView } from "@/views/SettingsView";
 import { DashboardView } from "@/views/dashboard/DashboardView";
 import { ApprovalsView } from "@/views/approvals/ApprovalsView";
 import { DesktopAppView } from "@/views/system/DesktopAppView";
+import { ApiAccessView } from "@/views/system/ApiAccessView";
 
 export type LucideIcon = typeof Boxes;
 
@@ -301,6 +303,18 @@ export const SECTIONS: Section[] = [
       { key: "roles", label: "Roles & access", icon: ShieldCheck, perm: "roles.manage", desc: "Manage roles and access." },
     ],
     render: (ctx) => <OpsView config={ctx.config} page={ctx.page} onPageChange={ctx.setPage} />,
+  },
+
+  {
+    key: "api-access",
+    label: "API Access",
+    icon: Lock,
+    group: "System",
+    perm: "settings.manage",
+    blurb: "Mint and revoke short-lived / always-on tokens for the DSM Analytics API instead of handing out the static secret.",
+    singlePage: true,
+    pages: [],
+    render: (ctx) => <ApiAccessView config={ctx.config} />,
   },
 
   {
