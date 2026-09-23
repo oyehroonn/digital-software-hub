@@ -258,7 +258,17 @@ const HeroMesh = ({ accent = "red" }: HeroMeshProps) => {
   }, []);
 
   return (
-    <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
+    <div
+      className="absolute inset-0 w-full h-full z-0 overflow-hidden"
+      // WebGL needs a moment to initialize before its first frame paints —
+      // without this, visitors briefly see a flat, unstyled background
+      // instead of the mesh. A static gradient approximating the mesh's own
+      // colors means that split-second gap looks intentional, not broken.
+      style={{
+        background:
+          "radial-gradient(ellipse 80% 60% at 50% 40%, hsl(4 65% 30% / 0.55) 0%, hsl(4 65% 12% / 0.35) 45%, #030305 80%)",
+      }}
+    >
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
