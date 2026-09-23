@@ -1,41 +1,21 @@
-# ── Single Cloudflare Pages project · 4 sites in one deploy ───────────────────
-# One project (digimax) serves all four DSM webs because the Cloudflare account
-# is at its 100/100 Pages-project cap — see CONSOLIDATION.md. Each site is a
-# self-contained bundle under its own path; real files serve directly, and each
-# path gets its own SPA fallback so client-side routing works per-site.
-
-# ── DSM AI Labs rebrand: subdomains on the SAME digimax deployment ────────────
-# marketing / agentic / creatives / admin .digitalsoftwaremarket.ai are all
-# attached as extra custom domains on this one Pages project (still just one
-# build, one deploy — no new project, same 100/100 cap constraint). Cloudflare
-# Pages matches these rules against the request's Host header, so they only
-# fire for that exact subdomain; the root domain, beta.*, and the *.pages.dev
-# URL fall through untouched to the rules below.
+# ── Single Cloudflare Pages project · shared deploy for the remaining sites ──
+# One project (digimax) still serves admin.* and creatives.* on top of the
+# main storefront — see CONSOLIDATION.md. marketing.* and agentic.* have been
+# extracted to their own lean, standalone Cloudflare Pages projects
+# (dsm-marketing / dsm-agentic-services) and are no longer part of this build;
+# their custom domains + DNS point straight at those projects now, so no
+# host-based rule for them is needed here anymore.
 #
-# Rule order matters: the "already-prefixed" passthrough for each site must
-# come before that site's catch-all, so a request that already carries the
-# real path (e.g. an absolute /admin/assets/... asset request) isn't
-# double-prefixed by the catch-all underneath it.
+# Rule order matters: the "already-prefixed" passthrough for admin must come
+# before its catch-all, so a request that already carries the real path
+# (e.g. an absolute /admin/assets/... asset request) isn't double-prefixed by
+# the catch-all underneath it.
 
 # Admin — admin.digitalsoftwaremarket.ai. admin-app's own asset refs are
 # absolute (/admin/...), so those already resolve directly against the shared
 # deployment; only bare/deep paths need falling back to the app shell.
 https://admin.digitalsoftwaremarket.ai/admin/*        /admin/:splat            200
 https://admin.digitalsoftwaremarket.ai/*              /admin/index.html        200
-
-# Marketing — marketing.digitalsoftwaremarket.ai. public/marketing assets are
-# also absolute-path (/marketing/...), so a transparent 200 rewrite keeps a
-# clean root URL on the subdomain with no visible redirect hop.
-https://marketing.digitalsoftwaremarket.ai/marketing/*  /marketing/:splat      200
-https://marketing.digitalsoftwaremarket.ai/*            /marketing/index.html  200
-
-# Agentic / AI services — agentic.digitalsoftwaremarket.ai. dsmAIFinal.html
-# uses RELATIVE asset/nav paths (assets/..., offerings.html, ...), so this
-# must be a real redirect (not a transparent rewrite) so the browser actually
-# lands under /services/ and those relative paths resolve. Still a single
-# edge-level 302 — no client JS round trip like the in-app /services route.
-https://agentic.digitalsoftwaremarket.ai/services/*   /services/:splat         200
-https://agentic.digitalsoftwaremarket.ai/*            /services/dsmAIFinal.html 302
 
 # Creatives — creatives.digitalsoftwaremarket.ai falls through to the normal
 # SPA fallback below (no rule needed here): App.tsx detects this hostname at
@@ -46,9 +26,13 @@ https://agentic.digitalsoftwaremarket.ai/*            /services/dsmAIFinal.html 
 # Admin SPA (built from admin-app/ under /admin) — must come BEFORE the store fallback.
 /admin/*              /admin/index.html                200
 
-# Marketing & services microsites (standalone static pages, fast load).
-/marketing            /marketing/index.html            302
-/services             /services/dsmAIFinal.html        302
+# The marketing microsite now lives as a standalone deployment (no longer
+# built into this bundle) — send a direct/bookmarked hit straight there.
+# NOTE: bare path only, no wildcard — /services/* still serves 50+ real,
+# still-in-this-build service pages (offerings.html, agentic-infrastructure.html,
+# case studies, etc.) and must NOT be caught by a catch-all redirect here.
+/marketing            https://marketing.digitalsoftwaremarket.ai   302
+/services             https://agentic.digitalsoftwaremarket.ai     302
 
 # SPA fallback for the React store / landing (every other client route).
 /*                    /index.html                      200

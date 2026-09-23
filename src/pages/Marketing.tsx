@@ -1,14 +1,15 @@
 import { useEffect } from 'react';
 
 /**
- * /marketing is served as a STANDALONE page (public/marketing/index.html) — no
- * React app, no iframe — for a fast load. This route exists only for in-app SPA
- * navigation: it hard-redirects to the standalone microsite. Direct/deep hits
- * are caught earlier by the Cloudflare `_redirects` edge rule (public/_redirects).
+ * DSM Marketing now lives as its own lean, standalone Cloudflare Pages
+ * deployment at marketing.digitalsoftwaremarket.ai (no digimax React bundle,
+ * no shared build) — see public/_redirects and CONSOLIDATION.md history.
+ * This in-app route only exists for old bookmarks / internal links that still
+ * point at /marketing; it hard-redirects out to the standalone site.
  */
 const Marketing = () => {
   useEffect(() => {
-    window.location.replace('/marketing/index.html');
+    window.location.replace('https://marketing.digitalsoftwaremarket.ai');
   }, []);
 
   return (
