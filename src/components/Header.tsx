@@ -302,10 +302,13 @@ const Header = () => {
               isOverLightSection={isOverLightSection}
             />
 
-            {/* Standout crimson CTA — the key member pill */}
+            {/* Standout crimson CTA — the key member pill. Solid background
+                (not translucent crimson-on-crimson) so it stays legible over
+                any hero/background color, including the site's own red hero
+                sections where a translucent crimson pill nearly disappeared. */}
             <Link
               to="/exclusive"
-              className="group text-sm font-medium text-crimson hover:text-crimson-dark transition-all duration-300 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-crimson/30 bg-crimson/[0.06] hover:bg-crimson/[0.12] hover:border-crimson/50"
+              className="group text-sm font-semibold text-white transition-all duration-300 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-crimson bg-crimson shadow-[0_1px_8px_rgba(0,0,0,0.25)] hover:bg-crimson-dark hover:border-crimson-dark"
             >
               <Crown className="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-110" strokeWidth={1.75} />
               Exclusive Members
@@ -381,7 +384,7 @@ const Header = () => {
           <Link
             to="/exclusive"
             onClick={() => setIsMobileOpen(false)}
-            className="inline-flex items-center gap-2 text-lg font-medium text-crimson px-4 py-2 rounded-full border border-crimson/30 bg-crimson/[0.08] w-fit"
+            className="inline-flex items-center gap-2 text-lg font-semibold text-white px-4 py-2 rounded-full border border-crimson bg-crimson w-fit"
           >
             <Crown className="w-4 h-4" strokeWidth={1.75} /> Exclusive Members
           </Link>
