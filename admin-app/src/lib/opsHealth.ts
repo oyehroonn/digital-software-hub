@@ -54,11 +54,30 @@ export function buildProbes(cfg: AppConfig): Probe[] {
       label: "codex-proxy (LLM)",
       kind: "unstable",
       target: "/v1/models",
-      run: (c) =>
-        httpGet(`${c.codex_base}/models`, {
-          timeoutMs: 2500,
-          headers: c.codex_key ? { Authorization: `Bearer ${c.codex_key}` } : undefined,
-        }),
+      // A direct browser fetch to `${codex_base}/models` (open.techrealm.ai)
+      // is CORS-blocked (no Access-Control-Allow-Origin, OPTIONS preflight
+      // 403s) — that made this probe permanently report DOWN / "Failed to
+      // fetch" even while AI chat features (confirmed working, via the Tauri
+      // bridge or the VPS proxy) were fine. Same fallback chain as
+      // `lib/health.ts`'s checkCodex / `lib/llm.ts`'s ping(): the native
+      // Tauri bridge isn't CORS-limited so try codex_base first there;
+      // everywhere else go through the VPS's same-origin-friendly
+      // `/api/llm/models` proxy (Access-Control-Allow-Origin: *) first.
+      run: async (c) => {
+        const codexUrl = c.codex_base ? `${c.codex_base.replace(/\/+$/, "")}/models` : "";
+        const vpsUrl = c.vps_base ? `${c.vps_base.replace(/\/+$/, "")}/api/llm/models` : "";
+        const headers = c.codex_key ? { Authorization: `Bearer ${c.codex_key}` } : undefined;
+        const candidates = (runtime.isTauri ? [codexUrl, vpsUrl] : [vpsUrl, codexUrl]).filter(Boolean);
+        let lastErr: unknown = new Error("no codex/VPS base configured");
+        for (const url of candidates) {
+          try {
+            return await httpGet(url, { timeoutMs: 2500, headers });
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+        throw lastErr;
+      },
     },
     {
       key: "simli",

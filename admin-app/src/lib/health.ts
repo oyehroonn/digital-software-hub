@@ -57,12 +57,32 @@ export async function checkVps(cfg: AppConfig): Promise<ServiceStatus> {
 }
 
 export async function checkCodex(cfg: AppConfig): Promise<ServiceStatus> {
-  const r = await timed(() =>
-    httpGet(`${cfg.codex_base}/models`, {
-      timeoutMs: 2500,
-      headers: cfg.codex_key ? { Authorization: `Bearer ${cfg.codex_key}` } : undefined,
-    }),
-  );
+  // A plain browser `fetch` straight to `${codex_base}/models`
+  // (https://open.techrealm.ai/v1/models) is CORS-blocked — that host sends
+  // no Access-Control-Allow-Origin header (its OPTIONS preflight even 403s),
+  // so the request never completes and this always reported "down" /
+  // "Failed to fetch" even while AI chat features (which route through the
+  // Tauri http bridge, or the VPS proxy below) worked fine. Same
+  // known-good routing `lib/llm.ts`'s `ping()` already uses: the Tauri
+  // native http bridge isn't subject to browser CORS, so try codex_base
+  // directly there; everywhere else (the web admin panel) go through the
+  // VPS's same-origin-friendly `/api/llm/models` proxy first, which mirrors
+  // the direct codex-proxy response and is served with
+  // `Access-Control-Allow-Origin: *`.
+  const codexUrl = cfg.codex_base ? `${cfg.codex_base.replace(/\/+$/, "")}/models` : "";
+  const vpsUrl = cfg.vps_base ? `${cfg.vps_base.replace(/\/+$/, "")}/api/llm/models` : "";
+  const headers = cfg.codex_key ? { Authorization: `Bearer ${cfg.codex_key}` } : undefined;
+  const candidates = (runtime.isTauri ? [codexUrl, vpsUrl] : [vpsUrl, codexUrl]).filter(Boolean);
+
+  let r: { ok: boolean; ms: number; detail: string } = {
+    ok: false,
+    ms: 0,
+    detail: "no codex/VPS base configured",
+  };
+  for (const url of candidates) {
+    r = await timed(() => httpGet(url, { timeoutMs: 2500, headers }));
+    if (r.ok) break;
+  }
   return status("codex", "codex-proxy (LLM)", "unstable", r);
 }
 

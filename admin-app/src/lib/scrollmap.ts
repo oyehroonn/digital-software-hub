@@ -54,6 +54,16 @@ export interface ScrollMapOptions {
 const SCROLL_RE = /scroll|depth|reach|fold/i;
 
 const PCT_KEYS = [
+  // "maxPercent" is what src/lib/track.ts (storefront) actually sends on
+  // BOTH "scroll_depth" (per-milestone) and "scroll_summary" (page-leave)
+  // events — see its EVENT SCHEMA comment. None of the other aliases below
+  // ever matched it, so extractScrollDepth() always fell through to the
+  // pixel-geometry and named-event branches (which also never matched real
+  // scroll telemetry), returning null for every event — every session's max
+  // depth stayed at its 0 initial value, so avg/median depth and every
+  // reach% (including "reached bottom") always computed as 0, even though
+  // session counts (built from ANY event with a pageUrl) were correct.
+  "maxPercent",
   "depth",
   "scrollDepth",
   "scrolldepth",

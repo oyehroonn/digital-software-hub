@@ -37,6 +37,7 @@ import { extractScrollDepth } from "@/lib/scrollmap";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useAnalyticsData } from "./useAnalyticsData";
+import { useDateRange } from "./reports/dateRange";
 import { AnalyticsHeader, AnalyticsEmpty, StatTile } from "./shell";
 import {
   clamp01,
@@ -329,7 +330,29 @@ function scrollColor(t: number): [number, number, number] {
 type LayerKey = "click" | "move" | "scroll";
 
 export function HeatmapOverlay({ config }: { config: AppConfig }) {
-  const { events, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config, { orders: false });
+  const { events: rawEvents, isEmpty, loading, liveCount, refresh } = useAnalyticsData(config, {
+    orders: false,
+  });
+
+  // The Heatmaps group nests its own <DateRangeProvider defaultPreset="all">
+  // (see AnalyticsHub.tsx CategoryPane) so the visible <DateRangeControls/>
+  // toolbar defaults to "All time" rather than inheriting the hub's global
+  // "Last 30 days" — but it's still a REAL, live control: narrowing it here
+  // actually re-scopes the overlay instead of being a dead decoration that
+  // implies filtering it never did. Events with no parseable timestamp are
+  // kept regardless of range (never silently dropped for bad/missing data).
+  const { inRange, label: rangeLabel, preset: rangePreset } = useDateRange();
+  const events = useMemo(() => {
+    if (rangePreset === "all") return rawEvents;
+    return rawEvents.filter((e) => {
+      const t = Date.parse(String(e.timestamp ?? ""));
+      return !Number.isFinite(t) || inRange(t);
+    });
+  }, [rawEvents, inRange, rangePreset]);
+  // Real data exists (isEmpty is false) but none of it falls in the selected
+  // window — distinct from "tracking sheet isn't connected at all" so we
+  // never show that misleading message when data genuinely exists.
+  const noDataInRange = !isEmpty && rawEvents.length > 0 && events.length === 0;
 
   // Derive every layer once per dataset.
   const clicksBySlug = useMemo(() => buildPoints(events, isClick, () => 1), [events]);
@@ -388,14 +411,14 @@ export function HeatmapOverlay({ config }: { config: AppConfig }) {
   // `dispH = dispW * ratio`) collapsed to 0 — the whole overlay silently
   // rendered nothing. Re-run once real content (and the ref) actually mounts.
   useEffect(() => {
-    if (isEmpty) return;
+    if (isEmpty || noDataInRange) return;
     const el = wrapRef.current;
     if (!el) return;
     const ro = new ResizeObserver(() => setDispW(el.clientWidth));
     ro.observe(el);
     setDispW(el.clientWidth);
     return () => ro.disconnect();
-  }, [isEmpty]);
+  }, [isEmpty, noDataInRange]);
 
   // (Re)draw every layer whenever inputs change.
   useEffect(() => {
@@ -470,14 +493,25 @@ export function HeatmapOverlay({ config }: { config: AppConfig }) {
         liveCount={liveCount}
         onRefresh={refresh}
         right={
-          <Badge variant="muted" className="gap-1 tabular-nums">
-            <MonitorSmartphone className="h-3 w-3" /> 1440w capture
-          </Badge>
+          <>
+            <Badge variant="muted" className="gap-1 tabular-nums">
+              {rangeLabel}
+            </Badge>
+            <Badge variant="muted" className="gap-1 tabular-nums">
+              <MonitorSmartphone className="h-3 w-3" /> 1440w capture
+            </Badge>
+          </>
         }
       />
 
       {isEmpty ? (
         <AnalyticsEmpty icon={<Flame className="h-7 w-7" />} />
+      ) : noDataInRange ? (
+        <AnalyticsEmpty
+          icon={<Flame className="h-7 w-7" />}
+          title="No activity in this range"
+          hint={`${rawEvents.length.toLocaleString("en-US")} real event(s) exist, just not within "${rangeLabel}". Widen the range above (try "All time") to see them.`}
+        />
       ) : (
         <>
       {/* Page selector — one tab per screenshot slot */}

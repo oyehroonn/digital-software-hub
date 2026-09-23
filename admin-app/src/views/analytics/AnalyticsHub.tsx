@@ -203,7 +203,7 @@ function CategoryPane({ config, category }: { config: AppConfig; category: strin
     );
   }
 
-  return (
+  const content = (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 border-b border-border pb-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-1.5">
@@ -231,6 +231,25 @@ function CategoryPane({ config, category }: { config: AppConfig; category: strin
       </div>
       <Active key={current.key} config={config} />
     </div>
+  );
+
+  // Heatmaps get their own nested date-range spine, defaulting to "All time"
+  // instead of inheriting the hub's global "Last 30 days" default. A rolling
+  // 30-day window makes sense for trend reports (Sales/Sessions/…), but a
+  // heat overlay / scroll map is a cumulative visual aggregate — defaulting
+  // it to a recent window risks showing a misleading "No data yet" empty
+  // state whenever real telemetry happens to sit outside that window, even
+  // though the tracking sheet is connected and full of real rows. Nesting a
+  // provider here shadows the outer one for just this group (same pattern
+  // SalesReports.tsx uses to pin its own default), so the still-visible
+  // <DateRangeControls/> toolbar keeps working for anyone who wants to
+  // narrow the view — it's just never the reason a heatmap looks empty.
+  return group === "Heatmaps" ? (
+    <DateRangeProvider defaultPreset="all" defaultCompare={false}>
+      {content}
+    </DateRangeProvider>
+  ) : (
+    content
   );
 }
 
