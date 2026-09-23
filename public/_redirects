@@ -33,7 +33,7 @@ https://admin.digitalsoftwaremarket.ai/*              /admin/index.html        2
 # bookmarked/linked sub-page (offerings.html, the generated service pages,
 # case studies, etc.) redirects to its new home instead of 404ing in the SPA.
 /marketing/*          https://marketing.digitalsoftwaremarket.ai/:splat   302
-/services/*           https://agentic.digitalsoftwaremarket.ai/:splat     302
+/services/*           https://agentic.digitalsoftwaremarket.ai/services/:splat     302
 
 # SPA fallback for the React store / landing (every other client route).
 /*                    /index.html                      200
