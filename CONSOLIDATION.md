@@ -7,16 +7,38 @@ Rather than delete existing projects, all four DSM web properties are served
 from the **single existing `digimax` Pages project** (`digimax-93q.pages.dev`),
 built from this one repository (`oyehroonn/digital-software-hub`).
 
-## The four sites (one build, one deploy)
+## UPDATE (2026-09-23): marketing + agentic extracted to standalone projects
+
+`public/marketing/` and `public/services/dsmAIFinal.html` are **no longer part
+of this build**. Serving them by rewriting into the shared `digimax` bundle
+meant every hit on `marketing.` / `agentic.digitalsoftwaremarket.ai` pulled
+down the full storefront bundle (three.js, model-viewer, the whole SPA) just
+to show a static page. They now live as their own lean, standalone Cloudflare
+Pages projects — reusing two project slots that already existed
+(`dsm-marketing` → `dsm-marketing-4ye.pages.dev`, `dsm-agentic-services` →
+`dsm-agentic-services.pages.dev`), so this didn't need a new project under the
+100-project cap. Each project contains only that microsite's own HTML/CSS/JS/
+assets, deployed via `npx wrangler pages deploy <dir> --project-name=<name>`.
+The `marketing.` and `agentic.digitalsoftwaremarket.ai` custom domains + DNS
+CNAMEs have been moved off `digimax` and onto these two projects directly.
+Both microsites got a "← DSM Store" link back to
+`beta.digitalsoftwaremarket.ai`, since neither had one before.
+
+The two remaining tables below are now **out of date** for the Marketing/
+Services rows and the `marketing.`/`agentic.` subdomain rows — see the update
+above instead. `creatives.` and `admin.` are unaffected and still work exactly
+as documented.
+
+## The four sites (one build, one deploy) — historical, see update above
 
 | Site | Path | Source | Type |
 |------|------|--------|------|
 | Store / landing page | `/` | this repo (root Vite app) | React SPA |
-| Marketing | `/marketing` | `public/marketing/` | static microsite |
-| Services | `/services` | `public/services/` | static microsite |
+| ~~Marketing~~ | ~~`/marketing`~~ | now standalone, see update above | — |
+| Services (the 50+ generated pages, offerings.html, etc. — still here) | `/services` | `public/services/` | static microsite |
 | Admin | `/admin` | `admin-app/` (Vite) | React SPA |
 
-## DSM AI Labs rebrand — subdomains (same deployment, no new project)
+## DSM AI Labs rebrand — subdomains (same deployment, no new project) — historical, see update above
 
 Same reasoning, one level up: `marketing.`, `agentic.`, `creatives.` and
 `admin.digitalsoftwaremarket.ai` are attached as four more custom domains on
@@ -26,13 +48,15 @@ inside the app shell:
 
 | Subdomain | Serves | Mechanism |
 |---|---|---|
-| `marketing.digitalsoftwaremarket.ai` | `public/marketing/` | edge 200 rewrite (its assets are absolute-path) |
-| `agentic.digitalsoftwaremarket.ai` | `public/services/dsmAIFinal.html` | edge 302 redirect (its assets are relative-path, so the browser must actually land under `/services/`) |
+| ~~`marketing.digitalsoftwaremarket.ai`~~ | now the standalone `dsm-marketing` project, not this one | — |
+| ~~`agentic.digitalsoftwaremarket.ai`~~ | now the standalone `dsm-agentic-services` project, not this one | — |
 | `creatives.digitalsoftwaremarket.ai` | existing `RegisteredCreatives` page | in-app: `App.tsx` swaps the `/` route's component for this hostname; every other route is the same SPA |
 | `admin.digitalsoftwaremarket.ai` | `admin-app/` | edge 200 rewrite |
 
-DNS: each is a proxied CNAME to `digimax-93q.pages.dev`, same pattern as the
-existing `beta.digitalsoftwaremarket.ai`. The root domain and `www` are
+DNS: `creatives.` and `admin.` are still proxied CNAMEs to `digimax-93q.pages.dev`,
+same pattern as the existing `beta.digitalsoftwaremarket.ai`. `marketing.` and
+`agentic.` are now CNAMEs to `dsm-marketing-4ye.pages.dev` and
+`dsm-agentic-services.pages.dev` respectively. The root domain and `www` are
 untouched (still point at the separate `dsm-agentic` project pending a later,
 separately-approved cutover).
 
@@ -44,7 +68,8 @@ separately-approved cutover).
    `ADMIN_BASE=/admin/`, emitting into `public/admin/` (gitignored artifact).
 2. `tsc --noEmit` type-check of the store app.
 3. `vite build` for the store — Vite copies everything in `public/`
-   (`marketing/`, `services/`, `admin/`, `_redirects`) into `dist/`.
+   (`services/`, `admin/`, `_redirects`) into `dist/`. (`marketing/` was
+   removed from `public/` — see the update above.)
 
 Routing is handled by `public/_redirects`: each site gets its own SPA fallback,
 with `/admin/*` listed **before** the store's `/*` catch-all so admin client
