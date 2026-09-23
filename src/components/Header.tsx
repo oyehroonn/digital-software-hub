@@ -491,6 +491,9 @@ const Header = () => {
                 <ProductModelViewer
                   key={activeCategory}
                   glbSrc={categoryFeaturedModel[activeCategory]?.glb}
+                  // Always-visible nav element — shouldn't sit behind a queue
+                  // of grid thumbnails the visitor isn't even looking at.
+                  priority
                   fallbackIcon={
                     <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${
                       isOverLightSection 
