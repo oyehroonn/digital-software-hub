@@ -26,13 +26,14 @@ https://admin.digitalsoftwaremarket.ai/*              /admin/index.html        2
 # Admin SPA (built from admin-app/ under /admin) — must come BEFORE the store fallback.
 /admin/*              /admin/index.html                200
 
-# The marketing microsite now lives as a standalone deployment (no longer
-# built into this bundle) — send a direct/bookmarked hit straight there.
-# NOTE: bare path only, no wildcard — /services/* still serves 50+ real,
-# still-in-this-build service pages (offerings.html, agentic-infrastructure.html,
-# case studies, etc.) and must NOT be caught by a catch-all redirect here.
-/marketing            https://marketing.digitalsoftwaremarket.ai   302
-/services             https://agentic.digitalsoftwaremarket.ai     302
+# The marketing + services (DSM AI Labs / agentic) microsites are now fully
+# standalone deployments — nothing real is left under /marketing or /services
+# in this build anymore (2026-09-24: the last 50+ static service pages moved
+# out to dsm-agentic-services too). Wildcard every old path across, so every
+# bookmarked/linked sub-page (offerings.html, the generated service pages,
+# case studies, etc.) redirects to its new home instead of 404ing in the SPA.
+/marketing/*          https://marketing.digitalsoftwaremarket.ai/:splat   302
+/services/*           https://agentic.digitalsoftwaremarket.ai/:splat     302
 
 # SPA fallback for the React store / landing (every other client route).
 /*                    /index.html                      200

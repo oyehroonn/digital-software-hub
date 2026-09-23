@@ -24,8 +24,26 @@ CNAMEs have been moved off `digimax` and onto these two projects directly.
 Both microsites got a "← DSM Store" link back to
 `beta.digitalsoftwaremarket.ai`, since neither had one before.
 
+## UPDATE (2026-09-24): the rest of `public/services/` moved out too
+
+The 2026-09-23 extraction above only moved `dsmAIFinal.html` (the agentic
+homepage) standalone — the other 219 files under `public/services/`
+(`offerings.html`, `agentic-infrastructure.html`, `software-automation.html`,
+`flo-ai-agents.html`, case studies, `llms.txt`, `resources/`, and all 50
+JSON-generated service pages) were left behind in this build, so clicking
+"Services" from the fast standalone homepage sent visitors right back into
+this heavy React/three.js/model-viewer bundle. `public/services/` (all of it),
+`content/services.json`, and `scripts/generate-service-pages.mjs` are now
+**gone from this repo entirely** — moved to
+`/srv/t3/projects/dsm/agentic-standalone/` on CT 2002 (see that directory's
+`SOURCE_OF_TRUTH.md`), which deploys to the same `dsm-agentic-services`
+Cloudflare Pages project as the homepage. `public/_redirects`'s old bare
+`/services` and `/marketing` rules are now `/services/*` and `/marketing/*`
+wildcards, since nothing real is left under either path here — every old
+in-bundle link/bookmark now redirects out instead of 404ing in the SPA.
+
 The two remaining tables below are now **out of date** for the Marketing/
-Services rows and the `marketing.`/`agentic.` subdomain rows — see the update
+Services rows and the `marketing.`/`agentic.` subdomain rows — see the updates
 above instead. `creatives.` and `admin.` are unaffected and still work exactly
 as documented.
 
@@ -35,7 +53,7 @@ as documented.
 |------|------|--------|------|
 | Store / landing page | `/` | this repo (root Vite app) | React SPA |
 | ~~Marketing~~ | ~~`/marketing`~~ | now standalone, see update above | — |
-| Services (the 50+ generated pages, offerings.html, etc. — still here) | `/services` | `public/services/` | static microsite |
+| ~~Services~~ | ~~`/services`~~ | now standalone, see 2026-09-24 update above | — |
 | Admin | `/admin` | `admin-app/` (Vite) | React SPA |
 
 ## DSM AI Labs rebrand — subdomains (same deployment, no new project) — historical, see update above
@@ -68,8 +86,8 @@ separately-approved cutover).
    `ADMIN_BASE=/admin/`, emitting into `public/admin/` (gitignored artifact).
 2. `tsc --noEmit` type-check of the store app.
 3. `vite build` for the store — Vite copies everything in `public/`
-   (`services/`, `admin/`, `_redirects`) into `dist/`. (`marketing/` was
-   removed from `public/` — see the update above.)
+   (`admin/`, `_redirects`) into `dist/`. (`marketing/` and `services/` were
+   both removed from `public/` — see the updates above.)
 
 Routing is handled by `public/_redirects`: each site gets its own SPA fallback,
 with `/admin/*` listed **before** the store's `/*` catch-all so admin client
