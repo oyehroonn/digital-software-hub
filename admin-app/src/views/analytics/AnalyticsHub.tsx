@@ -30,6 +30,7 @@ import {
   Globe,
   Grid3x3,
   Layers,
+  LineChart,
   LogOut,
   Megaphone,
   Monitor,
@@ -68,6 +69,8 @@ import { UtmCampaigns } from "./UtmCampaigns";
 import { Acquisition } from "./Acquisition";
 import { BehaviorFlow } from "./BehaviorFlow";
 import { DevicesTech } from "./DevicesTech";
+// Real GA4 data for both DSM sites, via the server-side proxy on dsm-analytics-api.
+import { GA4Comparison } from "./GA4Comparison";
 // Live visitor view + free-form query builder.
 import { LiveView } from "./LiveView";
 import { QueryBuilder } from "./QueryBuilder";
@@ -95,7 +98,8 @@ type Group =
   | "Heatmaps"
   | "Conversion"
   | "Acquisition"
-  | "Audience";
+  | "Audience"
+  | "GA4";
 
 interface Tab {
   key: string;
@@ -144,6 +148,10 @@ export const ANALYTICS_TABS: Tab[] = [
 
   { key: "geo", label: "Geo", icon: Globe, group: "Audience", Component: GeoAnalytics },
   { key: "devices", label: "Devices", icon: Monitor, group: "Audience", Component: DevicesTech },
+
+  // Real GA4 (Google Analytics 4) data — old site (digitalsoftwaremarkett.com)
+  // vs new site (digitalsoftwaremarket.ai), side by side.
+  { key: "ga4", label: "GA4", icon: LineChart, group: "GA4", Component: GA4Comparison },
 ];
 
 const GROUP_ORDER: Group[] = [
@@ -155,6 +163,7 @@ const GROUP_ORDER: Group[] = [
   "Conversion",
   "Acquisition",
   "Audience",
+  "GA4",
 ];
 
 /**
@@ -171,6 +180,7 @@ const CATEGORY_GROUP: Record<string, Group> = {
   conversion: "Conversion",
   acquisition: "Acquisition",
   audience: "Audience",
+  ga4: "GA4",
 };
 
 /**

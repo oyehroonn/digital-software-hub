@@ -25,6 +25,9 @@ export { BehaviorFlow } from "./BehaviorFlow";
 export { Acquisition } from "./Acquisition";
 export { UtmCampaigns } from "./UtmCampaigns";
 
+// Real GA4 data (old + new DSM sites) via the dsm-analytics-api server-side proxy.
+export { GA4Comparison } from "./GA4Comparison";
+
 // Visual heatmap overlay — full-page screenshot with click/move/scroll painted on top.
 export { HeatmapOverlay } from "./HeatmapOverlay";
 

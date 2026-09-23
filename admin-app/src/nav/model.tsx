@@ -37,6 +37,7 @@ import {
   KeyRound,
   LayoutDashboard,
   LifeBuoy,
+  LineChart,
   Mail,
   Megaphone,
   MonitorDown,
@@ -163,6 +164,7 @@ export const SECTIONS: Section[] = [
       { key: "conversion", label: "Conversion", icon: Target, desc: "Funnels, behavior flow, view-to-buy and drop-off.", keywords: "funnel flow dropoff view to buy" },
       { key: "acquisition", label: "Acquisition", icon: Megaphone, desc: "Acquisition, UTM & campaigns, search and attribution.", keywords: "utm campaigns search attribution" },
       { key: "audience", label: "Audience", icon: Globe, desc: "Geography and devices / technology.", keywords: "geo devices tech" },
+      { key: "ga4", label: "GA4", icon: LineChart, desc: "Real Google Analytics 4 data for the old and new DSM sites, side by side, with date-range comparison.", keywords: "ga4 google analytics traffic sessions users channels conversions digitalsoftwaremarkett digitalsoftwaremarket.ai" },
     ],
     render: (ctx) => (
       <AnalyticsHub config={ctx.config} category={ctx.page} onCategoryChange={ctx.setPage} />
