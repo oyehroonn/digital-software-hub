@@ -165,6 +165,25 @@ export async function chatStream(
       throw new LLMError(`LLM proxy returned HTTP ${res.status}`, res.status);
     }
 
+    // The proxy doesn't always honor `stream: true` — it can return one
+    // complete `application/json` body instead of a real `text/event-stream`.
+    // Reading that as SSE finds no `data:` lines, so onToken never fires and
+    // the caller's "typing…" indicator hangs forever even though the request
+    // succeeded. Detect the non-streamed case up front and short-circuit to
+    // a single onToken call with the full text instead of hanging.
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('text/event-stream')) {
+      const data = (await res.json()) as ChatCompletionResponse;
+      if (data.error) {
+        const msg = typeof data.error === 'string' ? data.error : data.error.message;
+        throw new LLMError(msg || 'LLM proxy error');
+      }
+      const content = data.choices?.[0]?.message?.content ?? '';
+      if (!content) throw new LLMError('LLM proxy returned no content');
+      onToken(content);
+      return content;
+    }
+
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
