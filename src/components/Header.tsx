@@ -210,8 +210,8 @@ const Header = () => {
 
   // Secondary links grouped into two compact dropdowns to de-clutter the bar.
   const solutionsItems: DropdownItem[] = [
-    { label: "DSM Marketing", desc: "Campaigns, branding & growth services", icon: Megaphone, to: "/marketing" },
-    { label: "DSM Services", desc: "Deployment, licensing & managed support", icon: Wrench, to: "/services" },
+    { label: "DSM Marketing", desc: "Campaigns, branding & growth services", icon: Megaphone, href: "https://marketing.digitalsoftwaremarket.ai" },
+    { label: "DSM Services", desc: "Deployment, licensing & managed support", icon: Wrench, href: "https://agentic.digitalsoftwaremarket.ai" },
   ];
   const companyItems: DropdownItem[] = [
     { label: "Enterprise", desc: "Volume licensing & procurement", icon: Building2, to: "/store" },
