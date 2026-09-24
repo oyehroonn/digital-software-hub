@@ -45,19 +45,51 @@ export function LegacyWoo() {
   const [orders, setOrders] = useState<WooOrder[] | null>(null);
   const [acContacts, setAcContacts] = useState<ACContact[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // Distinct from `error` — the deployed build deliberately strips the
+  // migrated-WooCommerce JSON (see CONSOLIDATION.md "Security notes": it
+  // contains real customer PII, so `build:admin` rm -rf's admin-app's
+  // public/legacy/ before deploy). Hitting that missing path used to fall
+  // through to the SPA's own index.html (a 200, not a 404 — see
+  // public/_redirects' catch-all), so `.json()` on real HTML blew up with
+  // "Unexpected token '<', \"<!doctype \"... is not valid JSON" and this
+  // view showed that raw parse error as if the feature were broken. It
+  // isn't broken — it's intentionally local-dev-only. Detect the HTML
+  // fallback up front and show an accurate explanation instead of a crash.
+  const [unavailable, setUnavailable] = useState(false);
   const [tab, setTab] = useState<"customers" | "orders" | "ac">("customers");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
 
   useEffect(() => {
     const base = import.meta.env.BASE_URL || "/";
+    // A response is real JSON only if it's ok AND actually served as JSON —
+    // the SPA fallback returns 200 + text/html for any unmatched path, which
+    // would otherwise get parsed as JSON and throw.
+    const fetchLegacyJson = async <T,>(path: string): Promise<T | null> => {
+      const r = await fetch(`${base}${path}`);
+      if (!r.ok) return null;
+      const ct = r.headers.get("content-type") || "";
+      if (!ct.includes("json")) return null;
+      try {
+        return (await r.json()) as T;
+      } catch {
+        return null;
+      }
+    };
     // AC contacts are optional (only present once pulled) — don't fail the view.
-    fetch(`${base}legacy/ac-contacts.json`).then((r) => (r.ok ? r.json() : [])).then(setAcContacts).catch(() => setAcContacts([]));
+    fetchLegacyJson<ACContact[]>("legacy/ac-contacts.json").then((c) => setAcContacts(c ?? []));
     Promise.all([
-      fetch(`${base}legacy/woo-customers.json`).then((r) => r.json()),
-      fetch(`${base}legacy/woo-orders.json`).then((r) => r.json()),
+      fetchLegacyJson<WooCustomer[]>("legacy/woo-customers.json"),
+      fetchLegacyJson<WooOrder[]>("legacy/woo-orders.json"),
     ])
-      .then(([c, o]) => { setCustomers(c); setOrders(o); })
+      .then(([c, o]) => {
+        if (c == null || o == null) {
+          setUnavailable(true);
+          return;
+        }
+        setCustomers(c);
+        setOrders(o);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
@@ -90,6 +122,15 @@ export function LegacyWoo() {
 
   useEffect(() => setPage(0), [tab, q]);
 
+  if (unavailable) {
+    return (
+      <Empty
+        icon={<Database className="size-5" />}
+        title="Legacy export isn't bundled in this deployment"
+        hint="The migrated WooCommerce customer/order data contains real PII and is deliberately excluded from the public admin build (see CONSOLIDATION.md). Run the admin locally (cd admin-app && npm run dev) with public/legacy/*.json in place to view it."
+      />
+    );
+  }
   if (error) return <Empty icon={<Database className="size-5" />} title="Couldn't load legacy export" hint={error} />;
   if (!customers || !orders || !stats) return <Empty icon={<Database className="size-5" />} title="Loading legacy WooCommerce data…" />;
 

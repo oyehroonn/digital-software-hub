@@ -77,6 +77,7 @@ import { DashboardView } from "@/views/dashboard/DashboardView";
 import { ApprovalsView } from "@/views/approvals/ApprovalsView";
 import { DesktopAppView } from "@/views/system/DesktopAppView";
 import { ApiAccessView } from "@/views/system/ApiAccessView";
+import { DocsView } from "@/views/system/DocsView";
 
 export type LucideIcon = typeof Boxes;
 
@@ -315,6 +316,18 @@ export const SECTIONS: Section[] = [
     singlePage: true,
     pages: [],
     render: (ctx) => <ApiAccessView config={ctx.config} />,
+  },
+
+  {
+    key: "internal-docs",
+    label: "Internal Docs",
+    icon: FileText,
+    group: "System",
+    perm: "settings.manage",
+    blurb: "Readable pages for the DSM API/infra access notes (local dev only — real credentials, never in the public repo).",
+    singlePage: true,
+    pages: [],
+    render: () => <DocsView />,
   },
 
   {

@@ -25,6 +25,15 @@ const CHART_TOOLTIP = {
 // Categorical palette (site series) — distinct, works light & dark.
 const SITE_COLORS = ["hsl(4 65% 54%)", "hsl(199 89% 48%)", "hsl(142 62% 45%)", "hsl(38 92% 55%)", "hsl(280 65% 60%)", "hsl(160 60% 45%)"];
 
+// `host` values are full subdomains (e.g. "agentic.digitalsoftwaremarket.ai")
+// — with `interval={0}` forcing every tick to render, plain horizontal text
+// jammed them into an unreadable pile. Rotate + truncate, matching the
+// pattern already used for long labels elsewhere (TrafficReport.tsx,
+// GeoAnalytics.tsx): the full host is still one hover away in the tooltip.
+const MAX_HOST_LABEL = 18;
+const truncateHost = (host: string) =>
+  host.length > MAX_HOST_LABEL ? `${host.slice(0, MAX_HOST_LABEL - 1)}…` : host;
+
 export function LandingCompareView({ config }: { config: AppConfig }) {
   const [events, setEvents] = useState<TelemetryEvent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -96,9 +105,19 @@ export function LandingCompareView({ config }: { config: AppConfig }) {
             <CardContent>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 8, right: 16, left: -8, bottom: 0 }}>
+                  <BarChart data={chartData} margin={{ top: 8, right: 16, left: -8, bottom: 24 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 6% 16%)" vertical={false} />
-                    <XAxis dataKey="host" tick={{ fill: "#9aa0a6", fontSize: 11 }} axisLine={false} tickLine={false} interval={0} />
+                    <XAxis
+                      dataKey="host"
+                      tick={{ fill: "#9aa0a6", fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={0}
+                      angle={-20}
+                      textAnchor="end"
+                      height={56}
+                      tickFormatter={truncateHost}
+                    />
                     <YAxis tick={{ fill: "#9aa0a6", fontSize: 11 }} axisLine={false} tickLine={false} width={44}
                       tickFormatter={(v) => (metric === "ctr" ? `${v}%` : String(v))} />
                     <Tooltip contentStyle={CHART_TOOLTIP} cursor={{ fill: "hsl(220 6% 16%)", opacity: 0.4 }}

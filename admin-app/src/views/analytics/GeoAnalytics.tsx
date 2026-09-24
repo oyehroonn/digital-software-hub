@@ -31,6 +31,7 @@ import {
 import { Globe2, MapPin, Building2, Users, ShoppingBag, DollarSign } from "lucide-react";
 import type { AppConfig } from "@/lib/config";
 import { buildGeo, flagEmoji, project, type CountryStat, type GeoAgg } from "@/lib/geo";
+import { WORLD_OUTLINE_PATH } from "./worldOutline";
 import { useAnalyticsData } from "./useAnalyticsData";
 import { AnalyticsHeader, AnalyticsEmpty, StatTile, MeterBar } from "./shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -123,6 +124,16 @@ function WorldBubbleMap({
         </defs>
 
         <rect x={0} y={0} width={MAP_W} height={MAP_H} rx={14} fill="url(#geo-ocean)" stroke={GRID} />
+
+        {/* Real landmass/country silhouette -- see worldOutline.ts for how this is generated
+           and why the map previously showed no landmasses at all. Same linear equirectangular
+           projection as project() below, so it lines up with every bubble exactly. */}
+        <path
+          d={WORLD_OUTLINE_PATH}
+          fill="hsl(220 10% 20%)"
+          stroke="hsl(220 8% 30%)"
+          strokeWidth={0.6}
+        />
 
         {/* graticule */}
         {graticule.map((lng) => {

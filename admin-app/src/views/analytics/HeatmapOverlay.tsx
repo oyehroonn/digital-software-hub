@@ -15,18 +15,46 @@
  * the screenshot regardless of how wide it renders — so hotspots land on the
  * actual button, card or hero they belong to.
  *
- * Screenshots live in `public/heatmap-pages/<slug>.png` (captured with headless
- * Chrome at 1440px wide). Live telemetry flows through the shared seed-aware
- * data hook, so the overlay renders the deterministic seed until the Apps Script
- * read endpoint is deployed. Pages whose screenshot could not be captured (dead
- * API loaders) degrade to a styled dark frame — the heatmap still draws.
+ * Screenshots live in `public/heatmap-pages/<slug>.png` — full-page captures
+ * (not viewport-only) taken with headless Chrome at a 1440px-wide viewport.
+ * Marketing and Services are now standalone microsites (see public/_redirects
+ * — the in-app /marketing and /services routes just window.location.replace
+ * out to marketing.digitalsoftwaremarket.ai / agentic.digitalsoftwaremarket.ai),
+ * so their screenshots are captured directly from those live subdomains
+ * rather than the old in-app routes, which only ever show a redirect spinner.
+ * The container's aspect ratio is derived from each image's actual natural
+ * size once it loads (see `imgDims` below) rather than a hardcoded guess, so
+ * a screenshot of any height renders at its real proportions instead of
+ * being cropped to a stale assumed height. Live telemetry flows through the
+ * shared seed-aware data hook, so the overlay renders the deterministic seed
+ * until the Apps Script read endpoint is deployed. A page slug added without
+ * a captured screenshot yet still degrades gracefully to a styled dark frame
+ * — the heatmap still draws over it from live/seed telemetry.
+ *
+ * Export (PNG / PDF / CSV): the "Download report" cluster composites the
+ * CURRENTLY visible screenshot + whichever layer canvases are toggled on
+ * (click/move/scroll) at the screenshot's real natural resolution — not the
+ * downscaled on-screen display size — by re-running the exact same
+ * `drawHeatmap`/`drawScroll` primitives the live view uses onto an offscreen
+ * canvas sized to `naturalWidth`×`naturalHeight`. Because the screenshot is
+ * already the full-page capture (Bug 2 fix), the export is automatically
+ * full-page too — there is no separate viewport-only code path. CSV exports
+ * the raw per-point data (x, y as normalized 0..1 fractions of the page,
+ * timestamp, page, layer) behind whichever layer(s) are currently on, read
+ * straight from the underlying telemetry events rather than the aggregated
+ * HeatPoint arrays, so it stays "raw" (one row per real event / grid cell).
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import jsPDF from "jspdf";
 import {
   Camera,
   Eye,
+  FileImage,
+  FileSpreadsheet,
+  FileText,
   Flame,
   ImageOff,
+  Loader2,
   MonitorSmartphone,
   MousePointerClick,
   MoveVertical,
@@ -72,11 +100,11 @@ interface PageDef {
 const SHOT = (slug: string) => `${import.meta.env.BASE_URL}heatmap-pages/${slug}.png`;
 
 /**
- * Only the Home page currently has a live screenshot — the Store / Services /
- * Marketing / Reseller routes hang on the site's dead-API loaders, so they
- * render as styled frames. Each still aggregates any telemetry whose path
- * matches, so seed / live traffic to `/products`, `/pricing`, `/ai-lab` etc.
- * lights up the relevant slot.
+ * Every slot now has a real, full-page screenshot. `imgW`/`imgH` here are
+ * just the pre-load aspect-ratio fallback (used for the first paint before
+ * the <img> fires `onLoad`); the actual displayed aspect ratio always comes
+ * from the loaded image's natural size (see `imgDims` state in the
+ * component), so it doesn't matter if a recapture changes a page's height.
  */
 const PAGES: PageDef[] = [
   {
@@ -92,6 +120,7 @@ const PAGES: PageDef[] = [
     slug: "store",
     label: "Store",
     path: "/store",
+    image: SHOT("store"),
     imgW: 1440,
     imgH: 3000,
     match: (p) => /^\/(store|storefront|products?|shop|catalog|pdp|cart|checkout|item)/.test(p),
@@ -99,7 +128,8 @@ const PAGES: PageDef[] = [
   {
     slug: "services",
     label: "Services",
-    path: "/services",
+    path: "agentic.digitalsoftwaremarket.ai",
+    image: SHOT("services"),
     imgW: 1440,
     imgH: 3000,
     match: (p) => /^\/(services|service|pricing|plans|ai-?lab|enterprise|support)/.test(p),
@@ -107,7 +137,8 @@ const PAGES: PageDef[] = [
   {
     slug: "marketing",
     label: "Marketing",
-    path: "/marketing",
+    path: "marketing.digitalsoftwaremarket.ai",
+    image: SHOT("marketing"),
     imgW: 1440,
     imgH: 3000,
     match: (p) => /^\/(marketing|about|portfolio|blog|case)/.test(p),
@@ -116,6 +147,7 @@ const PAGES: PageDef[] = [
     slug: "reseller",
     label: "Reseller",
     path: "/reseller",
+    image: SHOT("reseller"),
     imgW: 1440,
     imgH: 3000,
     match: (p) => /^\/(reseller|account|partner|affiliate)/.test(p),
@@ -399,8 +431,19 @@ export function HeatmapOverlay({ config }: { config: AppConfig }) {
   const clickCanvas = useRef<HTMLCanvasElement | null>(null);
   const moveCanvas = useRef<HTMLCanvasElement | null>(null);
   const scrollCanvas = useRef<HTMLCanvasElement | null>(null);
+  const shotImg = useRef<HTMLImageElement | null>(null);
   const [dispW, setDispW] = useState(0);
-  const dispH = dispW * (page.imgH / page.imgW);
+
+  // Real aspect ratio per slug, read off each screenshot once it loads
+  // (`img.naturalWidth`/`naturalHeight`). Until then — or for a slug with no
+  // captured screenshot — fall back to the PageDef's placeholder guess. This
+  // is what makes the overlay match a page's TRUE captured height (some
+  // pages are 1.4k px tall, others are 28k+) instead of every slot being
+  // stretched/cropped to one hardcoded aspect ratio.
+  const [imgDims, setImgDims] = useState<Record<string, { w: number; h: number }>>({});
+  const dims = imgDims[slug];
+  const aspect = dims && dims.w > 0 ? dims.h / dims.w : page.imgH / page.imgW;
+  const dispH = dispW * aspect;
 
   // `wrapRef` only exists in the DOM once `isEmpty` is false (the screenshot +
   // canvases are behind that ternary below). On first mount `isEmpty` is still
@@ -482,6 +525,263 @@ export function HeatmapOverlay({ config }: { config: AppConfig }) {
 
   const totalClicks = clicks.length;
   const toggle = (k: LayerKey) => setLayers((s) => ({ ...s, [k]: !s[k] }));
+
+  /* ---------------------------------------------------------------- */
+  /* Export — PNG / PDF / CSV report for the current page + layer(s)   */
+  /* ---------------------------------------------------------------- */
+  const [exporting, setExporting] = useState<"png" | "pdf" | "csv" | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const stamp = () => new Date().toISOString().replace(/[:.]/g, "-");
+
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
+  /** Load a full-resolution <img> for `page.image`, reusing the on-screen one when it's already loaded. */
+  const resolveImage = async (): Promise<HTMLImageElement | null> => {
+    if (!page.image) return null;
+    const live = shotImg.current;
+    if (live && live.complete && live.naturalWidth > 0) return live;
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = page.image!;
+    });
+  };
+
+  /**
+   * Composite the base screenshot + whichever layer(s) are toggled on, at
+   * the screenshot's real natural resolution (full-page, per Bug 2 — never
+   * the truncated/downscaled on-screen display size). Reuses `drawHeatmap`
+   * (click/move) and `drawScroll` (scroll) exactly as the live canvases do,
+   * just onto an offscreen canvas sized to the full capture.
+   */
+  const buildCompositeCanvas = async (): Promise<HTMLCanvasElement | null> => {
+    const img = await resolveImage();
+    const W = img?.naturalWidth || imgDims[slug]?.w || page.imgW;
+    const H = img?.naturalHeight || imgDims[slug]?.h || page.imgH;
+    if (!W || !H) return null;
+
+    const out = document.createElement("canvas");
+    out.width = W;
+    out.height = H;
+    const ctx = out.getContext("2d");
+    if (!ctx) return null;
+
+    if (img) {
+      ctx.drawImage(img, 0, 0, W, H);
+    } else {
+      // No screenshot for this slug (shouldn't happen post-fix, but stay
+      // defensive) — export something valid instead of failing silently.
+      ctx.fillStyle = "#0d0e12";
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    const scale = dispW > 0 ? W / dispW : 1;
+    const alpha = opacity / 100;
+    const drawLayer = (fn: (c: HTMLCanvasElement) => void) => {
+      const tmp = document.createElement("canvas");
+      tmp.width = W;
+      tmp.height = H;
+      fn(tmp);
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(tmp, 0, 0);
+      ctx.globalAlpha = 1;
+    };
+
+    if (layers.scroll && scroll) {
+      drawLayer((tmp) => {
+        const sctx = tmp.getContext("2d");
+        if (sctx) drawScroll(sctx, scroll.bands, W, H);
+      });
+    }
+    if (layers.move && moves.length) {
+      drawLayer((tmp) => drawHeatmap(tmp, moves, { radius: (radius + 8) * scale, intensity: 0.85, ramp: "look" }));
+    }
+    if (layers.click && clicks.length) {
+      drawLayer((tmp) => drawHeatmap(tmp, clicks, { radius: radius * scale, intensity: 0.9, ramp: "click" }));
+    }
+
+    return out;
+  };
+
+  const activeLayerKeys = (Object.keys(layers) as LayerKey[]).filter((k) => layers[k]);
+  const canExport = Boolean(page.image) && dispW > 0;
+
+  const handleExportPng = async () => {
+    setExportError(null);
+    setExporting("png");
+    try {
+      const composite = await buildCompositeCanvas();
+      if (!composite) throw new Error("Couldn't build the report image.");
+      const blob: Blob | null = await new Promise((resolve) => composite.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error("Canvas export produced an empty file.");
+      triggerDownload(blob, `heatmap-${slug}-${activeLayerKeys.join("+") || "blank"}-${stamp()}.png`);
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setExportError(null);
+    setExporting("pdf");
+    try {
+      const composite = await buildCompositeCanvas();
+      if (!composite) throw new Error("Couldn't build the report image.");
+      const W = composite.width;
+      const H = composite.height;
+
+      // The PNG export keeps the full native capture resolution (up to
+      // ~1440×28763 for the tallest pages) — great for a lossless image, but
+      // jsPDF embeds raster data verbatim (no re-encoding), so doing the same
+      // for the PDF produced 100MB+ files. Downscale + re-encode as JPEG for
+      // a report-sized embed; the PDF page's physical dimensions still match
+      // the full-page capture's real aspect ratio, so nothing is cropped.
+      const PDF_RASTER_MAX_W = 1600;
+      const rasterW = Math.min(W, PDF_RASTER_MAX_W);
+      const rasterH = Math.round(H * (rasterW / W));
+      const raster = document.createElement("canvas");
+      raster.width = rasterW;
+      raster.height = rasterH;
+      const rctx = raster.getContext("2d");
+      if (!rctx) throw new Error("Couldn't downscale the report image for PDF.");
+      rctx.fillStyle = "#0b0c0f";
+      rctx.fillRect(0, 0, rasterW, rasterH);
+      rctx.drawImage(composite, 0, 0, rasterW, rasterH);
+      const dataUrl = raster.toDataURL("image/jpeg", 0.85);
+
+      // Fit the (potentially very tall — full-page) capture onto one PDF
+      // page within PDF's ~14400pt page-dimension ceiling, image below a
+      // text header with the report's metadata.
+      const HEADER_PT = 46;
+      let imgWpt = 620;
+      let imgHpt = imgWpt * (H / W);
+      const MAX_PAGE_PT = 14000;
+      if (imgHpt + HEADER_PT > MAX_PAGE_PT) {
+        const f = (MAX_PAGE_PT - HEADER_PT) / imgHpt;
+        imgWpt *= f;
+        imgHpt *= f;
+      }
+      const doc = new jsPDF({ unit: "pt", format: [imgWpt, imgHpt + HEADER_PT] });
+      doc.setFontSize(11);
+      doc.setTextColor(20, 20, 20);
+      doc.text(`DSM Heatmap Report — ${page.label} (${page.path})`, 12, 16);
+      doc.setFontSize(8.5);
+      doc.setTextColor(90, 90, 90);
+      doc.text(
+        `Layer(s): ${activeLayerKeys.join(", ") || "none"}  ·  Range: ${rangeLabel}  ·  Clicks: ${totalClicks}  ·  Sessions: ${
+          scroll?.sessions ?? 0
+        }  ·  Generated ${new Date().toLocaleString()}`,
+        12,
+        30,
+      );
+      doc.addImage(dataUrl, "JPEG", 0, HEADER_PT, imgWpt, imgHpt);
+      doc.save(`heatmap-${slug}-${activeLayerKeys.join("+") || "blank"}-${stamp()}.pdf`);
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const csvCell = (v: string | number) => {
+    const s = String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  /** Raw per-event rows (x, y normalized 0..1, timestamp, page, layer) for whichever layer(s) are on. */
+  const rawExportRows = (): { x: number; y: number; timestamp: string; page: string; layer: LayerKey }[] => {
+    const rows: { x: number; y: number; timestamp: string; page: string; layer: LayerKey }[] = [];
+    const pageLabel = page.path;
+    for (const e of events) {
+      const pUrl = String(field(e, "pageUrl", "page_url") ?? "");
+      if (matchSlug(pUrl) !== slug) continue;
+      const ts = String(e.timestamp ?? "");
+
+      if (layers.click && isClick(e)) {
+        const m = meta(e);
+        const x = num(field(e, "x"));
+        const y = num(field(e, "y"));
+        if (x != null && y != null) {
+          const vw = num(m.vw ?? m.viewportWidth ?? m.innerWidth ?? m.vpW);
+          const dh = num(m.dh ?? m.docHeight ?? m.pageHeight ?? m.scrollHeight ?? m.vh ?? m.viewportHeight ?? m.innerHeight);
+          rows.push({
+            x: vw && vw > 0 ? clamp01(x / vw) : clamp01(x / 100),
+            y: dh && dh > 0 ? clamp01(y / dh) : clamp01(y / 100),
+            timestamp: ts,
+            page: pageLabel,
+            layer: "click",
+          });
+        }
+      }
+
+      if (layers.move && isMove(e)) {
+        const m = meta(e);
+        const grid = m.grid;
+        if (grid && typeof grid === "object") {
+          const cols = num(m.cols) || 20;
+          const rowsN = num(m.rows) || 20;
+          for (const key of Object.keys(grid as Record<string, unknown>)) {
+            const [colStr, rowStr] = key.split(",");
+            const col = Number(colStr);
+            const row = Number(rowStr);
+            if (!Number.isFinite(col) || !Number.isFinite(row)) continue;
+            rows.push({
+              x: clamp01((col + 0.5) / cols),
+              y: clamp01((row + 0.5) / rowsN),
+              timestamp: ts,
+              page: pageLabel,
+              layer: "move",
+            });
+          }
+        } else {
+          const x = num(field(e, "x"));
+          const y = num(field(e, "y"));
+          if (x != null && y != null) {
+            rows.push({ x: clamp01(x / 100), y: clamp01(y / 100), timestamp: ts, page: pageLabel, layer: "move" });
+          }
+        }
+      }
+
+      if (layers.scroll) {
+        const d = extractScrollDepth(e);
+        if (d != null) {
+          rows.push({ x: 0, y: clamp01(d / 100), timestamp: ts, page: pageLabel, layer: "scroll" });
+        }
+      }
+    }
+    return rows;
+  };
+
+  const handleExportCsv = () => {
+    setExportError(null);
+    setExporting("csv");
+    try {
+      const rows = rawExportRows();
+      const header = "x,y,timestamp,page,layer";
+      const body = rows
+        .map((r) => [r.x.toFixed(4), r.y.toFixed(4), csvCell(r.timestamp), csvCell(r.page), r.layer].join(","))
+        .join("\n");
+      const csv = `${header}\n${body}\n`;
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      triggerDownload(blob, `heatmap-${slug}-${activeLayerKeys.join("+") || "blank"}-${stamp()}.csv`);
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setExporting(null);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -574,8 +874,35 @@ export function HeatmapOverlay({ config }: { config: AppConfig }) {
                 on={layers.scroll}
                 onClick={() => toggle("scroll")}
               />
+              <span className="mx-1 h-4 w-px bg-border" />
+              <ExportButton
+                icon={<FileImage className="h-3.5 w-3.5" />}
+                label="PNG"
+                busy={exporting === "png"}
+                disabled={!canExport || exporting !== null}
+                onClick={() => void handleExportPng()}
+              />
+              <ExportButton
+                icon={<FileText className="h-3.5 w-3.5" />}
+                label="PDF"
+                busy={exporting === "pdf"}
+                disabled={!canExport || exporting !== null}
+                onClick={() => void handleExportPdf()}
+              />
+              <ExportButton
+                icon={<FileSpreadsheet className="h-3.5 w-3.5" />}
+                label="CSV"
+                busy={exporting === "csv"}
+                disabled={!canExport || exporting !== null || activeLayerKeys.length === 0}
+                onClick={handleExportCsv}
+              />
             </div>
           </div>
+          {exportError && (
+            <div className="mb-3 rounded-md border border-down/40 bg-down/10 px-3 py-1.5 text-[11px] text-down">
+              Export failed: {exportError}
+            </div>
+          )}
 
           {/* Scroll container so the tall page can be inspected top-to-bottom */}
           <div className="max-h-[76vh] overflow-y-auto overflow-x-hidden rounded-lg border border-border/70 bg-black">
@@ -588,10 +915,17 @@ export function HeatmapOverlay({ config }: { config: AppConfig }) {
               >
                 {page.image ? (
                   <img
+                    ref={shotImg}
                     src={page.image}
                     alt={`${page.label} page screenshot`}
                     className="absolute inset-0 h-full w-full select-none object-cover object-top"
                     draggable={false}
+                    onLoad={(e) => {
+                      const t = e.currentTarget;
+                      const w = t.naturalWidth;
+                      const h = t.naturalHeight;
+                      setImgDims((d) => (d[slug]?.w === w && d[slug]?.h === h ? d : { ...d, [slug]: { w, h } }));
+                    }}
                   />
                 ) : (
                   <PlaceholderFrame label={page.label} />
@@ -804,6 +1138,35 @@ function LayerToggle({
       )}
     >
       {icon}
+      {label}
+    </button>
+  );
+}
+
+function ExportButton({
+  icon,
+  label,
+  busy,
+  disabled,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  busy: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={`Download ${label} report`}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground",
+        disabled && "cursor-not-allowed opacity-40 hover:text-muted-foreground",
+      )}
+    >
+      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : icon}
       {label}
     </button>
   );
