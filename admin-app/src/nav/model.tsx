@@ -30,6 +30,7 @@ import {
   FlaskConical,
   Flame,
   Gauge,
+  GitMerge,
   Globe,
   HeartPulse,
   Inbox,
@@ -77,6 +78,7 @@ import { DashboardView } from "@/views/dashboard/DashboardView";
 import { ApprovalsView } from "@/views/approvals/ApprovalsView";
 import { DesktopAppView } from "@/views/system/DesktopAppView";
 import { ApiAccessView } from "@/views/system/ApiAccessView";
+import { MergeRequestsView } from "@/views/system/MergeRequestsView";
 import { DocsView } from "@/views/system/DocsView";
 
 export type LucideIcon = typeof Boxes;
@@ -316,6 +318,19 @@ export const SECTIONS: Section[] = [
     singlePage: true,
     pages: [],
     render: (ctx) => <ApiAccessView config={ctx.config} />,
+  },
+
+  {
+    key: "merge-requests",
+    label: "Merge Requests",
+    icon: GitMerge,
+    group: "System",
+    perm: "settings.manage",
+    blurb:
+      "Review and approve/reject staging deploys from the Agent File Gateway — real diff, live staging URL, real merge-to-production on approve.",
+    singlePage: true,
+    pages: [],
+    render: (ctx) => <MergeRequestsView config={ctx.config} />,
   },
 
   {
