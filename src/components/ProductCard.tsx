@@ -74,14 +74,20 @@ export default function ProductCard({ product, viewMode = 'grid', onClick }: Pro
             </div>
           </div>
           <div className="text-right">
-            {mp ? (
-              <>
-                <div className="font-serif text-lg text-crimson mb-0.5">{mp.formatted}</div>
-                <div className="text-xs text-[#B1B2B3]/50 line-through">{product.price}</div>
-              </>
-            ) : (
-              <div className="font-serif text-lg text-[#FEFEFE] mb-1">{product.price}</div>
-            )}
+            {/* Both rows always render (CLS guard) — only their content/visibility
+                changes with membership, so the card never grows/shrinks in place
+                when member pricing resolves (e.g. right after sign-in). */}
+            <div
+              className={`font-serif text-lg mb-0.5 ${mp ? 'text-crimson' : 'text-[#FEFEFE]'}`}
+            >
+              {mp ? mp.formatted : product.price}
+            </div>
+            <div
+              className={`text-xs text-[#B1B2B3]/50 line-through ${mp ? '' : 'invisible'}`}
+              aria-hidden={!mp}
+            >
+              {product.price}
+            </div>
             <div className="text-xs text-[#B1B2B3]/50">{product.licenseType}</div>
           </div>
         </div>
@@ -144,22 +150,34 @@ export default function ProductCard({ product, viewMode = 'grid', onClick }: Pro
           {product.name}
         </h3>
         <p className="text-xs text-muted-foreground line-clamp-1">{product.description}</p>
-        <div className="flex items-center justify-between mt-2">
-          <Badge variant="outline" className="text-[10px] text-muted-foreground">
+        <div className="flex items-center justify-between gap-2 mt-2">
+          <Badge variant="outline" className="min-w-0 truncate text-[10px] text-muted-foreground">
             {product.category}
           </Badge>
+          {/* shrink-0 + whitespace-nowrap: the member-price cluster (two spans)
+              is wider than the single guest price, so without this it could
+              wrap onto its own second line once the category badge crowds it —
+              another source of card-height CLS on sign-in. */}
           {mp ? (
-            <span className="flex items-baseline gap-1.5">
+            <span className="flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
               <span className="text-[11px] text-muted-foreground/60 line-through">{product.price}</span>
               <span className="font-serif text-sm text-crimson">{mp.formatted}</span>
             </span>
           ) : (
-            <span className="font-serif text-sm text-foreground">{product.price}</span>
+            <span className="shrink-0 whitespace-nowrap font-serif text-sm text-foreground">
+              {product.price}
+            </span>
           )}
         </div>
-        {mp && (
-          <p className="text-[10px] uppercase tracking-wider text-crimson/80">Member price applied</p>
-        )}
+        {/* Always rendered (CLS guard): the card's height must not change the
+            moment member pricing resolves (e.g. right after sign-in), so this
+            row stays in the layout and only its visibility toggles. */}
+        <p
+          className={`text-[10px] uppercase tracking-wider text-crimson/80 ${mp ? '' : 'invisible'}`}
+          aria-hidden={!mp}
+        >
+          Member price applied
+        </p>
       </div>
     </div>
   );

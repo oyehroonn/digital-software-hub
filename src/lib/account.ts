@@ -665,8 +665,17 @@ export function memberPrice(
   pct: number = MEMBER_DISCOUNT_PCT,
 ): MemberPrice | null {
   if (priceText == null) return null;
-  const text = String(priceText);
-  const match = text.replace(/,/g, '').match(/(\d+(?:\.\d+)?)/);
+  // Strip thousands separators first and match/slice against that SAME string
+  // throughout — matching against the stripped text but then indexOf()-ing
+  // into the original (comma-containing) text silently fails whenever the
+  // number has a thousands separator (e.g. "AED 1,466.00": the stripped match
+  // "1466.00" is never found inside "AED 1,466.00"), which used to make the
+  // currency prefix swallow almost the whole string and render a garbled,
+  // wrapping price like "AED 1,466.0 1319.40" — a real product bug, and it
+  // also caused the product card to grow an extra line (CLS) once the long
+  // string wrapped.
+  const text = String(priceText).replace(/,/g, '');
+  const match = text.match(/(\d+(?:\.\d+)?)/);
   if (!match) return null;
   const original = Number.parseFloat(match[1]);
   if (!Number.isFinite(original) || original <= 0) return null;
