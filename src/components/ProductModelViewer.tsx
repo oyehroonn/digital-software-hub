@@ -342,6 +342,7 @@ const ProductModelViewer = ({
   }, [startShowroomMotion]);
 
   const handleLoad = useCallback(() => {
+    if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] load fired", glbSrc);
     setIsLoaded(true);
     const mv = modelRef.current;
     if (mv) {
@@ -351,7 +352,7 @@ const ProductModelViewer = ({
       mv.setAttribute("rotation-per-second", `${IDLE_SPEED}deg`);
       startShowroomMotion();
     }
-  }, [startShowroomMotion]);
+  }, [startShowroomMotion, glbSrc]);
 
   // Track real download progress (model-viewer dispatches `progress` with
   // detail.totalProgress in [0, 1]) so the stall-detector below can tell a
@@ -359,12 +360,14 @@ const ProductModelViewer = ({
   const handleProgress = useCallback((e: Event) => {
     const detail = (e as CustomEvent<{ totalProgress?: number }>).detail;
     const value = detail?.totalProgress ?? 0;
+    if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] progress", glbSrc.slice(-40), value);
     if (value > lastProgressRef.current.value || lastProgressRef.current.at === 0) {
       lastProgressRef.current = { value, at: performance.now() };
     }
-  }, []);
+  }, [glbSrc]);
 
   const handleError = useCallback(() => {
+    if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] error fired", glbSrc, "retryCount", retryCountRef.current);
     // The first few concurrently mounted WebGL viewers can emit a transient
     // error while the custom element is initialising. Remount once before
     // showing a letter placeholder; genuine broken links still degrade safely.
@@ -377,17 +380,21 @@ const ProductModelViewer = ({
       return;
     }
     setHasError(true);
-  }, []);
+  }, [glbSrc]);
 
   // Wait for a free concurrency slot before actually mounting <model-viewer>.
   // Re-acquire on every fresh attempt (visibility regained, or the one
   // auto-retry after an error swaps the element key).
   useEffect(() => {
     if (!isVisible || !mvReady) return;
+    if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] requesting slot", glbSrc.slice(-40), "activeLoadSlots=", activeLoadSlots, "waiters=", slotWaiters.length);
     setHasSlot(false);
     let cancelled = false;
     const release = acquireLoadSlot(() => {
-      if (!cancelled) setHasSlot(true);
+      if (!cancelled) {
+        if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] slot GRANTED", glbSrc.slice(-40));
+        setHasSlot(true);
+      }
     }, priority);
     releaseSlotRef.current = release;
     return () => {
@@ -395,7 +402,7 @@ const ProductModelViewer = ({
       release();
       if (releaseSlotRef.current === release) releaseSlotRef.current = null;
     };
-  }, [isVisible, mvReady, modelAttempt, priority]);
+  }, [isVisible, mvReady, modelAttempt, priority, glbSrc]);
 
   // Free the slot as soon as there's a result so the next queued card can
   // start — the already-mounted viewer keeps rendering regardless.
@@ -422,19 +429,25 @@ const ProductModelViewer = ({
   // advancing (dead link, CORS block, network drop) gets flagged quickly.
   useEffect(() => {
     if (!isVisible || !mvReady || !hasSlot || isLoaded || hasError) return;
+    if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] stall-check EFFECT (re)started", glbSrc.slice(-40));
 
     const interval = window.setInterval(() => {
       const now = performance.now();
       const sinceProgress = now - (lastProgressRef.current.at || now);
       const sinceStart = now - (loadStartedAtRef.current || now);
+      if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] tick", glbSrc.slice(-40), "sinceProgress=", Math.round(sinceProgress), "sinceStart=", Math.round(sinceStart), "progressVal=", lastProgressRef.current.value);
 
       if (sinceProgress >= STALL_TIMEOUT || sinceStart >= ABSOLUTE_TIMEOUT) {
+        if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] STALL FIRED -> hasError=true", glbSrc.slice(-40));
         setHasError(true);
       }
     }, STALL_CHECK_INTERVAL);
 
-    return () => window.clearInterval(interval);
-  }, [isVisible, mvReady, hasSlot, isLoaded, hasError, modelAttempt]);
+    return () => {
+      if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] stall-check effect CLEANUP (interval cleared)", glbSrc.slice(-40));
+      window.clearInterval(interval);
+    };
+  }, [isVisible, mvReady, hasSlot, isLoaded, hasError, modelAttempt, glbSrc]);
 
   useEffect(() => {
     return () => {
