@@ -431,15 +431,36 @@ const ProductModelViewer = ({
     if (!isVisible || !mvReady || !hasSlot || isLoaded || hasError) return;
     if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] stall-check EFFECT (re)started", glbSrc.slice(-40));
 
+    // handleError()'s retry remount is async (a 350ms setTimeout before
+    // modelAttempt changes and this effect re-runs), so guard against this
+    // same interval firing a second time in that window and immediately
+    // exhausting the one retry before it's had a chance to run.
+    let fired = false;
+
     const interval = window.setInterval(() => {
+      if (fired) return;
       const now = performance.now();
       const sinceProgress = now - (lastProgressRef.current.at || now);
       const sinceStart = now - (loadStartedAtRef.current || now);
       if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] tick", glbSrc.slice(-40), "sinceProgress=", Math.round(sinceProgress), "sinceStart=", Math.round(sinceStart), "progressVal=", lastProgressRef.current.value);
 
       if (sinceProgress >= STALL_TIMEOUT || sinceStart >= ABSOLUTE_TIMEOUT) {
-        if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] STALL FIRED -> hasError=true", glbSrc.slice(-40));
-        setHasError(true);
+        fired = true;
+        if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] STALL FIRED -> handleError()", glbSrc.slice(-40));
+        // Route through the same give-up-or-retry path as a genuine `error`
+        // event, rather than jumping straight to the fallback icon. Isolated
+        // testing (a single <model-viewer> alone on a blank page, nothing
+        // else competing) shows these exact GLBs load in well under a
+        // second — so a stall here isn't a bad file, it's some concurrent-
+        // mount race inside model-viewer's own init path that wedges just
+        // this one instance. Removing every OTHER already-loaded viewer on
+        // the page doesn't unstick it either (confirmed live) — it's a
+        // dead, unrecoverable instance, not something waiting on a shared
+        // resource that frees up. A fresh remount (new key -> brand new
+        // <model-viewer> + new internal state) reliably works because by
+        // the time the retry fires, the initial pile-up of simultaneous
+        // mounts has long since settled.
+        handleError();
       }
     }, STALL_CHECK_INTERVAL);
 
@@ -447,7 +468,7 @@ const ProductModelViewer = ({
       if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] stall-check effect CLEANUP (interval cleared)", glbSrc.slice(-40));
       window.clearInterval(interval);
     };
-  }, [isVisible, mvReady, hasSlot, isLoaded, hasError, modelAttempt, glbSrc]);
+  }, [isVisible, mvReady, hasSlot, isLoaded, hasError, modelAttempt, glbSrc, handleError]);
 
   useEffect(() => {
     return () => {
