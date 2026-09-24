@@ -15,15 +15,18 @@ const Hero = () => {
   const { containerRef, glowRef } = useCursorGlow();
   const [meshAccent, setMeshAccent] = useState<MeshAccent>("red");
 
-  // Defer the WebGL hero until the browser is idle. three.js + UnrealBloom init
-  // is a long main-thread task; mounting it after first paint / interactivity
-  // slashes Total Blocking Time (the page is usable before the mesh appears).
+  // Mount the WebGL hero fast: start fetching the three.js chunk immediately
+  // (in parallel with the rest of the page) instead of waiting for idle to
+  // even start the download, then mount after a short idle/timeout window
+  // (not blocking first paint, but no longer leaving the static gradient
+  // showing for seconds).
   const [showMesh, setShowMesh] = useState(false);
   useEffect(() => {
+    import("./HeroMesh");
     const ric: (cb: () => void) => number =
       (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback
-        ? (cb) => (window as unknown as { requestIdleCallback: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback(cb, { timeout: 2500 })
-        : (cb) => window.setTimeout(cb, 1200);
+        ? (cb) => (window as unknown as { requestIdleCallback: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback(cb, { timeout: 400 })
+        : (cb) => window.setTimeout(cb, 200);
     const id = ric(() => setShowMesh(true));
     return () => {
       const cic = (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
