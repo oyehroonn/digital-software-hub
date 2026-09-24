@@ -243,14 +243,31 @@ function buildLeadOrder(
 
 // ── Inner feature (only mounted when codex-proxy is healthy) ─────────────────
 
-function InstantQuoteInner() {
-  const [need, setNeed] = useState('');
+export interface InstantQuoteProps {
+  /**
+   * Pre-fill the "what do you need" textarea, e.g. with a product name a
+   * visitor just clicked "Buy Now" on but that has no confident WooCommerce
+   * checkout match — so they don't have to re-type what they already told us.
+   */
+  initialNeed?: string;
+  /** Pre-fill the email field too, e.g. from a checkout form already filled in. */
+  initialEmail?: string;
+  /**
+   * Tags the resulting Orders-sheet lead/quote row so the admin can tell this
+   * request apart from the Home-hero "Instant Quote Genie" (e.g. when this is
+   * embedded as the unmatched-product quote flow on /checkout).
+   */
+  leadSource?: string;
+}
+
+function InstantQuoteInner({ initialNeed = '', initialEmail = '', leadSource = 'instant-quote' }: InstantQuoteProps) {
+  const [need, setNeed] = useState(initialNeed);
   const [phase, setPhase] = useState<Phase>('idle');
   const [quote, setQuote] = useState<Quote | null>(null);
   const [matches, setMatches] = useState<Product[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<'no' | 'delivered' | 'queued'>('no');
   const [emailError, setEmailError] = useState('');
@@ -328,7 +345,7 @@ function InstantQuoteInner() {
     captureLead({
       email: to,
       source: 'quote',
-      productName: 'Instant Quote request',
+      productName: leadSource === 'instant-quote' ? 'Instant Quote request' : 'Quote request (unmatched product)',
       notes: quoteToText(quote, need),
     });
 
@@ -347,7 +364,7 @@ function InstantQuoteInner() {
     // Stable path: record the quote as a lead in the Orders sheet. submitOrder
     // never rejects — it confirms, or parks in the offline queue and retries.
     try {
-      const res = await submitOrder(buildLeadOrder(to, need, quote, 'instant-quote'));
+      const res = await submitOrder(buildLeadOrder(to, need, quote, leadSource));
       setSent(res.confirmed ? 'delivered' : 'queued');
     } catch {
       setSent('queued');
@@ -374,6 +391,7 @@ function InstantQuoteInner() {
         <QuoteBetaSignup
           reason="error"
           prefillNeed={trimmed}
+          prefillEmail={email}
           onRetry={() => {
             setErrorMsg('');
             setPhase('idle');
@@ -652,12 +670,14 @@ interface BetaSignupProps {
   /** Why we're degrading — tunes the copy and the telemetry. */
   reason: 'offline' | 'error';
   prefillNeed?: string;
+  /** Pre-fill the email field too, e.g. from a checkout form the visitor already filled in. */
+  prefillEmail?: string;
   onRetry?: () => void;
 }
 
-function QuoteBetaSignup({ reason, prefillNeed = '', onRetry }: BetaSignupProps) {
+function QuoteBetaSignup({ reason, prefillNeed = '', prefillEmail = '', onRetry }: BetaSignupProps) {
   const [need, setNeed] = useState(prefillNeed);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(prefillEmail);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
@@ -880,19 +900,30 @@ function quoteToHtml(quote: Quote, need: string): string {
 // ── Public export: codex-gated wrapper ───────────────────────────────────────
 
 /**
- * Home-hero Instant Quote. When the LLM backend is healthy it renders the live
- * quote builder; when it's down it degrades to a beta-signup lead capture rather
- * than disappearing, so the hero always converts (the resilience contract).
- * Drop it straight into the hero — no props.
+ * Instant Quote. When the LLM backend is healthy it renders the live quote
+ * builder; when it's down it degrades to a beta-signup lead capture rather
+ * than disappearing, so it always converts (the resilience contract) — this
+ * is enforced here via `fallback`, not left for the caller to wire up.
+ *
+ * Drop it straight into the Home hero with no props, or reuse it anywhere a
+ * visitor needs a tailored quote — e.g. `/checkout`'s unmatched-product path
+ * passes `initialNeed`/`initialEmail`/`leadSource` so the request is
+ * pre-filled with what the visitor already told us and tagged distinctly in
+ * the admin Orders view.
  */
-export default function InstantQuote() {
+export default function InstantQuote({ initialNeed = '', initialEmail = '', leadSource = 'instant-quote' }: InstantQuoteProps) {
   return (
     <AIFeature
       backend="codex"
       feature="quote-genie"
       recheckMs={60000}
+      fallback={
+        <QuoteShell>
+          <QuoteBetaSignup reason="offline" prefillNeed={initialNeed} prefillEmail={initialEmail} />
+        </QuoteShell>
+      }
     >
-      <InstantQuoteInner />
+      <InstantQuoteInner initialNeed={initialNeed} initialEmail={initialEmail} leadSource={leadSource} />
     </AIFeature>
   );
 }

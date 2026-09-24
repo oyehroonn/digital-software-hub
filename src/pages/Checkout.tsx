@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
   CalendarClock,
   CheckCircle2,
   ExternalLink,
+  FileText,
   Loader2,
   Mail,
   ShieldCheck,
@@ -13,13 +14,14 @@ import {
 import AnnouncementBar from "@/components/AnnouncementBar";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import InstantQuote from "@/components/ai/InstantQuote";
 import { useApp } from "@/contexts/AppContext";
 import type { CartItem } from "@/contexts/AppContext";
 import { isValidEmail, signIn } from "@/lib/account";
 import { submitOrder } from "@/lib/stable/orders";
-import { sendProxyEmail } from "@/lib/emailProxy";
+import { sendProxyEmail, type EmailProxyResult } from "@/lib/emailProxy";
 import { isOwnProduct } from "@/data/ownProducts";
-import { purchaseUrl, hasWooMatch, OLD_WEB_BASE } from "@/lib/legacyStore";
+import { wooCheckoutUrl, hasWooMatch } from "@/lib/legacyStore";
 import { track, reportAiOutage } from "@/lib/stable/analytics";
 
 const formatAED = (value: number) =>
@@ -28,6 +30,15 @@ const formatAED = (value: number) =>
     currency: "AED",
     maximumFractionDigits: 2,
   }).format(value);
+
+/** Pre-fill text for the Instant Quote "what do you need" field from cart items
+ *  we don't have a confident WooCommerce checkout match for. */
+function quoteNeedText(items: CartItem[]): string {
+  const list = items
+    .map((i) => (i.quantity > 1 ? `${i.name} (x${i.quantity})` : i.name))
+    .join(", ");
+  return `I'd like pricing and licensing details for: ${list}.`;
+}
 
 // ⚠️ FLAG: placeholder Calendly link for the DSM own-product "book a meeting"
 // flow. Replace with the real scheduling link (env: VITE_CALENDLY_URL).
@@ -46,10 +57,17 @@ interface OwnResult {
 interface LicensingResult {
   kind: "licensing";
   emailOk: boolean;
-  /** Product name → old-web purchase URL for the license items. */
-  links: { name: string; url: string; matched: boolean }[];
-  /** Where we auto-redirect the buyer to finish the purchase. */
-  redirectUrl: string;
+  /** Items with a confident WooCommerce match — real add-to-cart checkout links. */
+  matchedLinks: { name: string; url: string }[];
+  /**
+   * Items with NO confident WooCommerce match. These no longer get a guessed
+   * product-page link — instead the checkout renders a "Request a Quote" CTA
+   * (the Instant Quote component) pre-filled with these names.
+   */
+  quoteItems: CartItem[];
+  /** Where we auto-redirect the buyer to finish the purchase — only set when
+   *  at least one item has a real checkout link. */
+  redirectUrl?: string;
 }
 type SubmitResult = OwnResult | LicensingResult;
 
@@ -84,6 +102,37 @@ export default function Checkout() {
 
   const isOwnPath = path === "own";
 
+  // Split the license items themselves into a confident WooCommerce
+  // add-to-cart-and-checkout deep-link vs. no match at all. Computed once,
+  // up front, so both the render (deciding whether to show the name/email
+  // gate at all) and the submit handler agree on the exact same split.
+  const { matchedLinks, quoteItems } = useMemo(() => {
+    const matched = licenseItems
+      .filter((i) => hasWooMatch({ id: i.id, name: i.name }))
+      .map((i) => ({
+        name: i.name,
+        url: wooCheckoutUrl({ id: i.id, name: i.name }, i.quantity) as string,
+      }));
+    const quote = licenseItems.filter((i) => !hasWooMatch({ id: i.id, name: i.name }));
+    return { matchedLinks: matched, quoteItems: quote };
+  }, [licenseItems]);
+
+  // True when EVERY license item in the cart has no confident WooCommerce
+  // match — i.e. this submit can only end in a quote request, never a real
+  // checkout redirect. Used to set expectations before the buyer submits.
+  const isQuoteOnlyPath = !isOwnPath && licenseItems.length > 0 && matchedLinks.length === 0;
+
+  // True when we already know EXACTLY where to send the buyer for every item
+  // in the cart — a real WooCommerce checkout link for each one, nothing
+  // unmatched. This is the case the "Create Order Request" name/email screen
+  // was needlessly gating: we don't need the buyer's name or email to send
+  // them to a checkout page we already have the URL for, so we skip that
+  // screen entirely and redirect the instant they land here (see the effect
+  // below). The name/email gate stays reserved for the genuine cases where a
+  // human follow-up actually needs a way to reach the buyer: booking a demo
+  // for DSM's own products, or quoting an item with no confident match.
+  const isInstantCheckoutPath = !isOwnPath && matchedLinks.length > 0 && quoteItems.length === 0;
+
   async function recordOrders(customerName: string) {
     // One durable order row per line item on the STABLE Ecommerce Apps Script,
     // so every request shows up in the admin Orders sheet. Resilient by design
@@ -103,7 +152,9 @@ export default function Checkout() {
             `path=${path}`,
             isOwnProduct({ id: it.id, name: it.name })
               ? "type=own-product/meeting-request"
-              : "type=license/redirect-to-legacy",
+              : hasWooMatch({ id: it.id, name: it.name })
+                ? "type=license/redirect-to-legacy"
+                : "type=license/quote-request",
             intent.trim() ? `intent: ${intent.trim()}` : "",
           ]
             .filter(Boolean)
@@ -112,6 +163,50 @@ export default function Checkout() {
       ),
     );
   }
+
+  // Guards the instant-checkout effect below against firing twice (React 18
+  // dev-mode double-invoke, or a re-render before the navigation completes).
+  const instantFiredRef = useRef(false);
+
+  // The actual fix: when every item in the cart has a confident WooCommerce
+  // checkout link, skip the "Create Order Request" name/email screen
+  // entirely and send the buyer straight to checkout — the moment they land
+  // on this page, with no click required past the one that got them here
+  // (Buy Now, or Proceed to Checkout from the cart). We still record the
+  // order and fire the same UTM-tagged link the form path used to build, but
+  // neither blocks the redirect: order-recording is fire-and-forget, and the
+  // UTM tagging lives in the URL itself (`wooCheckoutUrl`), not in anything
+  // the buyer types.
+  useEffect(() => {
+    if (!isInstantCheckoutPath || instantFiredRef.current) return;
+    const redirectUrl = matchedLinks[0]?.url;
+    if (!redirectUrl) return; // shouldn't happen given the guard above, but never redirect to nothing
+    instantFiredRef.current = true;
+
+    // Fire-and-forget: never awaited, never blocks the redirect. We don't
+    // have a buyer-supplied name/email here (that's the point — we already
+    // know where to send them), so this is recorded as a guest lead; the
+    // real customer details are captured by WooCommerce's own checkout.
+    void recordOrders("Guest (instant checkout)").catch(() => {});
+
+    track({
+      event: "checkout_license_request",
+      eventType: "ecommerce",
+      metadata: {
+        itemCount: licenseItems.length,
+        matchedCount: matchedLinks.length,
+        quoteCount: 0,
+        instant: true,
+        redirectUrl,
+      },
+    });
+
+    clearCart();
+    window.location.assign(redirectUrl);
+    // Deliberately narrow deps: recordOrders/track/clearCart close over
+    // component state that doesn't need to re-trigger this redirect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInstantCheckoutPath, matchedLinks, licenseItems.length]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -165,48 +260,63 @@ export default function Checkout() {
         setResult({ kind: "own", emailOk: emailRes.ok });
         clearCart();
       } else {
-        // Precise add-to-cart-and-go-to-checkout deep-link when we have a
-        // confident WooCommerce match (see src/lib/legacyStore.ts), else the
-        // existing best-effort guessed product-page link — never a hard dead
-        // end. Both are UTM-tagged for sales attribution on the old site.
-        const links = licenseItems.map((i) => ({
-          name: i.name,
-          url: purchaseUrl({ id: i.id, name: i.name }, i.quantity),
-          matched: hasWooMatch({ id: i.id, name: i.name }),
-        }));
-        // Auto-redirect to the first item we have a confident Woo match for
-        // (lands directly on checkout, item already in cart) when one
-        // exists; otherwise fall back to the first item's guessed link.
-        const redirectUrl =
-          links.find((l) => l.matched)?.url ?? links[0]?.url ?? `${OLD_WEB_BASE}/`;
+        // NOTE: this branch only runs when the buyer actually submitted the
+        // name/email form, which by this point in the flow only happens when
+        // `isInstantCheckoutPath` was false — i.e. there's at least one item
+        // with NO confident WooCommerce match, so a genuine follow-up (quote
+        // or, further up, an own-product demo) needs a way to reach the
+        // buyer. A pure confident-match cart never reaches here — it's
+        // redirected straight to WooCommerce checkout by the effect below,
+        // before this form is ever shown. `matchedLinks` / `quoteItems` are
+        // the same split computed above (shared with the render).
+        // Only auto-redirect when at least one item has a real checkout link.
+        const redirectUrl = matchedLinks[0]?.url;
 
-        const emailRes = await sendProxyEmail({
-          to: cleanEmail,
-          subject: "Your DSM order request — complete your purchase",
-          body:
-            `Hi ${name.trim()},\n\n` +
-            `Here are the products you asked about — click to complete your ` +
-            `licensed purchase on our store:\n\n` +
-            links.map((l) => `• ${l.name}\n  ${l.url}`).join("\n\n") +
-            `\n\n` +
-            (intent.trim() ? `Your note: ${intent.trim()}\n\n` : "") +
-            `We've also opened the first product for you now.\n\nThe DSM Team`,
-        });
-        if (!emailRes.ok) reportAiOutage("email-proxy", "checkout-license", emailRes.error);
+        let emailRes: EmailProxyResult = { ok: true };
+        if (matchedLinks.length > 0) {
+          emailRes = await sendProxyEmail({
+            to: cleanEmail,
+            subject: "Your DSM order request — complete your purchase",
+            body:
+              `Hi ${name.trim()},\n\n` +
+              `Here are the products you asked about — click to complete your ` +
+              `licensed purchase on our store:\n\n` +
+              matchedLinks.map((l) => `• ${l.name}\n  ${l.url}`).join("\n\n") +
+              (quoteItems.length > 0
+                ? `\n\nWe don't have instant checkout set up yet for:\n${quoteItems
+                    .map((i) => `• ${i.name}`)
+                    .join("\n")}\n` +
+                  `A DSM specialist will follow up with a tailored quote for those.`
+                : "") +
+              `\n\n` +
+              (intent.trim() ? `Your note: ${intent.trim()}\n\n` : "") +
+              `We've also opened the first product for you now.\n\nThe DSM Team`,
+          });
+          if (!emailRes.ok) reportAiOutage("email-proxy", "checkout-license", emailRes.error);
+        }
 
         track({
           event: "checkout_license_request",
           eventType: "ecommerce",
-          metadata: { itemCount: licenseItems.length, emailOk: emailRes.ok, redirectUrl },
+          metadata: {
+            itemCount: licenseItems.length,
+            matchedCount: matchedLinks.length,
+            quoteCount: quoteItems.length,
+            emailOk: emailRes.ok,
+            redirectUrl,
+          },
         });
 
-        setResult({ kind: "licensing", emailOk: emailRes.ok, links, redirectUrl });
+        setResult({ kind: "licensing", emailOk: emailRes.ok, matchedLinks, quoteItems, redirectUrl });
         clearCart();
 
-        // Redirect to the legacy store to finish the purchase.
-        window.setTimeout(() => {
-          window.location.assign(redirectUrl);
-        }, REDIRECT_DELAY_MS);
+        // Redirect to the legacy store to finish the purchase — only when we
+        // actually have somewhere real to send the buyer.
+        if (redirectUrl) {
+          window.setTimeout(() => {
+            window.location.assign(redirectUrl);
+          }, REDIRECT_DELAY_MS);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -223,17 +333,25 @@ export default function Checkout() {
       <main className="max-w-[1600px] mx-auto px-6 pt-44 pb-16">
         <div className="mb-10">
           <span className="inline-block text-[10px] font-semibold text-crimson uppercase tracking-[0.2em] mb-3">
-            {isOwnPath ? "Request a Demo" : "Complete Your Request"}
+            {isOwnPath ? "Request a Demo" : isInstantCheckoutPath ? "Checkout" : "Complete Your Request"}
           </span>
           <h1 className="font-serif text-4xl md:text-5xl text-[#FEFEFE] mb-2">
-            {result ? "You're all set" : isOwnPath ? "Book Your DSM Session" : "Create Order Request"}
+            {result
+              ? "You're all set"
+              : isInstantCheckoutPath
+              ? "Taking You to Checkout"
+              : isOwnPath
+              ? "Book Your DSM Session"
+              : "Create Order Request"}
           </h1>
           <p className="text-[#B1B2B3]/65">
             {result
               ? "We've saved your request and sent you an email."
+              : isInstantCheckoutPath
+              ? "We already know exactly what you're buying — no forms needed. Sending you straight to our licensed store to pay."
               : isOwnPath
               ? "Tell us who you are — we'll email a booking link and set up a live walkthrough."
-              : "Sign in with just your email, and we'll send your purchase links and take you to checkout."}
+              : "Sign in with just your email, and we'll get you straight to checkout — or a tailored quote for anything we don't sell instantly."}
           </p>
         </div>
 
@@ -280,23 +398,92 @@ export default function Checkout() {
         )}
 
         {result?.kind === "licensing" && (
+          <div className="max-w-3xl space-y-8">
+            {result.matchedLinks.length > 0 && (
+              <section className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-6 md:p-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <Loader2 className="w-6 h-6 text-crimson animate-spin" />
+                  <h2 className="font-serif text-2xl text-[#FEFEFE]">Taking you to checkout…</h2>
+                </div>
+                <p className="text-[#B1B2B3]/80 mb-2">
+                  Your request is saved and we've emailed{" "}
+                  <span className="text-[#FEFEFE]">{email.trim()}</span> your purchase links.
+                  Redirecting you to complete the purchase now.
+                </p>
+                {!result.emailOk && (
+                  <p className="text-[11px] text-amber-400/80 mb-2">
+                    (The email is still sending in the background.)
+                  </p>
+                )}
+                <div className="mt-5 space-y-2">
+                  {result.matchedLinks.map((l) => (
+                    <a
+                      key={l.url}
+                      href={l.url}
+                      className="flex items-center justify-between gap-3 rounded-md border border-white/[0.1] bg-white/[0.02] px-4 py-3 text-sm text-[#FEFEFE] hover:border-crimson/40 transition-colors"
+                    >
+                      <span className="truncate">{l.name}</span>
+                      <ExternalLink className="w-4 h-4 text-crimson shrink-0" />
+                    </a>
+                  ))}
+                </div>
+                {result.redirectUrl && (
+                  <a
+                    href={result.redirectUrl}
+                    className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-crimson text-[#FEFEFE] rounded-sm text-xs font-semibold uppercase tracking-[0.14em] hover:bg-crimson-dark transition-colors"
+                  >
+                    Continue now
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </section>
+            )}
+
+            {result.quoteItems.length > 0 && (
+              <section>
+                <div className="mb-4 flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-crimson" />
+                  <div>
+                    <h2 className="font-serif text-2xl text-[#FEFEFE]">
+                      {result.matchedLinks.length > 0
+                        ? "Get a quote for the rest"
+                        : "Let's get you a tailored quote"}
+                    </h2>
+                    <p className="mt-1 text-sm text-[#B1B2B3]/70">
+                      We don't have instant checkout set up yet for{" "}
+                      {result.quoteItems.length === 1
+                        ? result.quoteItems[0].name
+                        : `${result.quoteItems.length} of your items`}
+                      . Confirm below and we'll send you a priced quote right away.
+                    </p>
+                  </div>
+                </div>
+                <InstantQuote
+                  initialNeed={quoteNeedText(result.quoteItems)}
+                  initialEmail={email.trim()}
+                  leadSource="checkout-unmatched-product"
+                />
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* ── Instant checkout: every item has a confident WooCommerce match ──
+            No name/email screen at all — the effect above fires the redirect
+            the moment this renders. This panel is purely informational (it
+            asks for nothing) and is on screen only as long as the browser
+            takes to act on window.location.assign. ─────────────────────── */}
+        {!result && items.length > 0 && isInstantCheckoutPath && (
           <section className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-6 md:p-8 max-w-2xl">
             <div className="flex items-center gap-3 mb-4">
               <Loader2 className="w-6 h-6 text-crimson animate-spin" />
               <h2 className="font-serif text-2xl text-[#FEFEFE]">Taking you to checkout…</h2>
             </div>
             <p className="text-[#B1B2B3]/80 mb-2">
-              Your request is saved and we've emailed{" "}
-              <span className="text-[#FEFEFE]">{email.trim()}</span> your purchase links. Redirecting
-              you to complete the purchase now.
+              No sign-in needed — we already know exactly what you're buying.
             </p>
-            {!result.emailOk && (
-              <p className="text-[11px] text-amber-400/80 mb-2">
-                (The email is still sending in the background.)
-              </p>
-            )}
             <div className="mt-5 space-y-2">
-              {result.links.map((l) => (
+              {matchedLinks.map((l) => (
                 <a
                   key={l.url}
                   href={l.url}
@@ -308,7 +495,7 @@ export default function Checkout() {
               ))}
             </div>
             <a
-              href={result.redirectUrl}
+              href={matchedLinks[0]?.url}
               className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-crimson text-[#FEFEFE] rounded-sm text-xs font-semibold uppercase tracking-[0.14em] hover:bg-crimson-dark transition-colors"
             >
               Continue now
@@ -333,7 +520,7 @@ export default function Checkout() {
         )}
 
         {/* ── The form ────────────────────────────────────────────────────── */}
-        {!result && items.length > 0 && (
+        {!result && items.length > 0 && !isInstantCheckoutPath && (
           <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-8">
             <section className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-6 md:p-8">
               <div className="flex items-center gap-2 mb-6">
@@ -402,6 +589,11 @@ export default function Checkout() {
                       <CalendarClock className="w-4 h-4" />
                       Request Demo & Book Meeting
                     </>
+                  ) : isQuoteOnlyPath ? (
+                    <>
+                      <FileText className="w-4 h-4" />
+                      Request My Quote
+                    </>
                   ) : (
                     <>
                       <Mail className="w-4 h-4" />
@@ -414,6 +606,8 @@ export default function Checkout() {
                   <ShieldCheck className="w-4 h-4 text-emerald-500" />
                   {isOwnPath
                     ? "We'll email a booking link and set up a live session — no payment now."
+                    : isQuoteOnlyPath
+                    ? "We save your request and get you a tailored, priced quote right here."
                     : "We save your request, email your purchase links, and take you to our licensed store to pay."}
                 </p>
               </form>
@@ -459,7 +653,9 @@ export default function Checkout() {
                     <span className="font-serif text-2xl text-[#FEFEFE]">{formatAED(finalTotal)}</span>
                   </div>
                   <p className="text-[10px] text-[#B1B2B3]/45 pt-1">
-                    Final price is confirmed on our licensed store at checkout.
+                    {isQuoteOnlyPath
+                      ? "Final price is confirmed on your tailored quote."
+                      : "Final price is confirmed on our licensed store at checkout."}
                   </p>
                 </div>
               )}
