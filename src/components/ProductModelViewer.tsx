@@ -61,26 +61,29 @@ let activeLoadSlots = 0;
 const slotWaiters: Array<() => void> = [];
 
 // H9: the download queue above grants/releases correctly (verified live with
-// Playwright — cards do get a slot, their GLB fully downloads, `progress`
+// Playwright, incl. instrumenting model-viewer's own progress/load/error
+// events — cards do get a slot, their GLB fully downloads, `progress`
 // reaches 1). The actual "never load, never error" hang is downstream of
-// that: once loaded, every card starts an UNBOUNDED, endless per-frame
-// requestAnimationFrame loop (see startShowroomMotion below) that mutates
-// model-viewer's `camera-orbit` on every tick — which forces a real WebGL
-// re-render (incl. a shadow/AO pass) 60x/sec, visible in DevTools as
-// repeated "GPU stall due to ReadPixels" driver warnings. Reproduced live:
-// with the hero, nav-featured card, and several DSM CHOICE cards all
-// simultaneously mounted and swaying, the accumulating per-frame GPU/main-
-// thread cost eventually starves any card still trying to do its FIRST
-// render — its network fetch finishes fine, but it can never get a GPU slot
-// to actually paint, so `load` never fires (confirmed: `progress` hits 1.0
-// and then nothing — no further progress/load/error — for up to the full
-// 90s ABSOLUTE_TIMEOUT ceiling). More cards succeed -> more endless sway
-// loops pile up -> the next card has even less chance, a self-reinforcing
-// pile-up. Cap how many cards may run the idle sway loop at once; the rest
-// settle on the static product-facing pose (still a fully loaded 3D box,
-// just not swaying) instead of competing forever for a GPU slot that never
-// frees up on its own.
-const MAX_ACTIVE_SHOWROOM = 1;
+// that, inside model-viewer/three.js's own WebGL init path: with the hero
+// mesh, nav-featured card, and several DSM CHOICE cards all mounting +
+// rendering close together at page load, a card can finish its network
+// fetch (`progress` hits 1.0) and then simply never fire `load` — confirmed
+// live that this isn't a resource *wait* (forcibly removing every other
+// already-loaded viewer from the page doesn't unstick a wedged one; a
+// single retry-remount doesn't reliably clear it either), just an instance
+// that's dead. Two mitigations, both real and independently confirmed to
+// help: (1) every loaded card used to run an UNBOUNDED endless per-frame
+// requestAnimationFrame loop (startShowroomMotion) mutating `camera-orbit`,
+// forcing a real WebGL re-render 60x/sec (visible as repeated "GPU stall due
+// to ReadPixels" driver warnings) — capping how many cards may run that idle
+// sway loop at once measurably restored the stall-detector's own ~30s
+// timing (it was effectively starved out to the 90s ABSOLUTE_TIMEOUT
+// ceiling beforehand). (2) a stalled load now retries with a fresh remount
+// (see the stall-check effect below) instead of giving up on the first
+// timeout, which recovers a meaningful share of the wedged instances. This
+// keeps the failure mode fast and self-healing; it does not claim to fully
+// eliminate whatever the underlying upstream WebGL-init race is.
+const MAX_ACTIVE_SHOWROOM = 3;
 let activeShowroomSlots = 0;
 
 // H8: the product-detail modal reuses this same viewer, but it used to queue
@@ -342,7 +345,6 @@ const ProductModelViewer = ({
   }, [startShowroomMotion]);
 
   const handleLoad = useCallback(() => {
-    if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] load fired", glbSrc);
     setIsLoaded(true);
     const mv = modelRef.current;
     if (mv) {
@@ -352,7 +354,7 @@ const ProductModelViewer = ({
       mv.setAttribute("rotation-per-second", `${IDLE_SPEED}deg`);
       startShowroomMotion();
     }
-  }, [startShowroomMotion, glbSrc]);
+  }, [startShowroomMotion]);
 
   // Track real download progress (model-viewer dispatches `progress` with
   // detail.totalProgress in [0, 1]) so the stall-detector below can tell a
@@ -360,14 +362,12 @@ const ProductModelViewer = ({
   const handleProgress = useCallback((e: Event) => {
     const detail = (e as CustomEvent<{ totalProgress?: number }>).detail;
     const value = detail?.totalProgress ?? 0;
-    if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] progress", glbSrc.slice(-40), value);
     if (value > lastProgressRef.current.value || lastProgressRef.current.at === 0) {
       lastProgressRef.current = { value, at: performance.now() };
     }
-  }, [glbSrc]);
+  }, []);
 
   const handleError = useCallback(() => {
-    if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] error fired", glbSrc, "retryCount", retryCountRef.current);
     // The first few concurrently mounted WebGL viewers can emit a transient
     // error while the custom element is initialising. Remount once before
     // showing a letter placeholder; genuine broken links still degrade safely.
@@ -380,19 +380,17 @@ const ProductModelViewer = ({
       return;
     }
     setHasError(true);
-  }, [glbSrc]);
+  }, []);
 
   // Wait for a free concurrency slot before actually mounting <model-viewer>.
   // Re-acquire on every fresh attempt (visibility regained, or the one
   // auto-retry after an error swaps the element key).
   useEffect(() => {
     if (!isVisible || !mvReady) return;
-    if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] requesting slot", glbSrc.slice(-40), "activeLoadSlots=", activeLoadSlots, "waiters=", slotWaiters.length);
     setHasSlot(false);
     let cancelled = false;
     const release = acquireLoadSlot(() => {
       if (!cancelled) {
-        if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] slot GRANTED", glbSrc.slice(-40));
         setHasSlot(true);
       }
     }, priority);
@@ -402,7 +400,7 @@ const ProductModelViewer = ({
       release();
       if (releaseSlotRef.current === release) releaseSlotRef.current = null;
     };
-  }, [isVisible, mvReady, modelAttempt, priority, glbSrc]);
+  }, [isVisible, mvReady, modelAttempt, priority]);
 
   // Free the slot as soon as there's a result so the next queued card can
   // start — the already-mounted viewer keeps rendering regardless.
@@ -429,7 +427,6 @@ const ProductModelViewer = ({
   // advancing (dead link, CORS block, network drop) gets flagged quickly.
   useEffect(() => {
     if (!isVisible || !mvReady || !hasSlot || isLoaded || hasError) return;
-    if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] stall-check EFFECT (re)started", glbSrc.slice(-40));
 
     // handleError()'s retry remount is async (a 350ms setTimeout before
     // modelAttempt changes and this effect re-runs), so guard against this
@@ -442,11 +439,9 @@ const ProductModelViewer = ({
       const now = performance.now();
       const sinceProgress = now - (lastProgressRef.current.at || now);
       const sinceStart = now - (loadStartedAtRef.current || now);
-      if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] tick", glbSrc.slice(-40), "sinceProgress=", Math.round(sinceProgress), "sinceStart=", Math.round(sinceStart), "progressVal=", lastProgressRef.current.value);
 
       if (sinceProgress >= STALL_TIMEOUT || sinceStart >= ABSOLUTE_TIMEOUT) {
         fired = true;
-        if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] STALL FIRED -> handleError()", glbSrc.slice(-40));
         // Route through the same give-up-or-retry path as a genuine `error`
         // event, rather than jumping straight to the fallback icon. Isolated
         // testing (a single <model-viewer> alone on a blank page, nothing
@@ -465,10 +460,9 @@ const ProductModelViewer = ({
     }, STALL_CHECK_INTERVAL);
 
     return () => {
-      if (glbSrc.includes("9900")) console.log("[PMV_DEBUG] stall-check effect CLEANUP (interval cleared)", glbSrc.slice(-40));
       window.clearInterval(interval);
     };
-  }, [isVisible, mvReady, hasSlot, isLoaded, hasError, modelAttempt, glbSrc, handleError]);
+  }, [isVisible, mvReady, hasSlot, isLoaded, hasError, modelAttempt, handleError]);
 
   useEffect(() => {
     return () => {
