@@ -19,6 +19,22 @@ import type { AppConfig } from "./config";
 
 export type TokenType = "short_lived" | "always_on";
 export type TokenStatus = "active" | "expired" | "revoked";
+/** Added 2026-09-24 alongside the dsm-files Agent File Gateway. "analytics"
+ * (the default/omitted case, for every token minted before scopes existed)
+ * is the original behavior — usable as `?secret=` against this API's own
+ * read endpoints. "filesystem" tokens are validated the same way (same
+ * store, same hash check, same active/expired/revoked rules) but only by
+ * the separate dsm-files-api gateway — see dsm-sites-filesystem.md. */
+export type TokenScope = "analytics" | "filesystem";
+export type FilesystemPermission = "read" | "create" | "write" | "rename" | "delete";
+export const FILESYSTEM_WORKSPACES = ["beta", "agentic", "marketing", "creatives"] as const;
+
+/** Public, secret-free hosted docs — served directly off the two gateways,
+ * no Cloudflare Access gate, so an external browser-only agent can fetch
+ * them without an email-OTP login. */
+export const FILES_GATEWAY_URL = "https://dsm-files.waleeds.world";
+export const FILES_DOC_URL = `${FILES_GATEWAY_URL}/docs/dsm-sites-filesystem.md`;
+export const ANALYTICS_DOC_URL = `${FILES_GATEWAY_URL}/docs/dsm-analytics-access-public.md`;
 
 export interface TokenRecord {
   id: string;
@@ -28,6 +44,9 @@ export interface TokenRecord {
   expires_at: string | null;
   revoked_at: string | null;
   status: TokenStatus;
+  scope?: TokenScope;
+  workspaces?: string[];
+  permissions?: FilesystemPermission[];
 }
 
 export interface MintedToken extends TokenRecord {
@@ -69,13 +88,27 @@ export async function listTokens(cfg: AppConfig): Promise<TokenRecord[]> {
   return data.tokens ?? [];
 }
 
+export interface MintTokenOptions {
+  ttlMinutes?: number;
+  /** Defaults to "analytics" (the original, pre-scope behavior) when omitted. */
+  scope?: TokenScope;
+  /** Only meaningful for scope: "filesystem". Defaults server-side to all 4
+   * workspaces when omitted. */
+  workspaces?: string[];
+  /** Only meaningful for scope: "filesystem". Defaults server-side to
+   * read+create+write+rename (no delete) when omitted. */
+  permissions?: FilesystemPermission[];
+}
+
 /** Mint a token. Returns the raw value — shown once, never recoverable after. */
 export async function mintToken(
   cfg: AppConfig,
   type: TokenType,
   label: string,
-  ttlMinutes?: number,
+  ttlMinutesOrOptions?: number | MintTokenOptions,
 ): Promise<MintedToken> {
+  const opts: MintTokenOptions =
+    typeof ttlMinutesOrOptions === "number" ? { ttlMinutes: ttlMinutesOrOptions } : ttlMinutesOrOptions ?? {};
   const url = withSecret(`${base(cfg)}/tokens`, cfg);
   const res = await fetch(url, {
     method: "POST",
@@ -83,11 +116,34 @@ export async function mintToken(
     body: JSON.stringify({
       type,
       label,
-      ...(type === "short_lived" && ttlMinutes ? { ttl_minutes: ttlMinutes } : {}),
+      ...(type === "short_lived" && opts.ttlMinutes ? { ttl_minutes: opts.ttlMinutes } : {}),
+      ...(opts.scope ? { scope: opts.scope } : {}),
+      ...(opts.workspaces ? { workspaces: opts.workspaces } : {}),
+      ...(opts.permissions ? { permissions: opts.permissions } : {}),
     }),
   });
   const data = await asJson<{ token: MintedToken }>(res);
   return data.token;
+}
+
+/** Mints BOTH an all-workspace filesystem token (read+create+write+rename,
+ * no delete) and an analytics token in one shot — what the admin UI's
+ * "Mint agent bundle" button uses to produce the two ready-to-copy blocks
+ * for an AI agent's context. */
+export async function mintAgentBundle(
+  cfg: AppConfig,
+  type: TokenType,
+  label: string,
+  ttlMinutes?: number,
+): Promise<{ filesystem: MintedToken; analytics: MintedToken }> {
+  const filesystem = await mintToken(cfg, type, `${label} (filesystem)`, {
+    ttlMinutes,
+    scope: "filesystem",
+    workspaces: [...FILESYSTEM_WORKSPACES],
+    permissions: ["read", "create", "write", "rename"],
+  });
+  const analytics = await mintToken(cfg, type, `${label} (analytics)`, { ttlMinutes, scope: "analytics" });
+  return { filesystem, analytics };
 }
 
 /** Revoke a token by id. Idempotent. */
@@ -101,4 +157,9 @@ export async function revokeToken(cfg: AppConfig, id: string): Promise<void> {
 export function usageSnippet(cfg: AppConfig, token: string): string {
   const url = `${base(cfg)}/?action=orders&secret=${token}`;
   return `curl "${url}"`;
+}
+
+/** Same idea, for a filesystem-scoped token against the dsm-files gateway. */
+export function filesystemUsageSnippet(token: string): string {
+  return `curl -H "Authorization: Bearer ${token}" "${FILES_GATEWAY_URL}/api/files?workspace=beta&path=/"`;
 }

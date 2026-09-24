@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   Clock,
   Copy,
+  HardDrive,
   Infinity as InfinityIcon,
   KeyRound,
   Loader2,
@@ -27,7 +28,11 @@ import {
 } from "lucide-react";
 import type { AppConfig } from "@/lib/config";
 import {
+  ANALYTICS_DOC_URL,
+  FILES_DOC_URL,
+  filesystemUsageSnippet,
   listTokens,
+  mintAgentBundle,
   mintToken,
   revokeToken,
   usageSnippet,
@@ -67,6 +72,21 @@ export function ApiAccessView({ config }: { config: AppConfig }) {
   const [revoking, setRevoking] = useState<string | null>(null);
   const [justMinted, setJustMinted] = useState<MintedToken | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Agent bundle — mints a filesystem token (all 4 workspaces, read+create+
+  // write+rename, no delete) and an analytics token together, added
+  // 2026-09-24 alongside the dsm-files Agent File Gateway. Additive: the
+  // single-token flow above still works unchanged for anything that only
+  // needs one token type.
+  const [bundleLabel, setBundleLabel] = useState("");
+  const [bundleMinting, setBundleMinting] = useState<TokenType | null>(null);
+  const [bundleResult, setBundleResult] = useState<{ filesystem: MintedToken; analytics: MintedToken } | null>(
+    null,
+  );
+  const [bundleCopied, setBundleCopied] = useState<{ filesystem: boolean; analytics: boolean }>({
+    filesystem: false,
+    analytics: false,
+  });
 
   async function refresh() {
     if (!configured) return;
@@ -122,6 +142,36 @@ export function ApiAccessView({ config }: { config: AppConfig }) {
       await navigator.clipboard.writeText(justMinted.token);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard permissions can fail silently; the box below is selectable text */
+    }
+  }
+
+  async function handleMintBundle(type: TokenType) {
+    setBundleMinting(type);
+    setError("");
+    try {
+      const result = await mintAgentBundle(config, type, bundleLabel.trim() || "agent bundle");
+      setBundleResult(result);
+      setBundleLabel("");
+      setBundleCopied({ filesystem: false, analytics: false });
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to mint agent bundle.");
+    } finally {
+      setBundleMinting(null);
+    }
+  }
+
+  function expiryLine(t: MintedToken): string {
+    return t.expires_at ? `Expires ${fmt(t.expires_at)}.` : "No expiry.";
+  }
+
+  async function copyBundleBlock(kind: "filesystem" | "analytics", text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setBundleCopied((prev) => ({ ...prev, [kind]: true }));
+      setTimeout(() => setBundleCopied((prev) => ({ ...prev, [kind]: false })), 2000);
     } catch {
       /* clipboard permissions can fail silently; the box below is selectable text */
     }
@@ -191,11 +241,130 @@ export function ApiAccessView({ config }: { config: AppConfig }) {
         </Card>
       )}
 
+      {bundleResult && (
+        <Card className="border-ok/40">
+          <CardHeader className="flex-row items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-ok" />
+            <CardTitle>Agent bundle created — copy both blocks now</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <p className="text-xs text-warn">
+              These are the only times the full token values are shown. Paste each block into an
+              agent's context as-is — it has everything the agent needs (doc + token + what it's for).
+            </p>
+
+            {/* Block 1 — Sites & Filesystem Access */}
+            <div className="flex flex-col gap-2 rounded-md border border-border p-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <HardDrive className="h-4 w-4 text-primary" /> Sites &amp; Filesystem Access
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Lets an AI agent browse and edit DSM&apos;s site source code directly.{" "}
+                {expiryLine(bundleResult.filesystem)}
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 select-all overflow-x-auto whitespace-pre-wrap rounded-md border border-border bg-muted px-3 py-2 text-xs">
+                  {`Docs: ${FILES_DOC_URL}\nToken: ${bundleResult.filesystem.token}\n\n${filesystemUsageSnippet(bundleResult.filesystem.token)}`}
+                </code>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    void copyBundleBlock(
+                      "filesystem",
+                      `Docs: ${FILES_DOC_URL}\nToken: ${bundleResult.filesystem.token}\n\n${filesystemUsageSnippet(bundleResult.filesystem.token)}`,
+                    )
+                  }
+                >
+                  <Copy /> {bundleCopied.filesystem ? "Copied" : "Copy"}
+                </Button>
+              </div>
+            </div>
+
+            {/* Block 2 — Analytics API Access */}
+            <div className="flex flex-col gap-2 rounded-md border border-border p-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <KeyRound className="h-4 w-4 text-primary" /> Analytics API Access
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Lets an AI agent pull real order, traffic, and GA4 analytics data.{" "}
+                {expiryLine(bundleResult.analytics)}
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 select-all overflow-x-auto whitespace-pre-wrap rounded-md border border-border bg-muted px-3 py-2 text-xs">
+                  {`Docs: ${ANALYTICS_DOC_URL}\nToken: ${bundleResult.analytics.token}\n\n${usageSnippet(config, bundleResult.analytics.token)}`}
+                </code>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    void copyBundleBlock(
+                      "analytics",
+                      `Docs: ${ANALYTICS_DOC_URL}\nToken: ${bundleResult.analytics.token}\n\n${usageSnippet(config, bundleResult.analytics.token)}`,
+                    )
+                  }
+                >
+                  <Copy /> {bundleCopied.analytics ? "Copied" : "Copy"}
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <Button size="sm" variant="ghost" onClick={() => setBundleResult(null)}>
+                Dismiss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
-          <CardTitle>Generate a token</CardTitle>
+          <CardTitle>Mint agent bundle</CardTitle>
           <CardDescription>
-            Give it a label so the list below stays meaningful (e.g. "GA4 export agent, 2026-09-24").
+            Recommended for AI agents: mints a filesystem token (all 4 site workspaces, read/create/
+            write/rename, no delete) and an analytics token together, each with its public doc link —
+            ready to paste straight into an agent&apos;s context.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <label className="flex flex-1 flex-col gap-1">
+            <span className="text-xs font-medium text-muted-foreground">Label</span>
+            <Input
+              value={bundleLabel}
+              onChange={(e) => setBundleLabel(e.target.value)}
+              placeholder="What/who is this for?"
+              disabled={!configured}
+            />
+          </label>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!configured || bundleMinting !== null}
+              onClick={() => void handleMintBundle("short_lived")}
+            >
+              {bundleMinting === "short_lived" ? <Loader2 className="animate-spin" /> : <Clock />}
+              Short-lived bundle
+            </Button>
+            <Button
+              size="sm"
+              disabled={!configured || bundleMinting !== null}
+              onClick={() => void handleMintBundle("always_on")}
+            >
+              {bundleMinting === "always_on" ? <Loader2 className="animate-spin" /> : <InfinityIcon />}
+              Always-on bundle
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Generate a single token</CardTitle>
+          <CardDescription>
+            Analytics-only, in case something still needs just one token (e.g. existing scripts) —
+            give it a label so the list below stays meaningful (e.g. "GA4 export agent, 2026-09-24").
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -252,6 +421,7 @@ export function ApiAccessView({ config }: { config: AppConfig }) {
               <TR>
                 <TH>Label</TH>
                 <TH>Type</TH>
+                <TH>Scope</TH>
                 <TH>Created</TH>
                 <TH>Expires</TH>
                 <TH>Status</TH>
@@ -261,7 +431,7 @@ export function ApiAccessView({ config }: { config: AppConfig }) {
             <TBody>
               {tokens.length === 0 && (
                 <TR>
-                  <TD colSpan={6} className="py-6 text-center text-xs text-muted-foreground">
+                  <TD colSpan={7} className="py-6 text-center text-xs text-muted-foreground">
                     {loading ? "Loading…" : "No tokens issued yet."}
                   </TD>
                 </TR>
@@ -275,6 +445,10 @@ export function ApiAccessView({ config }: { config: AppConfig }) {
                     <Badge variant={t.type === "always_on" ? "default" : "warn"}>
                       {t.type === "always_on" ? "Always-on" : "Short-lived"}
                     </Badge>
+                  </TD>
+                  <TD className="whitespace-nowrap text-xs text-muted-foreground">
+                    {t.scope === "filesystem" ? "Filesystem" : "Analytics"}
+                    {t.workspaces && t.workspaces.length > 0 ? ` (${t.workspaces.join(", ")})` : ""}
                   </TD>
                   <TD className="whitespace-nowrap text-xs text-muted-foreground">
                     {fmt(t.created_at)}
