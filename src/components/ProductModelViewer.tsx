@@ -59,6 +59,10 @@ const STALL_CHECK_INTERVAL = 2000;
 const MAX_CONCURRENT_LOADS = 2;
 let activeLoadSlots = 0;
 const slotWaiters: Array<() => void> = [];
+// Timestamp of the most recent time a download slot was actually handed out
+// (a NEW download starting), not just "is a slot currently occupied" — see
+// R2 below for why that distinction matters.
+let lastLoadGrantAt = 0;
 
 // H9: the download queue above grants/releases correctly (verified live with
 // Playwright, incl. instrumenting model-viewer's own progress/load/error
@@ -84,47 +88,54 @@ const slotWaiters: Array<() => void> = [];
 // keeps the failure mode fast and self-healing; it does not claim to fully
 // eliminate whatever the underlying upstream WebGL-init race is.
 // R1 (2026-09-24, follow-up): the fixed cap above was a real regression —
-// on a Store grid with many products already loaded and just sitting there
-// (no active downloads), the first 3 cards to ever finish loading grabbed
-// the only 3 sway slots and held them FOREVER (nothing ever released a slot
-// in that steady state), so every other loaded card was permanently frozen
+// on a Store grid with many products already loaded and just sitting there,
+// the first 3 cards to ever finish loading grabbed the only 3 sway slots
+// and held them FOREVER, so every other loaded card was permanently frozen
 // at the static resting pose. Confirmed live: 9 cards loaded on the Store
-// grid, only 3 swaying, the rest dead-static — which reads as "not 3D" even
-// though the boxes are genuinely loaded and rendered. The GPU contention
-// that actually mattered for the stall-detector (H9 below) only happens
-// during a real page-load burst, i.e. while something is actively
-// downloading/mounting for the first time — NOT during ordinary browsing of
-// an already-settled grid. So the cap is now dynamic: tight while the
-// download queue is actually busy (protects the stall-detector's timing the
-// same way it did before), generous once it's idle (a paused, already-
-// loaded grid sways freely, like before H9 ever existed). Cards denied a
-// slot no longer freeze permanently either — they queue and get granted as
-// soon as capacity opens up (a load finishes, or the queue goes idle and
-// the cap itself jumps up), mirroring the download queue's own FIFO design.
+// grid, only 3 swaying, the rest dead-static — reads as "not 3D" even
+// though the boxes are genuinely loaded and rendered.
+//
+// R2 (2026-09-24, same day, second pass): the first fix — "tight cap while
+// `activeLoadSlots > 0`, generous once it hits 0" — LOOKED right but still
+// failed live, because `activeLoadSlots > 0` doesn't reliably return to 0
+// in bounded time: the residual H9 wedging issue (a card whose download
+// finishes but whose `load`/`error` never fires) holds its download slot
+// for the full 30-90s stall/retry cycle, so on any grid where even one card
+// hits that (confirmed: routinely 1-3 out of ~9 do), `activeLoadSlots`
+// stays stuck above 0 and the cap never actually widens — instrumented live
+// and confirmed: cap stayed pinned at 3 for the entire 30s test window.
+// Fix: track TIME SINCE THE LAST NEW download was actually handed out
+// (`lastLoadGrantAt`, updated in acquireLoadSlot's grant()), not whether a
+// slot is currently occupied. A genuine page-load burst keeps handing out
+// new slots every second or two as the queue churns through a backlog —
+// that's the real, actively-growing-contention signal worth protecting the
+// stall-detector against. A single old card that's stuck mid-download isn't
+// generating any NEW per-frame GPU work by just sitting there, so it no
+// longer holds the whole page's sway animation hostage.
 const MAX_ACTIVE_SHOWROOM_BUSY = 3;
 const MAX_ACTIVE_SHOWROOM_IDLE = 24;
+const SHOWROOM_BUSY_SETTLE_MS = 4000; // no new download grant for this long => burst is over
 function currentShowroomCap(): number {
-  return activeLoadSlots > 0 || slotWaiters.length > 0 ? MAX_ACTIVE_SHOWROOM_BUSY : MAX_ACTIVE_SHOWROOM_IDLE;
+  const sinceLastGrant = performance.now() - lastLoadGrantAt;
+  return sinceLastGrant < SHOWROOM_BUSY_SETTLE_MS ? MAX_ACTIVE_SHOWROOM_BUSY : MAX_ACTIVE_SHOWROOM_IDLE;
 }
 let activeShowroomSlots = 0;
 const showroomWaiters: Array<() => void> = [];
 function drainShowroomWaiters(): void {
-  if (typeof window !== "undefined") {
-    const w = window as unknown as Record<string, unknown>;
-    const log = (w.__pmvDebugLog as unknown[]) || (w.__pmvDebugLog = []);
-    (log as unknown[]).push({
-      activeLoadSlots,
-      slotWaitersLen: slotWaiters.length,
-      activeShowroomSlots,
-      showroomWaitersLen: showroomWaiters.length,
-      cap: currentShowroomCap(),
-      at: Math.round(performance.now()),
-    });
-  }
   while (showroomWaiters.length && activeShowroomSlots < currentShowroomCap()) {
     const next = showroomWaiters.shift();
     if (next) next();
   }
+}
+// Cards denied a slot only get re-checked when SOMETHING happens to call
+// drainShowroomWaiters (a load finishes, a slot is released, ...). If a
+// burst ends and nothing else happens to trigger a re-check, queued cards
+// could sit static indefinitely even though the cap has since widened —
+// this passive sweep is the backstop that guarantees they still get picked
+// up once SHOWROOM_BUSY_SETTLE_MS has genuinely elapsed, regardless of
+// whatever else is or isn't happening on the page.
+if (typeof window !== "undefined") {
+  window.setInterval(drainShowroomWaiters, 1000);
 }
 
 // H8: the product-detail modal reuses this same viewer, but it used to queue
@@ -145,6 +156,7 @@ function acquireLoadSlot(onGranted: () => void, priority = false): () => void {
     if (released) return;
     granted = true;
     activeLoadSlots++;
+    lastLoadGrantAt = performance.now();
     onGranted();
   };
   if (priority || activeLoadSlots < MAX_CONCURRENT_LOADS) {
@@ -356,11 +368,6 @@ const ProductModelViewer = ({
     // page-load burst, and resolves itself as soon as that burst settles.
     if (activeShowroomSlots >= currentShowroomCap()) {
       mv.setAttribute("camera-orbit", FRONT_ORBIT);
-      if (typeof window !== "undefined") {
-        const w = window as unknown as Record<string, unknown>;
-        const log = (w.__pmvDebugLog as unknown[]) || (w.__pmvDebugLog = []);
-        (log as unknown[]).push({ QUEUED: true, glbSrc: glbSrc.slice(-30), activeLoadSlots, slotWaitersLen: slotWaiters.length, activeShowroomSlots, cap: currentShowroomCap(), at: Math.round(performance.now()) });
-      }
       const waiter = () => {
         showroomWaiterRef.current = null;
         runShowroomLoop();
