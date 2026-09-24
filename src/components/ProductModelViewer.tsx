@@ -109,6 +109,18 @@ function currentShowroomCap(): number {
 let activeShowroomSlots = 0;
 const showroomWaiters: Array<() => void> = [];
 function drainShowroomWaiters(): void {
+  if (typeof window !== "undefined") {
+    const w = window as unknown as Record<string, unknown>;
+    const log = (w.__pmvDebugLog as unknown[]) || (w.__pmvDebugLog = []);
+    (log as unknown[]).push({
+      activeLoadSlots,
+      slotWaitersLen: slotWaiters.length,
+      activeShowroomSlots,
+      showroomWaitersLen: showroomWaiters.length,
+      cap: currentShowroomCap(),
+      at: Math.round(performance.now()),
+    });
+  }
   while (showroomWaiters.length && activeShowroomSlots < currentShowroomCap()) {
     const next = showroomWaiters.shift();
     if (next) next();
@@ -344,6 +356,11 @@ const ProductModelViewer = ({
     // page-load burst, and resolves itself as soon as that burst settles.
     if (activeShowroomSlots >= currentShowroomCap()) {
       mv.setAttribute("camera-orbit", FRONT_ORBIT);
+      if (typeof window !== "undefined") {
+        const w = window as unknown as Record<string, unknown>;
+        const log = (w.__pmvDebugLog as unknown[]) || (w.__pmvDebugLog = []);
+        (log as unknown[]).push({ QUEUED: true, glbSrc: glbSrc.slice(-30), activeLoadSlots, slotWaitersLen: slotWaiters.length, activeShowroomSlots, cap: currentShowroomCap(), at: Math.round(performance.now()) });
+      }
       const waiter = () => {
         showroomWaiterRef.current = null;
         runShowroomLoop();
