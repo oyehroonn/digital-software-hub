@@ -383,6 +383,35 @@ const ProductModelViewer = ({
     if (!isVisible) stopShowroomMotion();
   }, [isVisible, stopShowroomMotion]);
 
+  // R3 (2026-09-24): reproduced live — scroll all the way to the page
+  // bottom, then back to the top, then back down to an already-loaded
+  // card's section, and it comes back BLANK (not the spinner, not the
+  // fallback icon, nothing) instead of either staying loaded or reloading.
+  // Root cause: once a card goes far enough out of view, the debounced
+  // `hideTimeoutRef` above flips `isVisible` to false, which fully unmounts
+  // the actual <model-viewer> element (see the JSX gate below) — a brand
+  // new element with zero memory of the old one is what comes back when
+  // `isVisible` flips true again. But `isLoaded`/`hasError` are plain React
+  // state with no corresponding reset, so they stay stuck at whatever they
+  // were the moment the card disappeared. For a card that had already
+  // loaded successfully, that's `isLoaded: true` — which, on the way back,
+  // makes the JSX skip the spinner (`!isLoaded` is false) while `hasSlot`
+  // is correctly back to false pending a fresh download-slot grant, so
+  // NOTHING renders in the gap. Worse: even once a slot is granted and a
+  // fresh <model-viewer> mounts, the stall-detector effect's own guard
+  // (`|| isLoaded || hasError`) never lets it start watching this new
+  // attempt, so if that fresh load hits the same H9 upstream race, there's
+  // no safety net either — it just hangs blank. Reset the load-outcome
+  // state on the way out so a scroll back in starts genuinely fresh, same
+  // as a first-time mount.
+  useEffect(() => {
+    if (isVisible) return;
+    setIsLoaded(false);
+    setHasError(false);
+    setModelAttempt(0);
+    retryCountRef.current = 0;
+  }, [isVisible]);
+
   const handleMouseEnter = useCallback(() => {
     if (isMobile.current) return;
     const mv = modelRef.current;
