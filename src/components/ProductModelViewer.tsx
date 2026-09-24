@@ -56,7 +56,7 @@ const STALL_CHECK_INTERVAL = 2000;
 // at once and they were timing out despite the model being fine. Cap how many
 // loads run concurrently; the rest wait for a free slot instead of fighting
 // for the CPU/GPU and losing.
-const MAX_CONCURRENT_LOADS = 3;
+const MAX_CONCURRENT_LOADS = 1;
 let activeLoadSlots = 0;
 const slotWaiters: Array<() => void> = [];
 
@@ -80,7 +80,7 @@ const slotWaiters: Array<() => void> = [];
 // settle on the static product-facing pose (still a fully loaded 3D box,
 // just not swaying) instead of competing forever for a GPU slot that never
 // frees up on its own.
-const MAX_ACTIVE_SHOWROOM = 4;
+const MAX_ACTIVE_SHOWROOM = 1;
 let activeShowroomSlots = 0;
 
 // H8: the product-detail modal reuses this same viewer, but it used to queue
