@@ -81,7 +81,13 @@ const StatsStatement = () => {
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(handleIntersect, { threshold: 0.2 });
+    // Same fix as useScrollAnimation: with no rootMargin, the counters only
+    // ever start once the user has genuinely scrolled this section (~y3476
+    // on a 900px viewport) into view — a page capture taken before that real
+    // scroll shows all four stats frozen at their initial 0 state. A large
+    // positive bottom margin lets the count-up start well ahead of the
+    // section actually entering the viewport.
+    const obs = new IntersectionObserver(handleIntersect, { threshold: 0.2, rootMargin: "0px 0px 3000px 0px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, [handleIntersect]);

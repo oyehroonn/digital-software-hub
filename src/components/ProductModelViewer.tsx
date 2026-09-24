@@ -60,6 +60,29 @@ const MAX_CONCURRENT_LOADS = 3;
 let activeLoadSlots = 0;
 const slotWaiters: Array<() => void> = [];
 
+// H9: the download queue above grants/releases correctly (verified live with
+// Playwright — cards do get a slot, their GLB fully downloads, `progress`
+// reaches 1). The actual "never load, never error" hang is downstream of
+// that: once loaded, every card starts an UNBOUNDED, endless per-frame
+// requestAnimationFrame loop (see startShowroomMotion below) that mutates
+// model-viewer's `camera-orbit` on every tick — which forces a real WebGL
+// re-render (incl. a shadow/AO pass) 60x/sec, visible in DevTools as
+// repeated "GPU stall due to ReadPixels" driver warnings. Reproduced live:
+// with the hero, nav-featured card, and several DSM CHOICE cards all
+// simultaneously mounted and swaying, the accumulating per-frame GPU/main-
+// thread cost eventually starves any card still trying to do its FIRST
+// render — its network fetch finishes fine, but it can never get a GPU slot
+// to actually paint, so `load` never fires (confirmed: `progress` hits 1.0
+// and then nothing — no further progress/load/error — for up to the full
+// 90s ABSOLUTE_TIMEOUT ceiling). More cards succeed -> more endless sway
+// loops pile up -> the next card has even less chance, a self-reinforcing
+// pile-up. Cap how many cards may run the idle sway loop at once; the rest
+// settle on the static product-facing pose (still a fully loaded 3D box,
+// just not swaying) instead of competing forever for a GPU slot that never
+// frees up on its own.
+const MAX_ACTIVE_SHOWROOM = 4;
+let activeShowroomSlots = 0;
+
 // H8: the product-detail modal reuses this same viewer, but it used to queue
 // for a slot behind whatever's-off-screen the background product grid was
 // still loading — measured with Playwright against the live site: the
@@ -126,6 +149,7 @@ const ProductModelViewer = ({
   const releaseSlotRef = useRef<(() => void) | null>(null);
   const animFrameRef = useRef<number>(0);
   const showroomFrameRef = useRef<number>(0);
+  const hasShowroomSlotRef = useRef(false);
   const snapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMobile = useRef(false);
   const retryCountRef = useRef(0);
@@ -225,6 +249,14 @@ const ProductModelViewer = ({
       cancelAnimationFrame(showroomFrameRef.current);
       showroomFrameRef.current = 0;
     }
+    // Release this instance's showroom slot (if it held one) so a card
+    // that's still waiting for its first render gets a fair shot at the
+    // GPU instead of competing against a permanently growing pile of idle
+    // sway loops. Idempotent — safe to call when no slot was held.
+    if (hasShowroomSlotRef.current) {
+      hasShowroomSlotRef.current = false;
+      activeShowroomSlots = Math.max(0, activeShowroomSlots - 1);
+    }
   }, []);
 
   const startShowroomMotion = useCallback(() => {
@@ -238,6 +270,17 @@ const ProductModelViewer = ({
       mv.setAttribute("camera-orbit", FRONT_ORBIT);
       return;
     }
+
+    // At capacity: hold the static product-facing pose (box is fully loaded
+    // and visible, just not swaying) instead of adding yet another endless
+    // per-frame animation loop on top of an already-busy render pipeline —
+    // see the MAX_ACTIVE_SHOWROOM comment above.
+    if (activeShowroomSlots >= MAX_ACTIVE_SHOWROOM) {
+      mv.setAttribute("camera-orbit", FRONT_ORBIT);
+      return;
+    }
+    activeShowroomSlots++;
+    hasShowroomSlotRef.current = true;
 
     const started = performance.now();
     const tick = (now: number) => {
@@ -397,6 +440,10 @@ const ProductModelViewer = ({
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (showroomFrameRef.current) cancelAnimationFrame(showroomFrameRef.current);
+      if (hasShowroomSlotRef.current) {
+        hasShowroomSlotRef.current = false;
+        activeShowroomSlots = Math.max(0, activeShowroomSlots - 1);
+      }
       if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
       releaseSlotRef.current?.();

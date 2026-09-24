@@ -14,7 +14,18 @@ export function useScrollAnimation(className = "animate-on-scroll") {
           observer.unobserve(el);
         }
       },
-      { threshold: 0.08, rootMargin: "0px 0px -20px 0px" }
+      // Reproduced live: with the old -20px margin (fire only once the
+      // element is genuinely inside the viewport), a section positioned a
+      // few screens down (e.g. "Curated by Role" at ~y2440 on a 900px-tall
+      // viewport) never gets a single IntersectionObserver callback until
+      // the user has actually scrolled all the way to it — so any capture
+      // of the page before that real scroll (a quick screenshot, a bot, a
+      // restored scroll position) sees the whole card grid sitting at
+      // permanent opacity:0, i.e. blank. A large positive bottom margin
+      // fires well ahead of the element actually entering view, so content
+      // within the first few screens is ready by the time it's reached
+      // instead of racing the user's scroll.
+      { threshold: 0.08, rootMargin: "0px 0px 2000px 0px" }
     );
 
     observer.observe(el);
