@@ -83,8 +83,37 @@ const slotWaiters: Array<() => void> = [];
 // timeout, which recovers a meaningful share of the wedged instances. This
 // keeps the failure mode fast and self-healing; it does not claim to fully
 // eliminate whatever the underlying upstream WebGL-init race is.
-const MAX_ACTIVE_SHOWROOM = 3;
+// R1 (2026-09-24, follow-up): the fixed cap above was a real regression —
+// on a Store grid with many products already loaded and just sitting there
+// (no active downloads), the first 3 cards to ever finish loading grabbed
+// the only 3 sway slots and held them FOREVER (nothing ever released a slot
+// in that steady state), so every other loaded card was permanently frozen
+// at the static resting pose. Confirmed live: 9 cards loaded on the Store
+// grid, only 3 swaying, the rest dead-static — which reads as "not 3D" even
+// though the boxes are genuinely loaded and rendered. The GPU contention
+// that actually mattered for the stall-detector (H9 below) only happens
+// during a real page-load burst, i.e. while something is actively
+// downloading/mounting for the first time — NOT during ordinary browsing of
+// an already-settled grid. So the cap is now dynamic: tight while the
+// download queue is actually busy (protects the stall-detector's timing the
+// same way it did before), generous once it's idle (a paused, already-
+// loaded grid sways freely, like before H9 ever existed). Cards denied a
+// slot no longer freeze permanently either — they queue and get granted as
+// soon as capacity opens up (a load finishes, or the queue goes idle and
+// the cap itself jumps up), mirroring the download queue's own FIFO design.
+const MAX_ACTIVE_SHOWROOM_BUSY = 3;
+const MAX_ACTIVE_SHOWROOM_IDLE = 24;
+function currentShowroomCap(): number {
+  return activeLoadSlots > 0 || slotWaiters.length > 0 ? MAX_ACTIVE_SHOWROOM_BUSY : MAX_ACTIVE_SHOWROOM_IDLE;
+}
 let activeShowroomSlots = 0;
+const showroomWaiters: Array<() => void> = [];
+function drainShowroomWaiters(): void {
+  while (showroomWaiters.length && activeShowroomSlots < currentShowroomCap()) {
+    const next = showroomWaiters.shift();
+    if (next) next();
+  }
+}
 
 // H8: the product-detail modal reuses this same viewer, but it used to queue
 // for a slot behind whatever's-off-screen the background product grid was
@@ -120,6 +149,10 @@ function acquireLoadSlot(onGranted: () => void, priority = false): () => void {
       activeLoadSlots = Math.max(0, activeLoadSlots - 1);
       const next = slotWaiters.shift();
       if (next) next();
+      // A download just finished (or the queue is otherwise less busy) —
+      // re-check whether the showroom cap should widen and grant any cards
+      // that were parked static waiting for capacity. See R1 above.
+      drainShowroomWaiters();
     } else {
       const idx = slotWaiters.indexOf(grant);
       if (idx !== -1) slotWaiters.splice(idx, 1);
@@ -153,6 +186,7 @@ const ProductModelViewer = ({
   const animFrameRef = useRef<number>(0);
   const showroomFrameRef = useRef<number>(0);
   const hasShowroomSlotRef = useRef(false);
+  const showroomWaiterRef = useRef<(() => void) | null>(null);
   const snapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMobile = useRef(false);
   const retryCountRef = useRef(0);
@@ -247,6 +281,25 @@ const ProductModelViewer = ({
     []
   );
 
+  // Runs the actual per-frame sway loop once a slot is granted (either
+  // immediately, in startShowroomMotion, or later via drainShowroomWaiters
+  // when capacity opens up for a card that was queued).
+  const runShowroomLoop = useCallback(() => {
+    const mv = modelRef.current;
+    if (!mv) return;
+    activeShowroomSlots++;
+    hasShowroomSlotRef.current = true;
+
+    const started = performance.now();
+    const tick = (now: number) => {
+      const phase = ((now - started) / SHOWROOM_CYCLE) * Math.PI * 2;
+      const azimuth = SHOWROOM_CENTER + Math.sin(phase) * SHOWROOM_SWEEP;
+      mv.setAttribute("camera-orbit", `${azimuth}deg 75deg 105%`);
+      showroomFrameRef.current = requestAnimationFrame(tick);
+    };
+    showroomFrameRef.current = requestAnimationFrame(tick);
+  }, []);
+
   const stopShowroomMotion = useCallback(() => {
     if (showroomFrameRef.current) {
       cancelAnimationFrame(showroomFrameRef.current);
@@ -259,6 +312,16 @@ const ProductModelViewer = ({
     if (hasShowroomSlotRef.current) {
       hasShowroomSlotRef.current = false;
       activeShowroomSlots = Math.max(0, activeShowroomSlots - 1);
+      drainShowroomWaiters();
+    }
+    // Also drop out of the waiter queue if we were parked there but never
+    // actually got granted a slot yet (e.g. hovered away while still
+    // queued) — otherwise a stale waiter could fire after this instance has
+    // moved on and start a loop nobody asked for anymore.
+    if (showroomWaiterRef.current) {
+      const idx = showroomWaiters.indexOf(showroomWaiterRef.current);
+      if (idx !== -1) showroomWaiters.splice(idx, 1);
+      showroomWaiterRef.current = null;
     }
   }, []);
 
@@ -274,26 +337,23 @@ const ProductModelViewer = ({
       return;
     }
 
-    // At capacity: hold the static product-facing pose (box is fully loaded
-    // and visible, just not swaying) instead of adding yet another endless
-    // per-frame animation loop on top of an already-busy render pipeline —
-    // see the MAX_ACTIVE_SHOWROOM comment above.
-    if (activeShowroomSlots >= MAX_ACTIVE_SHOWROOM) {
+    // At capacity: hold the static product-facing pose for now, but queue
+    // for a slot rather than staying static forever — see R1 above. Most of
+    // the time (nothing currently downloading) the cap is generous enough
+    // that this branch isn't even hit; it only bites during a genuine
+    // page-load burst, and resolves itself as soon as that burst settles.
+    if (activeShowroomSlots >= currentShowroomCap()) {
       mv.setAttribute("camera-orbit", FRONT_ORBIT);
+      const waiter = () => {
+        showroomWaiterRef.current = null;
+        runShowroomLoop();
+      };
+      showroomWaiterRef.current = waiter;
+      showroomWaiters.push(waiter);
       return;
     }
-    activeShowroomSlots++;
-    hasShowroomSlotRef.current = true;
-
-    const started = performance.now();
-    const tick = (now: number) => {
-      const phase = ((now - started) / SHOWROOM_CYCLE) * Math.PI * 2;
-      const azimuth = SHOWROOM_CENTER + Math.sin(phase) * SHOWROOM_SWEEP;
-      mv.setAttribute("camera-orbit", `${azimuth}deg 75deg 105%`);
-      showroomFrameRef.current = requestAnimationFrame(tick);
-    };
-    showroomFrameRef.current = requestAnimationFrame(tick);
-  }, [stopShowroomMotion]);
+    runShowroomLoop();
+  }, [stopShowroomMotion, runShowroomLoop]);
 
   useEffect(() => {
     if (!isVisible) stopShowroomMotion();
@@ -471,6 +531,12 @@ const ProductModelViewer = ({
       if (hasShowroomSlotRef.current) {
         hasShowroomSlotRef.current = false;
         activeShowroomSlots = Math.max(0, activeShowroomSlots - 1);
+        drainShowroomWaiters();
+      }
+      if (showroomWaiterRef.current) {
+        const idx = showroomWaiters.indexOf(showroomWaiterRef.current);
+        if (idx !== -1) showroomWaiters.splice(idx, 1);
+        showroomWaiterRef.current = null;
       }
       if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
