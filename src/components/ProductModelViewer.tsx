@@ -56,7 +56,7 @@ const STALL_CHECK_INTERVAL = 2000;
 // at once and they were timing out despite the model being fine. Cap how many
 // loads run concurrently; the rest wait for a free slot instead of fighting
 // for the CPU/GPU and losing.
-const MAX_CONCURRENT_LOADS = 1;
+const MAX_CONCURRENT_LOADS = 2;
 let activeLoadSlots = 0;
 const slotWaiters: Array<() => void> = [];
 
@@ -371,7 +371,7 @@ const ProductModelViewer = ({
     // The first few concurrently mounted WebGL viewers can emit a transient
     // error while the custom element is initialising. Remount once before
     // showing a letter placeholder; genuine broken links still degrade safely.
-    if (retryCountRef.current < 1) {
+    if (retryCountRef.current < 3) {
       retryCountRef.current += 1;
       window.setTimeout(() => {
         setIsLoaded(false);
