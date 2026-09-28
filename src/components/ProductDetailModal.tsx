@@ -37,6 +37,9 @@ import { getProductById } from '@/lib/api';
 import { VPS_BASE } from '@/lib/health';
 import { hasWooMatch } from '@/lib/legacyStore';
 import { reportAiOutage, track } from '@/lib/stable/analytics';
+import { captureLead } from '@/lib/captureLead';
+import { submitOrder } from '@/lib/stable/orders';
+import { notifyQuoteTeam } from '@/lib/stable/email';
 import {
   displayPrice,
   isOutOfStock,
@@ -51,8 +54,11 @@ import { useToast } from '@/hooks/use-toast';
 import ProductModelViewer from './ProductModelViewer';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface ProductDetailModalProps {
   product: Product;
@@ -226,6 +232,13 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
   const [sending, setSending] = useState(false);
   const [aiStatus, setAiStatus] = useState<AiStatus>('checking');
 
+  // Inline "Request a quote" capture (quote-only products).
+  const [quoteFormOpen, setQuoteFormOpen] = useState(false);
+  const [quoteEmail, setQuoteEmail] = useState('');
+  const [quoteEmailError, setQuoteEmailError] = useState('');
+  const [quoteSending, setQuoteSending] = useState(false);
+  const [quoteSent, setQuoteSent] = useState(false);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const comparing = isComparing(detail.id);
@@ -284,6 +297,11 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
     navigate('/checkout');
   }, [pushToCart, navigate, onClose, detail.id, detail.name]);
 
+  // Reveals the inline email-capture form below the CTA. The actual
+  // request (lead capture + team notification) only fires once the visitor
+  // submits a real email — see `submitQuoteRequest` below. Previously this
+  // handler only fired telemetry and showed a toast claiming a specialist
+  // would follow up, with no email collected and nothing ever sent anywhere.
   const handleRequestQuote = useCallback(() => {
     track({
       event: 'request_quote',
@@ -292,11 +310,63 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
       elementText: detail.name,
       metadata: { source: 'product-detail-modal' },
     });
+    setQuoteFormOpen(true);
+  }, [detail.id, detail.name]);
+
+  const submitQuoteRequest = useCallback(async () => {
+    const to = quoteEmail.trim();
+    if (!EMAIL_RE.test(to)) {
+      setQuoteEmailError('Please enter a valid email address.');
+      return;
+    }
+    setQuoteEmailError('');
+    setQuoteSending(true);
+
+    track({
+      event: 'quote_emailed',
+      eventType: 'ecommerce',
+      elementText: to,
+      productId: detail.id,
+      metadata: { feature: 'product-detail-modal', product: detail.name },
+    });
+
+    // Durable capture: lands in the DSM Analytics API orders.csv, tagged
+    // `source: 'quote'` — the same convention the admin Approvals view keys
+    // off of (see admin-app/src/views/approvals/approvalsData.ts).
+    captureLead({
+      email: to,
+      source: 'quote',
+      productName: `Quote request — ${detail.name}`,
+      notes: `Request a quote (product-detail modal). Product: ${detail.name} (${detail.id}). Listed price: ${displayPrice(detail)}.`,
+    });
+
+    void submitOrder({
+      customerName: to.split('@')[0] || 'Website visitor',
+      email: to,
+      productId: detail.id,
+      productName: `Quote request — ${detail.name}`,
+      quantity: 1,
+      price: 'Contact for pricing',
+      notes: `[product-detail-modal] Website visitor requested a quote for ${detail.name}.`,
+    }).catch(() => {
+      /* submitOrder self-queues; captureLead above already guarantees the lead lands */
+    });
+
+    // Every quote request must notify the DSM team.
+    void notifyQuoteTeam({
+      source: 'product-detail-modal',
+      requesterEmail: to,
+      product: detail.name,
+      details: `Listed price: ${displayPrice(detail)}\nCategory: ${detail.category}\nBrand: ${detail.brand}`,
+    });
+
+    setQuoteSending(false);
+    setQuoteSent(true);
     toast({
       title: 'Quote requested',
       description: `A DSM specialist will follow up with pricing for ${detail.name}.`,
     });
-  }, [toast, detail.id, detail.name]);
+  }, [quoteEmail, detail, toast]);
 
   // Escape to close + lock body scroll while open.
   useEffect(() => {
@@ -491,13 +561,54 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
 
                 {/* ── Purchase CTAs ──────────────────────────────────────── */}
                 {quoteOnly ? (
-                  <Button
-                    onClick={handleRequestQuote}
-                    className="group h-14 w-full rounded-xl bg-gradient-to-r from-gold to-gold/80 text-base font-semibold text-[#0A0A0A] shadow-[0_8px_30px_-8px_rgba(212,175,55,0.6)] transition-all hover:shadow-[0_12px_40px_-8px_rgba(212,175,55,0.8)] hover:brightness-110"
-                  >
-                    <FileText className="mr-2 h-5 w-5" />
-                    Request a quote
-                  </Button>
+                  quoteSent ? (
+                    <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-[#FEFEFE]">
+                      <CheckCircle className="h-5 w-5 shrink-0 text-emerald-500" />
+                      <span>
+                        Request sent — a DSM specialist will follow up with pricing for{' '}
+                        {detail.name}.
+                      </span>
+                    </div>
+                  ) : quoteFormOpen ? (
+                    <div className="space-y-2 rounded-xl border border-gold/30 bg-gold/5 p-4">
+                      <label htmlFor="quote-request-email" className="text-xs font-medium uppercase tracking-wider text-[#B1B2B3]">
+                        Your email — we'll send pricing here
+                      </label>
+                      <Input
+                        id="quote-request-email"
+                        type="email"
+                        autoFocus
+                        placeholder="you@company.com"
+                        value={quoteEmail}
+                        onChange={(e) => {
+                          setQuoteEmail(e.target.value);
+                          if (quoteEmailError) setQuoteEmailError('');
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') submitQuoteRequest();
+                        }}
+                        disabled={quoteSending}
+                      />
+                      {quoteEmailError && (
+                        <p className="text-xs text-crimson">{quoteEmailError}</p>
+                      )}
+                      <Button
+                        onClick={submitQuoteRequest}
+                        disabled={quoteSending}
+                        className="h-11 w-full rounded-xl bg-gradient-to-r from-gold to-gold/80 text-sm font-semibold text-[#0A0A0A] hover:brightness-110"
+                      >
+                        {quoteSending ? 'Sending…' : 'Send request'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={handleRequestQuote}
+                      className="group h-14 w-full rounded-xl bg-gradient-to-r from-gold to-gold/80 text-base font-semibold text-[#0A0A0A] shadow-[0_8px_30px_-8px_rgba(212,175,55,0.6)] transition-all hover:shadow-[0_12px_40px_-8px_rgba(212,175,55,0.8)] hover:brightness-110"
+                    >
+                      <FileText className="mr-2 h-5 w-5" />
+                      Request a quote
+                    </Button>
+                  )
                 ) : (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Button

@@ -41,7 +41,7 @@ import AIFeature from '@/components/ai/AIFeature';
 import ProductModelViewer from '@/components/ProductModelViewer';
 import { chat, LLMError, type ChatMessage } from '@/lib/llm';
 import { searchProducts, getTopProducts, type Product } from '@/lib/api';
-import { sendEmail } from '@/lib/stable/email';
+import { sendEmail, notifyQuoteTeam } from '@/lib/stable/email';
 import { submitOrder, type OrderPayload } from '@/lib/stable/orders';
 import { sendTelemetry } from '@/lib/telemetry';
 import { captureLead } from '@/lib/captureLead';
@@ -347,6 +347,15 @@ function InstantQuoteInner({ initialNeed = '', initialEmail = '', leadSource = '
       source: 'quote',
       productName: leadSource === 'instant-quote' ? 'Instant Quote request' : 'Quote request (unmatched product)',
       notes: quoteToText(quote, need),
+    });
+
+    // Every quote request must notify the DSM team (sales + the two owner
+    // inboxes), independent of the buyer's own confirmation email below.
+    void notifyQuoteTeam({
+      source: leadSource || 'instant-quote',
+      requesterEmail: to,
+      product: quote.items.map((i) => i.name).join(', ') || undefined,
+      details: quoteToText(quote, need),
     });
 
     // Bonus: if a local mail bridge is running (admin app), fire the formatted
@@ -720,6 +729,14 @@ function QuoteBetaSignup({ reason, prefillNeed = '', prefillEmail = '', onRetry 
         /* email service down too — order is still recorded auto-approved */
       });
 
+      // Team notification independent of the codex/VPS outage that triggered
+      // this degraded path — the DSM team still needs to know a quote landed.
+      void notifyQuoteTeam({
+        source: 'quote-auto-approved',
+        requesterEmail: to,
+        details: `Auto-approved (VPS/AI was offline). What they told us: ${need.trim() || '(general enquiry)'}`,
+      });
+
       try {
         await submitOrder(buildLeadOrder(to, need, null, 'quote-auto-approved'));
       } catch {
@@ -738,6 +755,12 @@ function QuoteBetaSignup({ reason, prefillNeed = '', prefillEmail = '', onRetry 
       source: 'quote',
       productName: 'Instant Quote — early access',
       notes: `Quote beta signup (${reason}). What they told us: ${need.trim() || '(not given)'}`,
+    });
+
+    void notifyQuoteTeam({
+      source: `quote-beta:${reason}`,
+      requesterEmail: to,
+      details: `What they told us: ${need.trim() || '(not given)'}`,
     });
 
     try {

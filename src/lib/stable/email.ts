@@ -126,6 +126,61 @@ export async function sendEmail(args: SendEmailArgs, _endpoint?: MailEndpoint): 
 }
 
 /**
+ * Every quote request — from any entry point on the site (Instant Quote
+ * Genie, Bulk Quote Builder, the product-detail "Request a quote" CTA, the
+ * legacy product modal, the quote-beta-signup degradation, …) — must notify
+ * the DSM team at these three addresses. Single source of truth so nobody
+ * has to hardcode the list per component.
+ */
+export const QUOTE_TEAM_RECIPIENTS: readonly string[] = [
+  'sales@digitalsoftwaremarket.com',
+  'ajmalwaleed107@gmail.com',
+  'digitalsoftwaremarket@gmail.com',
+];
+
+export interface QuoteNotifyArgs {
+  /** Where on the site this request came from, e.g. "instant-quote", "bulk-quote-builder". */
+  source: string;
+  requesterEmail: string;
+  requesterName?: string;
+  company?: string;
+  /** Product/service the quote is for, when known. */
+  product?: string;
+  /** Free-text detail — what they asked for, line items, etc. */
+  details?: string;
+}
+
+/**
+ * Notify the DSM team (sales@digitalsoftwaremarket.com,
+ * ajmalwaleed107@gmail.com, digitalsoftwaremarket@gmail.com) that a new quote
+ * request came in. Reuses the same STABLE `/api/email` proxy as `sendEmail`
+ * (confirmed live: the underlying Apps Script accepts a comma-separated `to`
+ * and fans it out to all three), so every quote entry point stays covered by
+ * fixing this one function rather than duplicating recipients per component.
+ * Best-effort: never throws into the caller — a failed team notification must
+ * never block the buyer's own confirmation or the lead capture.
+ */
+export function notifyQuoteTeam(args: QuoteNotifyArgs): Promise<unknown> {
+  const subject = `New quote request${args.product ? ` — ${args.product}` : ''} (${args.source})`;
+  const body = [
+    `Source: ${args.source}`,
+    `Requester: ${args.requesterName ? `${args.requesterName} <${args.requesterEmail}>` : args.requesterEmail}`,
+    args.company ? `Company: ${args.company}` : '',
+    args.product ? `Product: ${args.product}` : '',
+    '',
+    (args.details ?? '').trim() || '(no additional details submitted)',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  return sendEmail({ to: QUOTE_TEAM_RECIPIENTS.join(', '), subject, body }).catch((err) => {
+    // Never let a team-notification failure surface to the buyer flow; the
+    // request is still durably captured via captureLead/submitOrder either way.
+    console.warn('notifyQuoteTeam: failed to notify DSM team', err);
+  });
+}
+
+/**
  * True when we're on a hosted HTTPS page but the mail bridge is a local
  * `http://localhost` sidecar — it can never be reached (and an http:// fetch
  * would be a mixed-content hard-block). Used to degrade the bridge-only

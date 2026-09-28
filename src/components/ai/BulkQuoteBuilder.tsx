@@ -54,7 +54,7 @@ import AIFeature from '@/components/ai/AIFeature';
 import { chat, LLMError } from '@/lib/llm';
 import { searchProducts, type Product } from '@/lib/api';
 import { track } from '@/lib/stable/analytics';
-import { sendEmail } from '@/lib/stable/email';
+import { sendEmail, notifyQuoteTeam } from '@/lib/stable/email';
 import { submitOrder } from '@/lib/stable/orders';
 import { enqueue } from '@/lib/offlineQueue';
 import { captureLead } from '@/lib/captureLead';
@@ -522,6 +522,17 @@ function BulkQuoteBuilderInner() {
       metadata: { ref, seats: totals.totalSeats, total: totals.total, tier: totals.tier.label },
     });
 
+    // Every quote request must notify the DSM team, independent of the
+    // buyer's own confirmation email below.
+    void notifyQuoteTeam({
+      source: 'bulk-quote-builder',
+      requesterEmail: contact.email,
+      requesterName: contact.contactName || undefined,
+      company: contact.company || undefined,
+      product: `Bulk quote — ${lines.length} lines, ${totals.totalSeats} seats`,
+      details: `${breakdown}\n\nTotal ${money(totals.total)} (${totals.tier.label})`,
+    });
+
     // 2) Deliver the formatted HTML quote by email (best-effort via the bridge).
     try {
       await sendEmail({ to: contact.email, subject, body, html: true });
@@ -852,6 +863,15 @@ function BulkQuoteBetaSignup() {
       productName: `Bulk quote request — ${company.trim() || 'team'}`,
       notes: `Bulk Quote Builder request ${ref} (AI builder offline — manual follow-up). ${team.trim()}`,
       metadata: { ref },
+    });
+
+    void notifyQuoteTeam({
+      source: 'bulk-quote-builder-beta',
+      requesterEmail: email.trim(),
+      requesterName: contactName.trim() || undefined,
+      company: company.trim() || undefined,
+      product: `Bulk quote request ${ref} (AI builder offline)`,
+      details: team.trim(),
     });
 
     setDone(true);

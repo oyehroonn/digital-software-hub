@@ -5,10 +5,17 @@ import { Product } from '@/lib/api';
 import { chat, type ChatMessage as LLMChatMessage } from '@/lib/llm';
 import UpgradeFinder from '@/components/ai/UpgradeFinder';
 import { useApp } from '@/contexts/AppContext';
+import { track } from '@/lib/stable/analytics';
+import { captureLead } from '@/lib/captureLead';
+import { submitOrder } from '@/lib/stable/orders';
+import { notifyQuoteTeam } from '@/lib/stable/email';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Focus trap utility
 function useFocusTrap(isActive: boolean) {
@@ -81,6 +88,73 @@ export default function ProductModal({ product }: ProductModalProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modalRef = useFocusTrap(true);
+
+  // Inline "Request Quote" capture — this button previously had no click
+  // handler at all (dead), so no request from this deep-link modal was ever
+  // captured or emailed anywhere. See ProductDetailModal for the same pattern.
+  const [quoteFormOpen, setQuoteFormOpen] = useState(false);
+  const [quoteEmail, setQuoteEmail] = useState('');
+  const [quoteEmailError, setQuoteEmailError] = useState('');
+  const [quoteSending, setQuoteSending] = useState(false);
+  const [quoteSent, setQuoteSent] = useState(false);
+
+  const handleRequestQuote = () => {
+    track({
+      event: 'request_quote',
+      eventType: 'ecommerce',
+      productId: product.id,
+      elementText: product.name,
+      metadata: { source: 'product-modal' },
+    });
+    setQuoteFormOpen(true);
+  };
+
+  const submitQuoteRequest = async () => {
+    const to = quoteEmail.trim();
+    if (!EMAIL_RE.test(to)) {
+      setQuoteEmailError('Please enter a valid email address.');
+      return;
+    }
+    setQuoteEmailError('');
+    setQuoteSending(true);
+
+    track({
+      event: 'quote_emailed',
+      eventType: 'ecommerce',
+      elementText: to,
+      productId: product.id,
+      metadata: { feature: 'product-modal', product: product.name },
+    });
+
+    captureLead({
+      email: to,
+      source: 'quote',
+      productName: `Quote request — ${product.name}`,
+      notes: `Request a quote (product modal / deep link). Product: ${product.name} (${product.id}). Listed price: ${product.price}.`,
+    });
+
+    void submitOrder({
+      customerName: to.split('@')[0] || 'Website visitor',
+      email: to,
+      productId: product.id,
+      productName: `Quote request — ${product.name}`,
+      quantity: 1,
+      price: 'Contact for pricing',
+      notes: `[product-modal] Website visitor requested a quote for ${product.name}.`,
+    }).catch(() => {
+      /* submitOrder self-queues; captureLead above already guarantees the lead lands */
+    });
+
+    void notifyQuoteTeam({
+      source: 'product-modal',
+      requesterEmail: to,
+      product: product.name,
+      details: `Listed price: ${product.price}\nCategory: ${product.category}\nBrand: ${product.brand}`,
+    });
+
+    setQuoteSending(false);
+    setQuoteSent(true);
+  };
 
   // Handle Escape key
   useEffect(() => {
@@ -293,10 +367,52 @@ export default function ProductModal({ product }: ProductModalProps) {
                   >
                     Add to Cart
                   </Button>
-                  <Button variant="outline" className="flex-1 border-white/[0.06] text-[#FEFEFE]">
-                    Request Quote
-                  </Button>
+                  {!quoteFormOpen && !quoteSent && (
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-white/[0.06] text-[#FEFEFE]"
+                      onClick={handleRequestQuote}
+                    >
+                      Request Quote
+                    </Button>
+                  )}
                 </div>
+
+                {quoteSent ? (
+                  <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-[#FEFEFE]">
+                    <CheckCircle className="h-5 w-5 shrink-0 text-emerald-500" />
+                    <span>Request sent — a DSM specialist will follow up with pricing for {product.name}.</span>
+                  </div>
+                ) : quoteFormOpen ? (
+                  <div className="space-y-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+                    <label htmlFor="product-modal-quote-email" className="text-xs font-medium uppercase tracking-wider text-[#B1B2B3]">
+                      Your email — we'll send pricing here
+                    </label>
+                    <Input
+                      id="product-modal-quote-email"
+                      type="email"
+                      autoFocus
+                      placeholder="you@company.com"
+                      value={quoteEmail}
+                      onChange={(e) => {
+                        setQuoteEmail(e.target.value);
+                        if (quoteEmailError) setQuoteEmailError('');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') submitQuoteRequest();
+                      }}
+                      disabled={quoteSending}
+                    />
+                    {quoteEmailError && <p className="text-xs text-crimson">{quoteEmailError}</p>}
+                    <Button
+                      onClick={submitQuoteRequest}
+                      disabled={quoteSending}
+                      className="h-11 w-full rounded-xl bg-crimson text-sm font-semibold text-[#FEFEFE] hover:bg-crimson-dark"
+                    >
+                      {quoteSending ? 'Sending…' : 'Send request'}
+                    </Button>
+                  </div>
+                ) : null}
 
                 {/*
                   Upgrade Finder (feature 09), pre-seeded with this product.
