@@ -57,6 +57,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import catalogue from '@/data/catalogueProducts.json';
+import ProductModelViewer from '@/components/ProductModelViewer';
 
 // ── Bundled catalogue index (works fully offline — the stable ordering path) ──
 
@@ -205,6 +206,9 @@ function productInitial(text: string): string {
   return (m ? m[0] : '?').toUpperCase();
 }
 
+const catalogueGlb = (product: Pick<CatalogueProduct, 'id' | 'folder'>) =>
+  `https://dsm-api.techrealm.ai/models/${product.id}/${product.folder}/model.glb`;
+
 function OrderingProductCard({ product }: { product: CatalogueProduct }) {
   const { addToCart } = useApp();
   const navigate = useNavigate();
@@ -235,7 +239,12 @@ function OrderingProductCard({ product }: { product: CatalogueProduct }) {
         style={{ background: `linear-gradient(135deg, hsl(${hue} 32% 15%), #0b0c0e)` }}
         aria-hidden
       >
-        <span className="text-sm font-semibold text-[#FEFEFE]/85">{productInitial(product.name)}</span>
+        <ProductModelViewer
+          glbSrc={catalogueGlb(product)}
+          fallbackIcon={
+            <span className="text-sm font-semibold text-[#FEFEFE]/85">{productInitial(product.name)}</span>
+          }
+        />
       </div>
 
       <div className="min-w-0 flex-1">
