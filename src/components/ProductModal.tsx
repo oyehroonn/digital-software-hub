@@ -8,7 +8,7 @@ import { useApp } from '@/contexts/AppContext';
 import { track } from '@/lib/stable/analytics';
 import { captureLead } from '@/lib/captureLead';
 import { submitOrder } from '@/lib/stable/orders';
-import { notifyQuoteTeam } from '@/lib/stable/email';
+import { notifyQuoteTeam, isValidPhone } from '@/lib/stable/email';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
@@ -94,7 +94,9 @@ export default function ProductModal({ product }: ProductModalProps) {
   // captured or emailed anywhere. See ProductDetailModal for the same pattern.
   const [quoteFormOpen, setQuoteFormOpen] = useState(false);
   const [quoteEmail, setQuoteEmail] = useState('');
+  const [quotePhone, setQuotePhone] = useState('');
   const [quoteEmailError, setQuoteEmailError] = useState('');
+  const [quotePhoneError, setQuotePhoneError] = useState('');
   const [quoteSending, setQuoteSending] = useState(false);
   const [quoteSent, setQuoteSent] = useState(false);
 
@@ -111,11 +113,17 @@ export default function ProductModal({ product }: ProductModalProps) {
 
   const submitQuoteRequest = async () => {
     const to = quoteEmail.trim();
+    const tel = quotePhone.trim();
     if (!EMAIL_RE.test(to)) {
       setQuoteEmailError('Please enter a valid email address.');
       return;
     }
+    if (!isValidPhone(tel)) {
+      setQuotePhoneError('Please enter a valid phone number.');
+      return;
+    }
     setQuoteEmailError('');
+    setQuotePhoneError('');
     setQuoteSending(true);
 
     track({
@@ -128,6 +136,7 @@ export default function ProductModal({ product }: ProductModalProps) {
 
     captureLead({
       email: to,
+      phone: tel,
       source: 'quote',
       productName: `Quote request — ${product.name}`,
       notes: `Request a quote (product modal / deep link). Product: ${product.name} (${product.id}). Listed price: ${product.price}.`,
@@ -136,6 +145,7 @@ export default function ProductModal({ product }: ProductModalProps) {
     void submitOrder({
       customerName: to.split('@')[0] || 'Website visitor',
       email: to,
+      phone: tel,
       productId: product.id,
       productName: `Quote request — ${product.name}`,
       quantity: 1,
@@ -148,6 +158,7 @@ export default function ProductModal({ product }: ProductModalProps) {
     void notifyQuoteTeam({
       source: 'product-modal',
       requesterEmail: to,
+      requesterPhone: tel,
       product: product.name,
       details: `Listed price: ${product.price}\nCategory: ${product.category}\nBrand: ${product.brand}`,
     });
@@ -404,6 +415,25 @@ export default function ProductModal({ product }: ProductModalProps) {
                       disabled={quoteSending}
                     />
                     {quoteEmailError && <p className="text-xs text-crimson">{quoteEmailError}</p>}
+                    <label htmlFor="product-modal-quote-phone" className="text-xs font-medium uppercase tracking-wider text-[#B1B2B3]">
+                      Your phone — so we can call with pricing
+                    </label>
+                    <Input
+                      id="product-modal-quote-phone"
+                      type="tel"
+                      placeholder="+971 5X XXX XXXX"
+                      value={quotePhone}
+                      onChange={(e) => {
+                        setQuotePhone(e.target.value);
+                        if (quotePhoneError) setQuotePhoneError('');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') submitQuoteRequest();
+                      }}
+                      disabled={quoteSending}
+                      required
+                    />
+                    {quotePhoneError && <p className="text-xs text-crimson">{quotePhoneError}</p>}
                     <Button
                       onClick={submitQuoteRequest}
                       disabled={quoteSending}

@@ -138,11 +138,26 @@ export const QUOTE_TEAM_RECIPIENTS: readonly string[] = [
   'digitalsoftwaremarket@gmail.com',
 ];
 
+/**
+ * Basic phone-format check shared by every quote-request capture form — not
+ * strict validation (no per-country rules), just enough to reject empty/junk
+ * input: digits, spaces, and the usual `+ ( ) -` separators, 7-15 digits.
+ */
+export const PHONE_RE = /^\+?[\d\s()-]{7,20}$/;
+
+export function isValidPhone(value: string): boolean {
+  const digits = value.replace(/\D/g, '');
+  return PHONE_RE.test(value.trim()) && digits.length >= 7 && digits.length <= 15;
+}
+
 export interface QuoteNotifyArgs {
   /** Where on the site this request came from, e.g. "instant-quote", "bulk-quote-builder". */
   source: string;
   requesterEmail: string;
   requesterName?: string;
+  /** Required alongside email on every quote entry point — the team needs a
+   * fast way to call back, not just email. */
+  requesterPhone: string;
   company?: string;
   /** Product/service the quote is for, when known. */
   product?: string;
@@ -165,6 +180,7 @@ export function notifyQuoteTeam(args: QuoteNotifyArgs): Promise<unknown> {
   const body = [
     `Source: ${args.source}`,
     `Requester: ${args.requesterName ? `${args.requesterName} <${args.requesterEmail}>` : args.requesterEmail}`,
+    `Phone: ${args.requesterPhone || '(not provided)'}`,
     args.company ? `Company: ${args.company}` : '',
     args.product ? `Product: ${args.product}` : '',
     '',

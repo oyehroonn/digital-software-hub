@@ -54,7 +54,7 @@ import AIFeature from '@/components/ai/AIFeature';
 import { chat, LLMError } from '@/lib/llm';
 import { searchProducts, type Product } from '@/lib/api';
 import { track } from '@/lib/stable/analytics';
-import { sendEmail, notifyQuoteTeam } from '@/lib/stable/email';
+import { sendEmail, notifyQuoteTeam, isValidPhone } from '@/lib/stable/email';
 import { submitOrder } from '@/lib/stable/orders';
 import { enqueue } from '@/lib/offlineQueue';
 import { captureLead } from '@/lib/captureLead';
@@ -319,6 +319,7 @@ interface QuoteContact {
   company: string;
   contactName: string;
   email: string;
+  phone: string;
 }
 
 function buildQuoteEmail(contact: QuoteContact, lines: QuoteLine[], totals: QuoteTotals) {
@@ -389,6 +390,7 @@ function BulkQuoteBuilderInner() {
   const [company, setCompany] = useState('');
   const [contactName, setContactName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [sending, setSending] = useState(false);
   const [sentRef, setSentRef] = useState<string | null>(null);
   const [emailQueued, setEmailQueued] = useState(false);
@@ -396,6 +398,7 @@ function BulkQuoteBuilderInner() {
   const totals = useMemo(() => computeTotals(lines), [lines]);
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const phoneValid = isValidPhone(phone.trim());
 
   const handleBuild = useCallback(async () => {
     const trimmed = description.trim();
@@ -450,6 +453,10 @@ function BulkQuoteBuilderInner() {
       setError('Add a valid email so we can send the formal quote.');
       return;
     }
+    if (!phoneValid) {
+      setError('Add a valid phone number so a specialist can reach you.');
+      return;
+    }
     if (lines.length === 0) {
       setError('Your order is empty. Add at least one product.');
       return;
@@ -461,6 +468,7 @@ function BulkQuoteBuilderInner() {
       company: company.trim(),
       contactName: contactName.trim(),
       email: email.trim(),
+      phone: phone.trim(),
     };
     const { ref, subject, body } = buildQuoteEmail(contact, lines, totals);
 
@@ -492,6 +500,7 @@ function BulkQuoteBuilderInner() {
     submitOrder({
       customerName: contact.contactName || contact.company || 'Bulk quote lead',
       email: contact.email,
+      phone: contact.phone || undefined,
       productId: ref,
       productName: `Bulk quote — ${contact.company || 'team'} (${lines.length} lines)`,
       quantity: totals.totalSeats,
@@ -512,6 +521,7 @@ function BulkQuoteBuilderInner() {
     // Also capture the email as a lead/customer for the admin Customers view.
     captureLead({
       email: contact.email,
+      phone: contact.phone,
       source: 'quote',
       name: contact.contactName || undefined,
       company: contact.company || undefined,
@@ -528,6 +538,7 @@ function BulkQuoteBuilderInner() {
       source: 'bulk-quote-builder',
       requesterEmail: contact.email,
       requesterName: contact.contactName || undefined,
+      requesterPhone: contact.phone,
       company: contact.company || undefined,
       product: `Bulk quote — ${lines.length} lines, ${totals.totalSeats} seats`,
       details: `${breakdown}\n\nTotal ${money(totals.total)} (${totals.tier.label})`,
@@ -547,7 +558,7 @@ function BulkQuoteBuilderInner() {
     setSentRef(ref);
     setPhase('sent');
     setSending(false);
-  }, [emailValid, lines, totals, company, contactName, email]);
+  }, [emailValid, phoneValid, lines, totals, company, contactName, email, phone]);
 
   const reset = useCallback(() => {
     setPhase('describe');
@@ -765,7 +776,7 @@ function BulkQuoteBuilderInner() {
                     onChange={(e) => setContactName(e.target.value)}
                   />
                 </div>
-                <div className="space-y-1.5 sm:col-span-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="bqb-email">Work email</Label>
                   <Input
                     id="bqb-email"
@@ -773,6 +784,17 @@ function BulkQuoteBuilderInner() {
                     placeholder="jordan@acme.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="bqb-phone">Phone</Label>
+                  <Input
+                    id="bqb-phone"
+                    type="tel"
+                    placeholder="+971 5X XXX XXXX"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
                   />
                 </div>
               </div>
@@ -811,16 +833,22 @@ function BulkQuoteBetaSignup() {
   const [company, setCompany] = useState('');
   const [contactName, setContactName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [team, setTeam] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const phoneValid = isValidPhone(phone.trim());
 
   const handleSubmit = useCallback(async () => {
     if (!emailValid) {
       setError('Add a valid work email so a specialist can reach you.');
+      return;
+    }
+    if (!phoneValid) {
+      setError('Add a valid phone number so a specialist can reach you.');
       return;
     }
     if (team.trim().length < 8) {
@@ -839,6 +867,7 @@ function BulkQuoteBetaSignup() {
     submitOrder({
       customerName: contactName.trim() || company.trim() || 'Bulk quote lead',
       email: email.trim(),
+      phone: phone.trim() || undefined,
       productId: ref,
       productName: `Bulk quote request — ${company.trim() || 'team'}`,
       quantity: 1,
@@ -857,6 +886,7 @@ function BulkQuoteBetaSignup() {
     // Also capture the email as a lead/customer for the admin Customers view.
     captureLead({
       email: email.trim(),
+      phone: phone.trim(),
       source: 'quote',
       name: contactName.trim() || undefined,
       company: company.trim() || undefined,
@@ -869,6 +899,7 @@ function BulkQuoteBetaSignup() {
       source: 'bulk-quote-builder-beta',
       requesterEmail: email.trim(),
       requesterName: contactName.trim() || undefined,
+      requesterPhone: phone.trim(),
       company: company.trim() || undefined,
       product: `Bulk quote request ${ref} (AI builder offline)`,
       details: team.trim(),
@@ -876,7 +907,7 @@ function BulkQuoteBetaSignup() {
 
     setDone(true);
     setSubmitting(false);
-  }, [emailValid, team, company, contactName, email]);
+  }, [emailValid, phoneValid, team, company, contactName, email, phone]);
 
   if (done) {
     return (
@@ -927,7 +958,7 @@ function BulkQuoteBetaSignup() {
               onChange={(e) => setContactName(e.target.value)}
             />
           </div>
-          <div className="space-y-1.5 sm:col-span-2">
+          <div className="space-y-1.5">
             <Label htmlFor="bqb-beta-email">Work email</Label>
             <Input
               id="bqb-beta-email"
@@ -935,6 +966,17 @@ function BulkQuoteBetaSignup() {
               placeholder="jordan@acme.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="bqb-beta-phone">Phone</Label>
+            <Input
+              id="bqb-beta-phone"
+              type="tel"
+              placeholder="+971 5X XXX XXXX"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
             />
           </div>
           <div className="space-y-1.5 sm:col-span-2">

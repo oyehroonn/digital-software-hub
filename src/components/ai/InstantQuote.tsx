@@ -41,7 +41,7 @@ import AIFeature from '@/components/ai/AIFeature';
 import ProductModelViewer from '@/components/ProductModelViewer';
 import { chat, LLMError, type ChatMessage } from '@/lib/llm';
 import { searchProducts, getTopProducts, type Product } from '@/lib/api';
-import { sendEmail, notifyQuoteTeam } from '@/lib/stable/email';
+import { sendEmail, notifyQuoteTeam, isValidPhone } from '@/lib/stable/email';
 import { submitOrder, type OrderPayload } from '@/lib/stable/orders';
 import { sendTelemetry } from '@/lib/telemetry';
 import { captureLead } from '@/lib/captureLead';
@@ -218,6 +218,7 @@ function buildMessages(need: string, products: Product[]): ChatMessage[] {
 
 function buildLeadOrder(
   email: string,
+  phone: string,
   need: string,
   quote: Quote | null,
   source: string,
@@ -233,6 +234,7 @@ function buildLeadOrder(
   return {
     customerName: email.split('@')[0] || 'Website visitor',
     email,
+    phone: phone || undefined,
     productId: matchedId ?? 'quote-genie',
     productName,
     quantity: 1,
@@ -268,9 +270,11 @@ function InstantQuoteInner({ initialNeed = '', initialEmail = '', leadSource = '
   const [errorMsg, setErrorMsg] = useState('');
 
   const [email, setEmail] = useState(initialEmail);
+  const [phone, setPhone] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<'no' | 'delivered' | 'queued'>('no');
   const [emailError, setEmailError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
 
   const trimmed = need.trim();
   const canQuote = trimmed.length >= 3 && phase !== 'thinking';
@@ -327,11 +331,17 @@ function InstantQuoteInner({ initialNeed = '', initialEmail = '', leadSource = '
   async function handleEmailQuote() {
     if (!quote) return;
     const to = email.trim();
+    const tel = phone.trim();
     if (!EMAIL_RE.test(to)) {
       setEmailError('Please enter a valid email address.');
       return;
     }
+    if (!isValidPhone(tel)) {
+      setPhoneError('Please enter a valid phone number.');
+      return;
+    }
     setEmailError('');
+    setPhoneError('');
     setSending(true);
 
     sendTelemetry({
@@ -344,6 +354,7 @@ function InstantQuoteInner({ initialNeed = '', initialEmail = '', leadSource = '
     // Also capture the email as a lead/customer for the admin Customers view.
     captureLead({
       email: to,
+      phone: tel,
       source: 'quote',
       productName: leadSource === 'instant-quote' ? 'Instant Quote request' : 'Quote request (unmatched product)',
       notes: quoteToText(quote, need),
@@ -354,6 +365,7 @@ function InstantQuoteInner({ initialNeed = '', initialEmail = '', leadSource = '
     void notifyQuoteTeam({
       source: leadSource || 'instant-quote',
       requesterEmail: to,
+      requesterPhone: tel,
       product: quote.items.map((i) => i.name).join(', ') || undefined,
       details: quoteToText(quote, need),
     });
@@ -373,7 +385,7 @@ function InstantQuoteInner({ initialNeed = '', initialEmail = '', leadSource = '
     // Stable path: record the quote as a lead in the Orders sheet. submitOrder
     // never rejects — it confirms, or parks in the offline queue and retries.
     try {
-      const res = await submitOrder(buildLeadOrder(to, need, quote, leadSource));
+      const res = await submitOrder(buildLeadOrder(to, tel, need, quote, leadSource));
       setSent(res.confirmed ? 'delivered' : 'queued');
     } catch {
       setSent('queued');
@@ -389,8 +401,10 @@ function InstantQuoteInner({ initialNeed = '', initialEmail = '', leadSource = '
     setPhase('idle');
     setErrorMsg('');
     setEmail('');
+    setPhone('');
     setSent('no');
     setEmailError('');
+    setPhoneError('');
   }
 
   // Runtime failure → don't dead-end the buyer; offer the beta-signup capture.
@@ -545,6 +559,21 @@ function InstantQuoteInner({ initialNeed = '', initialEmail = '', leadSource = '
                   className="flex-1 text-base"
                   disabled={sending}
                 />
+                <Input
+                  id="instant-quote-phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleEmailQuote();
+                  }}
+                  placeholder="Phone number"
+                  className="flex-1 text-base"
+                  disabled={sending}
+                  required
+                />
                 <Button
                   onClick={handleEmailQuote}
                   disabled={sending}
@@ -566,6 +595,9 @@ function InstantQuoteInner({ initialNeed = '', initialEmail = '', leadSource = '
               </div>
               {emailError && (
                 <p className="mt-2 text-sm text-destructive">{emailError}</p>
+              )}
+              {phoneError && (
+                <p className="mt-2 text-sm text-destructive">{phoneError}</p>
               )}
             </div>
           ) : (
@@ -687,17 +719,25 @@ interface BetaSignupProps {
 function QuoteBetaSignup({ reason, prefillNeed = '', prefillEmail = '', onRetry }: BetaSignupProps) {
   const [need, setNeed] = useState(prefillNeed);
   const [email, setEmail] = useState(prefillEmail);
+  const [phone, setPhone] = useState('');
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
 
   async function submit() {
     const to = email.trim();
+    const tel = phone.trim();
     if (!EMAIL_RE.test(to)) {
       setError('Please enter a valid email address.');
       return;
     }
+    if (!isValidPhone(tel)) {
+      setPhoneError('Please enter a valid phone number.');
+      return;
+    }
     setError('');
+    setPhoneError('');
     setSending(true);
 
     sendTelemetry({
@@ -734,11 +774,12 @@ function QuoteBetaSignup({ reason, prefillNeed = '', prefillEmail = '', onRetry 
       void notifyQuoteTeam({
         source: 'quote-auto-approved',
         requesterEmail: to,
+        requesterPhone: tel,
         details: `Auto-approved (VPS/AI was offline). What they told us: ${need.trim() || '(general enquiry)'}`,
       });
 
       try {
-        await submitOrder(buildLeadOrder(to, need, null, 'quote-auto-approved'));
+        await submitOrder(buildLeadOrder(to, tel, need, null, 'quote-auto-approved'));
       } catch {
         /* self-queues */
       } finally {
@@ -752,6 +793,7 @@ function QuoteBetaSignup({ reason, prefillNeed = '', prefillEmail = '', onRetry 
     // Non-offline degradation (runtime error): capture as an early-access lead.
     captureLead({
       email: to,
+      phone: tel,
       source: 'quote',
       productName: 'Instant Quote — early access',
       notes: `Quote beta signup (${reason}). What they told us: ${need.trim() || '(not given)'}`,
@@ -760,11 +802,12 @@ function QuoteBetaSignup({ reason, prefillNeed = '', prefillEmail = '', onRetry 
     void notifyQuoteTeam({
       source: `quote-beta:${reason}`,
       requesterEmail: to,
+      requesterPhone: tel,
       details: `What they told us: ${need.trim() || '(not given)'}`,
     });
 
     try {
-      await submitOrder(buildLeadOrder(to, need, null, `quote-beta:${reason}`));
+      await submitOrder(buildLeadOrder(to, tel, need, null, `quote-beta:${reason}`));
     } catch {
       /* submitOrder self-queues; the visitor is captured either way */
     } finally {
@@ -820,6 +863,20 @@ function QuoteBetaSignup({ reason, prefillNeed = '', prefillEmail = '', onRetry 
           className="flex-1 text-base"
           disabled={sending}
         />
+        <Input
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') submit();
+          }}
+          placeholder="Phone number"
+          className="flex-1 text-base"
+          disabled={sending}
+          required
+        />
         <Button
           onClick={submit}
           disabled={sending}
@@ -841,6 +898,7 @@ function QuoteBetaSignup({ reason, prefillNeed = '', prefillEmail = '', onRetry 
       </div>
 
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+      {phoneError && <p className="mt-2 text-sm text-destructive">{phoneError}</p>}
 
       {reason === 'error' && onRetry && (
         <button
