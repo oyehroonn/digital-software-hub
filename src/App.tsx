@@ -9,6 +9,7 @@ import { useEffect, lazy, Suspense } from "react";
 import ProductModalWrapper from "./components/ProductModalWrapper";
 import GlobalAIChat from "./components/GlobalAIChat";
 import SettingsPanel from "./components/SettingsPanel";
+import CheckoutRedirectOverlay from "./components/CheckoutRedirectOverlay";
 import { AccountProvider } from "./components/account/AccountProvider";
 import { ResellerProvider } from "./components/reseller/ResellerProvider";
 import { CompareProvider } from "@/contexts/CompareContext";
@@ -142,6 +143,11 @@ const AppContent = () => {
               </Suspense>
             )}
             <SettingsPanel />
+            {/* Buy Now -> WooCommerce checkout full-screen loading overlay. Lives
+                here (not inside ProductDetailModal or Checkout) so it survives
+                both the modal closing and the /checkout route mount -- see
+                CheckoutRedirectOverlay.tsx. */}
+            <CheckoutRedirectOverlay />
           </ProductModalProvider>
         </CompareProvider>
       </ResellerProvider>

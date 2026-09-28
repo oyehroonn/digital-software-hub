@@ -72,7 +72,7 @@ interface LicensingResult {
 type SubmitResult = OwnResult | LicensingResult;
 
 export default function Checkout() {
-  const { state, cartTotal, clearCart } = useApp();
+  const { state, cartTotal, clearCart, setCheckoutRedirecting } = useApp();
   const items = state.cartItems;
 
   const [name, setName] = useState("");
@@ -201,12 +201,48 @@ export default function Checkout() {
       },
     });
 
-    clearCart();
-    window.location.assign(redirectUrl);
-    // Deliberately narrow deps: recordOrders/track/clearCart close over
-    // component state that doesn't need to re-trigger this redirect.
+    // If the buyer arrived via "Buy Now" (ProductDetailModal already flipped
+    // on <CheckoutRedirectOverlay /> the instant they clicked, before this
+    // page even mounted), make sure the overlay is visible for at least a
+    // brief, perceptible moment before the actual external navigation fires.
+    // On a fast connection the whole modal-close -> route-mount -> redirect
+    // chain can resolve in well under 100ms, which would make the "Creating
+    // secure payment link…" overlay flash imperceptibly rather than read as
+    // real feedback. Arriving via "Proceed to Checkout" on the Cart page
+    // (checkoutRedirecting never got set) is untouched — redirects exactly
+    // as before, zero artificial delay, same as the already-verified flow.
+    const MIN_VISIBLE_MS = 700;
+    const fire = () => {
+      clearCart();
+      window.location.assign(redirectUrl);
+    };
+    if (state.checkoutRedirecting) {
+      const elapsed = state.checkoutRedirectStartedAt ? Date.now() - state.checkoutRedirectStartedAt : 0;
+      const delay = Math.max(0, MIN_VISIBLE_MS - elapsed);
+      if (delay > 0) {
+        setTimeout(fire, delay);
+      } else {
+        fire();
+      }
+    } else {
+      fire();
+    }
+    // Deliberately narrow deps: recordOrders/track/clearCart/checkoutRedirecting
+    // close over component state that doesn't need to re-trigger this redirect
+    // (instantFiredRef already guards against re-firing).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInstantCheckoutPath, matchedLinks, licenseItems.length]);
+
+  // Buy Now's overlay assumes an instant WooCommerce redirect is coming. If
+  // the cart actually needs the name/email form instead (e.g. another cart
+  // item has no confident match, or it's an own-product/meeting path), there
+  // is no redirect to wait for — clear the overlay immediately so the buyer
+  // sees and can use the real page instead of staring at a spinner.
+  useEffect(() => {
+    if (state.checkoutRedirecting && !isInstantCheckoutPath) {
+      setCheckoutRedirecting(false);
+    }
+  }, [isInstantCheckoutPath, state.checkoutRedirecting, setCheckoutRedirecting]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

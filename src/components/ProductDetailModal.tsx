@@ -39,7 +39,7 @@ import { hasWooMatch } from '@/lib/legacyStore';
 import { reportAiOutage, track } from '@/lib/stable/analytics';
 import { captureLead } from '@/lib/captureLead';
 import { submitOrder } from '@/lib/stable/orders';
-import { notifyQuoteTeam } from '@/lib/stable/email';
+import { notifyQuoteTeam, isValidPhone } from '@/lib/stable/email';
 import {
   displayPrice,
   isOutOfStock,
@@ -218,7 +218,7 @@ function deepLinks(p: ProductLike) {
 
 export default function ProductDetailModal({ product, onClose }: ProductDetailModalProps) {
   const { toggleCompare, isComparing, atCapacity } = useCompare();
-  const { addToCart } = useApp();
+  const { addToCart, setCheckoutRedirecting } = useApp();
   const { toast } = useToast();
   const navigate = useNavigate();
   const modalRef = useFocusTrap(true);
@@ -235,7 +235,9 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
   // Inline "Request a quote" capture (quote-only products).
   const [quoteFormOpen, setQuoteFormOpen] = useState(false);
   const [quoteEmail, setQuoteEmail] = useState('');
+  const [quotePhone, setQuotePhone] = useState('');
   const [quoteEmailError, setQuoteEmailError] = useState('');
+  const [quotePhoneError, setQuotePhoneError] = useState('');
   const [quoteSending, setQuoteSending] = useState(false);
   const [quoteSent, setQuoteSent] = useState(false);
 
@@ -285,6 +287,12 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
   }, [pushToCart, toast, detail.name]);
 
   const handleBuyNow = useCallback(() => {
+    // First thing, synchronously, before anything else -- this is what makes
+    // <CheckoutRedirectOverlay /> appear the instant the click happens rather
+    // than after the modal closes / the /checkout chunk loads. It lives in
+    // AppContext (not local state) specifically so it survives this modal
+    // unmounting on close() and the route change below.
+    setCheckoutRedirecting(true);
     pushToCart();
     track({
       event: 'buy_now',
@@ -295,7 +303,7 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
     });
     onClose();
     navigate('/checkout');
-  }, [pushToCart, navigate, onClose, detail.id, detail.name]);
+  }, [setCheckoutRedirecting, pushToCart, navigate, onClose, detail.id, detail.name]);
 
   // Reveals the inline email-capture form below the CTA. The actual
   // request (lead capture + team notification) only fires once the visitor
@@ -315,11 +323,17 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
 
   const submitQuoteRequest = useCallback(async () => {
     const to = quoteEmail.trim();
+    const tel = quotePhone.trim();
     if (!EMAIL_RE.test(to)) {
       setQuoteEmailError('Please enter a valid email address.');
       return;
     }
+    if (!isValidPhone(tel)) {
+      setQuotePhoneError('Please enter a valid phone number.');
+      return;
+    }
     setQuoteEmailError('');
+    setQuotePhoneError('');
     setQuoteSending(true);
 
     track({
@@ -335,6 +349,7 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
     // off of (see admin-app/src/views/approvals/approvalsData.ts).
     captureLead({
       email: to,
+      phone: tel,
       source: 'quote',
       productName: `Quote request — ${detail.name}`,
       notes: `Request a quote (product-detail modal). Product: ${detail.name} (${detail.id}). Listed price: ${displayPrice(detail)}.`,
@@ -343,6 +358,7 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
     void submitOrder({
       customerName: to.split('@')[0] || 'Website visitor',
       email: to,
+      phone: tel,
       productId: detail.id,
       productName: `Quote request — ${detail.name}`,
       quantity: 1,
@@ -356,6 +372,7 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
     void notifyQuoteTeam({
       source: 'product-detail-modal',
       requesterEmail: to,
+      requesterPhone: tel,
       product: detail.name,
       details: `Listed price: ${displayPrice(detail)}\nCategory: ${detail.category}\nBrand: ${detail.brand}`,
     });
@@ -366,7 +383,7 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
       title: 'Quote requested',
       description: `A DSM specialist will follow up with pricing for ${detail.name}.`,
     });
-  }, [quoteEmail, detail, toast]);
+  }, [quoteEmail, quotePhone, detail, toast]);
 
   // Escape to close + lock body scroll while open.
   useEffect(() => {
@@ -591,6 +608,27 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
                       />
                       {quoteEmailError && (
                         <p className="text-xs text-crimson">{quoteEmailError}</p>
+                      )}
+                      <label htmlFor="quote-request-phone" className="text-xs font-medium uppercase tracking-wider text-[#B1B2B3]">
+                        Your phone — so we can call with pricing
+                      </label>
+                      <Input
+                        id="quote-request-phone"
+                        type="tel"
+                        placeholder="+971 5X XXX XXXX"
+                        value={quotePhone}
+                        onChange={(e) => {
+                          setQuotePhone(e.target.value);
+                          if (quotePhoneError) setQuotePhoneError('');
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') submitQuoteRequest();
+                        }}
+                        disabled={quoteSending}
+                        required
+                      />
+                      {quotePhoneError && (
+                        <p className="text-xs text-crimson">{quotePhoneError}</p>
                       )}
                       <Button
                         onClick={submitQuoteRequest}

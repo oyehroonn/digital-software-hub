@@ -15,6 +15,17 @@ interface AppState {
   theme: 'light' | 'dark';
   hideAvatar: boolean;
   hideConcierge: boolean;
+  /** True while a Buy Now click is carrying the buyer to the WooCommerce
+   *  checkout redirect (modal close -> /checkout route -> external
+   *  navigation) -- drives <CheckoutRedirectOverlay />'s full-screen loading
+   *  state so that gap never feels dead. Lives here (not component-local
+   *  state) because it must survive the ProductDetailModal unmounting on
+   *  close and the route change to /checkout. */
+  checkoutRedirecting: boolean;
+  /** Date.now() when checkoutRedirecting was last set true -- lets Checkout.tsx
+   *  enforce a minimum visible duration for the overlay before firing the
+   *  actual external redirect, so it never just flashes on a fast connection. */
+  checkoutRedirectStartedAt: number | null;
 }
 
 export interface CartItem {
@@ -59,6 +70,7 @@ interface AppContextType {
   setHideAvatar: (hidden: boolean) => void;
   setHideConcierge: (hidden: boolean) => void;
   setNavigate: (navigateFn: (path: string) => void) => void;
+  setCheckoutRedirecting: (redirecting: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -119,6 +131,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     theme: preferences.theme,
     hideAvatar: preferences.hideAvatar,
     hideConcierge: preferences.hideConcierge,
+    checkoutRedirecting: false,
+    checkoutRedirectStartedAt: null,
   });
 
   // Apply theme to document root
@@ -311,6 +325,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, hideConcierge: hidden }));
   }, []);
 
+  const setCheckoutRedirecting = useCallback((redirecting: boolean) => {
+    setState(prev => ({
+      ...prev,
+      checkoutRedirecting: redirecting,
+      checkoutRedirectStartedAt: redirecting ? Date.now() : null,
+    }));
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -332,6 +354,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setHideAvatar,
         setHideConcierge,
         setNavigate,
+        setCheckoutRedirecting,
       }}
     >
       {children}
