@@ -193,10 +193,36 @@ function tokens(s) {
 }
 function priceToFloat(p) {
   if (p == null) return null;
-  const s = String(p).replace(/[^0-9.]/g, "");
-  if (!s) return null;
-  const n = parseFloat(s);
+  const s = String(p);
+  // DSM prices are sometimes prefixed with a tier qualifier that has its own
+  // digits, e.g. "20-user pack from AED 2,203.50" or "5-user pack from AED
+  // 550.00" -- naively stripping every non-digit/dot character concatenates
+  // the "20" and the "2,203.50" into a garbage "202203.50". When an "AED"
+  // amount is present, pull specifically that number; only fall back to the
+  // strip-everything approach for values with no "AED" marker (e.g. Woo's
+  // own bare "2203.50" price field).
+  const aed = s.match(/AED\s*([\d,]+(?:\.\d+)?)/i);
+  const raw = aed ? aed[1] : s.replace(/[^0-9.]/g, "");
+  const cleaned = String(raw).replace(/,/g, "");
+  if (!cleaned) return null;
+  const n = parseFloat(cleaned);
   return Number.isFinite(n) ? n : null;
+}
+
+// The 3D box-art pipeline mints a fresh catalog id per box-image side, and
+// for the "front" side the product's `name` keeps a literal trailing
+// "front"/"Front" token straight from the asset folder name (e.g.
+// "99205_Microsoft_Visual_Studio_2019_Professional_Front" ->
+// "Microsoft Visual Studio 2019 Professional Front") -- confirmed by these
+// rows carrying `hasCustomBoxArt: true`, a generic templated description
+// ("Official <brand> license. Software software solution."), and the exact
+// same price as an existing, already-matched catalog entry for the real
+// product. That one extra token is just enough to drop the combined
+// name-similarity score below the 0.90 fuzzy-match floor, so the real
+// product (which DOES have a confident Woo match) never gets found. Strip it
+// for MATCHING purposes only -- never changes what's shown to the shopper.
+function stripBoxArtSuffix(name) {
+  return String(name || "").replace(/\s+front\s*$/i, "");
 }
 function seqRatio(a, b) {
   // Cheap Ratcliff/Obershelp-ish ratio via longest-common-subsequence length.
@@ -229,9 +255,13 @@ async function buildMap(dsmProducts, wooProducts) {
   let nHigh = 0, nMedium = 0, nNone = 0, nVariableDropped = 0;
 
   for (const p of dsmProducts) {
-    const dnorm = norm(p.name);
+    // Match against the name with any trailing box-art "front" artifact
+    // stripped (see stripBoxArtSuffix) -- the value actually shown to the
+    // shopper (p.name) is untouched everywhere else.
+    const matchName = stripBoxArtSuffix(p.name);
+    const dnorm = norm(matchName);
     const dprice = priceToFloat(p.price);
-    const dtok = new Set(tokens(p.name));
+    const dtok = new Set(tokens(matchName));
 
     let match = null, method = null, confidence = null;
 
@@ -267,15 +297,31 @@ async function buildMap(dsmProducts, wooProducts) {
         if (score > bestScore) { bestScore = score; best = w; }
       }
       if (best && bestScore >= 0.9) {
-        const wprice = priceToFloat(best.price);
-        let priceOk = true;
-        if (dprice != null && wprice != null && dprice > 0) {
-          priceOk = Math.abs(dprice - wprice) / dprice <= 0.15;
-        }
-        if (priceOk) {
+        if (best.type === "variable") {
+          // A variable product's own `.price` is just its cheapest/default
+          // variation (e.g. the 20-user tier of a MAK license) -- comparing
+          // THIS dsm row's price against it is meaningless when the row is a
+          // different tier (e.g. the 150-user row), and was silently
+          // dropping every non-cheapest tier of every multi-tier product
+          // (MAK keys, Autodesk 1/3-year terms, etc.) before ever reaching
+          // the per-variation price resolution below. Defer the price check
+          // entirely to resolveVariation, which checks against each CHILD
+          // variation's own price with a tight tolerance -- same safety
+          // bar, just checked against the right number.
           match = best;
           method = `fuzzy_${bestScore.toFixed(2)}`;
           confidence = bestScore >= 0.97 ? "high" : "medium";
+        } else {
+          const wprice = priceToFloat(best.price);
+          let priceOk = true;
+          if (dprice != null && wprice != null && dprice > 0) {
+            priceOk = Math.abs(dprice - wprice) / dprice <= 0.15;
+          }
+          if (priceOk) {
+            match = best;
+            method = `fuzzy_${bestScore.toFixed(2)}`;
+            confidence = bestScore >= 0.97 ? "high" : "medium";
+          }
         }
       }
     }

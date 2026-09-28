@@ -1,5 +1,5 @@
 {
-  "_generatedAt": "2026-09-22T23:52:20.638Z",
+  "_generatedAt": "2026-09-28T08:07:24.826Z",
   "_source": {
     "dsmApi": "https://dsm-api.techrealm.ai/products",
     "wooApi": "https://digitalsoftwaremarkett.com/wp-json/wc/v3/products",
@@ -7,11 +7,11 @@
     "wooCount": 246
   },
   "_stats": {
-    "matched": 237,
-    "high": 224,
-    "medium": 13,
-    "unmatched": 459,
-    "variableParentDroppedNoVariationMatch": 42
+    "matched": 343,
+    "high": 338,
+    "medium": 5,
+    "unmatched": 353,
+    "variableParentDroppedNoVariationMatch": 93
   },
   "products": {
     "8151": {
@@ -887,11 +887,29 @@
       "confidence": "high",
       "method": "exact_name+variation_price_match"
     },
+    "8397": {
+      "wooId": 8397,
+      "wooName": "AutoCAD LT 2023 : Best-in-class 2D design and documentation to complete projects faster (3 Year)",
+      "wooPrice": "2997",
+      "wooParentId": 8359,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.91+variation_price_match"
+    },
     "8398": {
       "wooId": 8398,
       "wooName": "AutoCAD LT 2023 : Best-in-class 2D design and documentation to complete projects faster (1 Year)",
       "wooPrice": "999",
       "wooParentId": 8359,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.91+variation_price_match"
+    },
+    "8399": {
+      "wooId": 8399,
+      "wooName": "AutoCAD LT 2022 : Best-in-class 2D design and documentation to complete projects faster (3 Year)",
+      "wooPrice": "2697",
+      "wooParentId": 8360,
       "wooType": "variation",
       "confidence": "high",
       "method": "fuzzy_0.91+variation_price_match"
@@ -905,6 +923,15 @@
       "confidence": "high",
       "method": "fuzzy_0.91+variation_price_match"
     },
+    "8417": {
+      "wooId": 8417,
+      "wooName": "Fusion 360 : Unify design, engineering, electronics and manufacturing (3)",
+      "wooPrice": "4197",
+      "wooParentId": 8369,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.93+variation_price_match"
+    },
     "8418": {
       "wooId": 8418,
       "wooName": "Fusion 360 : Unify design, engineering, electronics and manufacturing (1)",
@@ -913,6 +940,15 @@
       "wooType": "variation",
       "confidence": "high",
       "method": "fuzzy_0.93+variation_price_match"
+    },
+    "8419": {
+      "wooId": 8419,
+      "wooName": "AutoCad 2024 : Trusted by millions, built to accelerate your creativity (Yearly Subscription) (3)",
+      "wooPrice": "11014",
+      "wooParentId": 8373,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.96+variation_price_match"
     },
     "8420": {
       "wooId": 8420,
@@ -923,6 +959,15 @@
       "confidence": "high",
       "method": "fuzzy_0.96+variation_price_match"
     },
+    "8423": {
+      "wooId": 8423,
+      "wooName": "Maya 2024 : Create expansive worlds, complex characters and dazzling effects (Yearly Subscription) (3)",
+      "wooPrice": "9897",
+      "wooParentId": 8375,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.95+variation_price_match"
+    },
     "8424": {
       "wooId": 8424,
       "wooName": "Maya 2024 : Create expansive worlds, complex characters and dazzling effects (Yearly Subscription) (1)",
@@ -932,11 +977,29 @@
       "confidence": "high",
       "method": "fuzzy_0.95+variation_price_match"
     },
+    "8425": {
+      "wooId": 8425,
+      "wooName": "Civil 3D 2024 : Comprehensive detailed design and documentation software for civil infrastructure (Yearly Subscription) (3)",
+      "wooPrice": "13797",
+      "wooParentId": 8376,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.95+variation_price_match"
+    },
     "8426": {
       "wooId": 8426,
       "wooName": "Civil 3D 2024 : Comprehensive detailed design and documentation software for civil infrastructure (Yearly Subscription) (1)",
       "wooPrice": "4599",
       "wooParentId": 8376,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.95+variation_price_match"
+    },
+    "8427": {
+      "wooId": 8427,
+      "wooName": "3ds Max 2024 : Create massive worlds and high-quality designs (Yearly Subscription) (3)",
+      "wooPrice": "10497",
+      "wooParentId": 8377,
       "wooType": "variation",
       "confidence": "high",
       "method": "fuzzy_0.95+variation_price_match"
@@ -959,6 +1022,24 @@
       "confidence": "high",
       "method": "fuzzy_0.94+variation_price_match"
     },
+    "8430": {
+      "wooId": 8430,
+      "wooName": "Inventor 2024 : Mechanical design software for ambitious ideas (Yearly Subscription) (3)",
+      "wooPrice": "13797",
+      "wooParentId": 8378,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.94+variation_price_match"
+    },
+    "8431": {
+      "wooId": 8431,
+      "wooName": "AutoCAD LT 2024 : Best-in-class 2D design with automation to expedite drafting (Yearly Subscription) (3)",
+      "wooPrice": "3897",
+      "wooParentId": 8379,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.96+variation_price_match"
+    },
     "8432": {
       "wooId": 8432,
       "wooName": "AutoCAD LT 2024 : Best-in-class 2D design with automation to expedite drafting (Yearly Subscription) (1)",
@@ -967,6 +1048,24 @@
       "wooType": "variation",
       "confidence": "high",
       "method": "fuzzy_0.96+variation_price_match"
+    },
+    "8433": {
+      "wooId": 8433,
+      "wooName": "Microsoft 365 Business Premium 1 Year Subscription (15)",
+      "wooPrice": "8814",
+      "wooParentId": 8380,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.92+variation_price_match"
+    },
+    "8434": {
+      "wooId": 8434,
+      "wooName": "Microsoft 365 Business Premium 1 Year Subscription (35)",
+      "wooPrice": "20195.08",
+      "wooParentId": 8380,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.92+variation_price_match"
     },
     "8435": {
       "wooId": 8435,
@@ -977,11 +1076,38 @@
       "confidence": "high",
       "method": "fuzzy_0.93+variation_price_match"
     },
+    "8436": {
+      "wooId": 8436,
+      "wooName": "Microsoft 365 E5 1 Year Subscription (200)",
+      "wooPrice": "117520",
+      "wooParentId": 8383,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.90+variation_price_match"
+    },
     "8437": {
       "wooId": 8437,
       "wooName": "Microsoft 365 E5 1 Year Subscription (100)",
       "wooPrice": "70000",
       "wooParentId": 8383,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.90+variation_price_match"
+    },
+    "8444": {
+      "wooId": 8441,
+      "wooName": "Microsoft Windows Server 2025 Remote Desktop - User Cal License (10)",
+      "wooPrice": "3301.57",
+      "wooParentId": 8387,
+      "wooType": "variation",
+      "confidence": "medium",
+      "method": "fuzzy_0.93+variation_price_match"
+    },
+    "8468": {
+      "wooId": 8468,
+      "wooName": "Civil 3D 2023 : Comprehensive detailed design and documentation software for civil infrastructure (Yearly Subscription) (3 Year)",
+      "wooPrice": "13797",
+      "wooParentId": 8391,
       "wooType": "variation",
       "confidence": "high",
       "method": "fuzzy_0.90+variation_price_match"
@@ -999,6 +1125,15 @@
       "wooId": 8470,
       "wooName": "Fusion 360 2025 : Unify design, engineering, electronics and manufacturing (1)",
       "wooPrice": "1899",
+      "wooParentId": 8392,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.94+variation_price_match"
+    },
+    "8471": {
+      "wooId": 8471,
+      "wooName": "Fusion 360 2025 : Unify design, engineering, electronics and manufacturing (3)",
+      "wooPrice": "4197",
       "wooParentId": 8392,
       "wooType": "variation",
       "confidence": "high",
@@ -1367,6 +1502,15 @@
       "confidence": "high",
       "method": "exact_name"
     },
+    "8521": {
+      "wooId": 8521,
+      "wooName": "AutoCad 2025 : Trusted by millions, built to accelerate your creativity (Yearly Subscription) (3)",
+      "wooPrice": "13209.98",
+      "wooParentId": 8472,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.96+variation_price_match"
+    },
     "8522": {
       "wooId": 8522,
       "wooName": "AutoCad 2025 : Trusted by millions, built to accelerate your creativity (Yearly Subscription) (1)",
@@ -1375,6 +1519,15 @@
       "wooType": "variation",
       "confidence": "high",
       "method": "fuzzy_0.96+variation_price_match"
+    },
+    "8523": {
+      "wooId": 8523,
+      "wooName": "Inventor 2025 : Mechanical design software for ambitious ideas (Yearly Subscription) (3)",
+      "wooPrice": "13797",
+      "wooParentId": 8473,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.94+variation_price_match"
     },
     "8524": {
       "wooId": 8524,
@@ -1385,6 +1538,15 @@
       "confidence": "high",
       "method": "fuzzy_0.94+variation_price_match"
     },
+    "8525": {
+      "wooId": 8525,
+      "wooName": "3ds Max 2025 : Create massive worlds and high-quality designs (Yearly Subscription) (3)",
+      "wooPrice": "10497",
+      "wooParentId": 8474,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.95+variation_price_match"
+    },
     "8526": {
       "wooId": 8526,
       "wooName": "3ds Max 2025 : Create massive worlds and high-quality designs (Yearly Subscription) (1)",
@@ -1393,6 +1555,15 @@
       "wooType": "variation",
       "confidence": "high",
       "method": "fuzzy_0.95+variation_price_match"
+    },
+    "8527": {
+      "wooId": 8527,
+      "wooName": "AutoCAD LT 2025 : Best-in-class 2D design with automation to expedite drafting (Yearly Subscription) (3)",
+      "wooPrice": "3897",
+      "wooParentId": 8475,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.96+variation_price_match"
     },
     "8528": {
       "wooId": 8528,
@@ -1403,6 +1574,15 @@
       "confidence": "high",
       "method": "fuzzy_0.96+variation_price_match"
     },
+    "8529": {
+      "wooId": 8529,
+      "wooName": "Maya 2025 : Create expansive worlds, complex characters and dazzling effects (Yearly Subscription) (3)",
+      "wooPrice": "9897",
+      "wooParentId": 8476,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.95+variation_price_match"
+    },
     "8530": {
       "wooId": 8530,
       "wooName": "Maya 2025 : Create expansive worlds, complex characters and dazzling effects (Yearly Subscription) (1)",
@@ -1411,6 +1591,15 @@
       "wooType": "variation",
       "confidence": "high",
       "method": "fuzzy_0.95+variation_price_match"
+    },
+    "8531": {
+      "wooId": 8531,
+      "wooName": "Civil 3D 2025 : Comprehensive detailed design and documentation software for civil infrastructure (Yearly Subscription) (3 Year)",
+      "wooPrice": "13797",
+      "wooParentId": 8477,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.90+variation_price_match"
     },
     "8532": {
       "wooId": 8532,
@@ -1430,6 +1619,24 @@
       "confidence": "high",
       "method": "fuzzy_0.95+variation_price_match"
     },
+    "8536": {
+      "wooId": 8536,
+      "wooName": "Navisworks 2025: Comprehensive project review software for coordination and analysis (Yearly Subscription) (3)",
+      "wooPrice": "14686",
+      "wooParentId": 8479,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.95+variation_price_match"
+    },
+    "8539": {
+      "wooId": 8539,
+      "wooName": "Navisworks 2024: Comprehensive project review software for coordination and analysis (Yearly Subscription) (3)",
+      "wooPrice": "14686",
+      "wooParentId": 8481,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.95+variation_price_match"
+    },
     "8540": {
       "wooId": 8540,
       "wooName": "Navisworks 2024: Comprehensive project review software for coordination and analysis (Yearly Subscription) (1)",
@@ -1438,6 +1645,15 @@
       "wooType": "variation",
       "confidence": "high",
       "method": "fuzzy_0.95+variation_price_match"
+    },
+    "8565": {
+      "wooId": 8565,
+      "wooName": "Architecture, Engineering & Construction (AEC) Collection 2024 (3)",
+      "wooPrice": "27536",
+      "wooParentId": 8494,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.92+variation_price_match"
     },
     "8566": {
       "wooId": 8566,
@@ -1448,11 +1664,29 @@
       "confidence": "high",
       "method": "fuzzy_0.92+variation_price_match"
     },
+    "8567": {
+      "wooId": 8567,
+      "wooName": "Architecture, Engineering & Construction (AEC) Collection 2025 (3)",
+      "wooPrice": "27536",
+      "wooParentId": 8495,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.92+variation_price_match"
+    },
     "8568": {
       "wooId": 8568,
       "wooName": "Architecture, Engineering & Construction (AEC) Collection 2025 (1)",
       "wooPrice": "9178",
       "wooParentId": 8495,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.92+variation_price_match"
+    },
+    "8578": {
+      "wooId": 54087,
+      "wooName": "Autodesk InfoDrainage: Create detailed drainage designs (3)",
+      "wooPrice": "27532.73",
+      "wooParentId": 8511,
       "wooType": "variation",
       "confidence": "high",
       "method": "fuzzy_0.92+variation_price_match"
@@ -1500,6 +1734,15 @@
       "confidence": "high",
       "method": "fuzzy_0.90+variation_price_match"
     },
+    "8688": {
+      "wooId": 8688,
+      "wooName": "3ds Max 2026 : Create massive worlds and high-quality designs (Yearly Subscription) (3 Year)",
+      "wooPrice": "10497",
+      "wooParentId": 8686,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.90+variation_price_match"
+    },
     "8690": {
       "wooId": 8692,
       "wooName": "Navisworks 2026: Comprehensive project review software for coordination and analysis (Yearly Subscription) (1)",
@@ -1513,6 +1756,15 @@
       "wooId": 8692,
       "wooName": "Navisworks 2026: Comprehensive project review software for coordination and analysis (Yearly Subscription) (1)",
       "wooPrice": "5138",
+      "wooParentId": 8690,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.95+variation_price_match"
+    },
+    "8693": {
+      "wooId": 8693,
+      "wooName": "Navisworks 2026: Comprehensive project review software for coordination and analysis (Yearly Subscription) (3)",
+      "wooPrice": "14686",
       "wooParentId": 8690,
       "wooType": "variation",
       "confidence": "high",
@@ -1536,6 +1788,15 @@
       "confidence": "high",
       "method": "fuzzy_0.95+variation_price_match"
     },
+    "8697": {
+      "wooId": 8697,
+      "wooName": "Maya 2026 : Create expansive worlds, complex characters and dazzling effects (Yearly Subscription) (3)",
+      "wooPrice": "9897",
+      "wooParentId": 8694,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.95+variation_price_match"
+    },
     "8698": {
       "wooId": 8700,
       "wooName": "Revit 2026: BIM software to design and make anything (Yearly Subscription) (1)",
@@ -1549,6 +1810,15 @@
       "wooId": 8700,
       "wooName": "Revit 2026: BIM software to design and make anything (Yearly Subscription) (1)",
       "wooPrice": "6607",
+      "wooParentId": 8698,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.94+variation_price_match"
+    },
+    "8701": {
+      "wooId": 8701,
+      "wooName": "Revit 2026: BIM software to design and make anything (Yearly Subscription) (3)",
+      "wooPrice": "19821",
       "wooParentId": 8698,
       "wooType": "variation",
       "confidence": "high",
@@ -1572,6 +1842,15 @@
       "confidence": "high",
       "method": "fuzzy_0.95+variation_price_match"
     },
+    "8705": {
+      "wooId": 8705,
+      "wooName": "Civil 3D 2026 : Comprehensive detailed design and documentation software for civil infrastructure (Yearly Subscription) (3)",
+      "wooPrice": "13797",
+      "wooParentId": 8702,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.95+variation_price_match"
+    },
     "8706": {
       "wooId": 8708,
       "wooName": "Architecture, Engineering &amp; Construction (AEC) Collection 2026 (1)",
@@ -1585,6 +1864,15 @@
       "wooId": 8708,
       "wooName": "Architecture, Engineering &amp; Construction (AEC) Collection 2026 (1)",
       "wooPrice": "9178",
+      "wooParentId": 8706,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.92+variation_price_match"
+    },
+    "8709": {
+      "wooId": 8709,
+      "wooName": "Architecture, Engineering &amp; Construction (AEC) Collection 2026 (3)",
+      "wooPrice": "27536",
       "wooParentId": 8706,
       "wooType": "variation",
       "confidence": "high",
@@ -1608,6 +1896,15 @@
       "confidence": "high",
       "method": "fuzzy_0.96+variation_price_match"
     },
+    "8713": {
+      "wooId": 8713,
+      "wooName": "AutoCAD LT 2026 : Best-in-class 2D design with automation to expedite drafting (Yearly Subscription) (3)",
+      "wooPrice": "3897",
+      "wooParentId": 8710,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.96+variation_price_match"
+    },
     "8714": {
       "wooId": 8716,
       "wooName": "Fusion 360 2026 : Unify design, engineering, electronics and manufacturing (1)",
@@ -1621,6 +1918,15 @@
       "wooId": 8716,
       "wooName": "Fusion 360 2026 : Unify design, engineering, electronics and manufacturing (1)",
       "wooPrice": "1899",
+      "wooParentId": 8714,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.94+variation_price_match"
+    },
+    "8717": {
+      "wooId": 8717,
+      "wooName": "Fusion 360 2026 : Unify design, engineering, electronics and manufacturing (3)",
+      "wooPrice": "4197",
       "wooParentId": 8714,
       "wooType": "variation",
       "confidence": "high",
@@ -1644,6 +1950,15 @@
       "confidence": "high",
       "method": "fuzzy_0.96+variation_price_match"
     },
+    "8724": {
+      "wooId": 8724,
+      "wooName": "AutoCad 2026 : Trusted by millions, built to accelerate your creativity (Yearly Subscription) (3)",
+      "wooPrice": "13209.98",
+      "wooParentId": 8721,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.96+variation_price_match"
+    },
     "8731": {
       "wooId": 8739,
       "wooName": "Inventor 2026 : Mechanical design software for ambitious ideas (Yearly Subscription) (1)",
@@ -1662,6 +1977,15 @@
       "confidence": "high",
       "method": "fuzzy_0.94+variation_price_match"
     },
+    "8740": {
+      "wooId": 8740,
+      "wooName": "Inventor 2026 : Mechanical design software for ambitious ideas (Yearly Subscription) (3)",
+      "wooPrice": "13797",
+      "wooParentId": 8731,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.94+variation_price_match"
+    },
     "8773": {
       "wooId": 8775,
       "wooName": "Fabrication Software 2026 That Drives Precision from Design to Production (1)",
@@ -1675,6 +1999,15 @@
       "wooId": 8775,
       "wooName": "Fabrication Software 2026 That Drives Precision from Design to Production (1)",
       "wooPrice": "3301.58",
+      "wooParentId": 8773,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.94+variation_price_match"
+    },
+    "8776": {
+      "wooId": 8776,
+      "wooName": "Fabrication Software 2026 That Drives Precision from Design to Production (3)",
+      "wooPrice": "9904.73",
       "wooParentId": 8773,
       "wooType": "variation",
       "confidence": "high",
@@ -1707,6 +2040,15 @@
       "confidence": "medium",
       "method": "fuzzy_0.93+variation_price_match"
     },
+    "8839": {
+      "wooId": 54095,
+      "wooName": "Autodesk Alias 2026 – Shape the Future of Product Design (3)",
+      "wooPrice": "49567.73",
+      "wooParentId": 8836,
+      "wooType": "variation",
+      "confidence": "medium",
+      "method": "fuzzy_0.93+variation_price_match"
+    },
     "8951": {
       "wooId": 54096,
       "wooName": "Autodesk Arnold 2026 – Advanced Global Illumination Rendering Software (1)",
@@ -1720,6 +2062,15 @@
       "wooId": 54096,
       "wooName": "Autodesk Arnold 2026 – Advanced Global Illumination Rendering Software (1)",
       "wooPrice": "1098.08",
+      "wooParentId": 8951,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.93+variation_price_match"
+    },
+    "8954": {
+      "wooId": 54097,
+      "wooName": "Autodesk Arnold 2026 – Advanced Global Illumination Rendering Software (3)",
+      "wooPrice": "3294.23",
       "wooParentId": 8951,
       "wooType": "variation",
       "confidence": "high",
@@ -1784,6 +2135,33 @@
       "confidence": "high",
       "method": "fuzzy_0.93+variation_price_match"
     },
+    "8982": {
+      "wooId": 8982,
+      "wooName": "Microsoft Office 2024 Standard LTSC MAK – Multi-User Licensing (1000)",
+      "wooPrice": "326852.5",
+      "wooParentId": 8979,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.93+variation_price_match"
+    },
+    "8983": {
+      "wooId": 8983,
+      "wooName": "Microsoft Office 2024 Standard LTSC MAK – Multi-User Licensing (2500)",
+      "wooPrice": "725318.75",
+      "wooParentId": 8979,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.93+variation_price_match"
+    },
+    "8984": {
+      "wooId": 8984,
+      "wooName": "Microsoft Office 2024 Standard LTSC MAK – Multi-User Licensing (5000)",
+      "wooPrice": "1267012.5",
+      "wooParentId": 8979,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.93+variation_price_match"
+    },
     "9009": {
       "wooId": 9010,
       "wooName": "Microsoft Office 2024 Professional Plus MAK - Multi-User Licenses (500)",
@@ -1797,6 +2175,33 @@
       "wooId": 9010,
       "wooName": "Microsoft Office 2024 Professional Plus MAK - Multi-User Licenses (500)",
       "wooPrice": "181788.75",
+      "wooParentId": 9009,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.93+variation_price_match"
+    },
+    "9011": {
+      "wooId": 9011,
+      "wooName": "Microsoft Office 2024 Professional Plus MAK - Multi-User Licenses (1000)",
+      "wooPrice": "326852.5",
+      "wooParentId": 9009,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.93+variation_price_match"
+    },
+    "9012": {
+      "wooId": 9012,
+      "wooName": "Microsoft Office 2024 Professional Plus MAK - Multi-User Licenses (2500)",
+      "wooPrice": "725318.75",
+      "wooParentId": 9009,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.93+variation_price_match"
+    },
+    "9013": {
+      "wooId": 9013,
+      "wooName": "Microsoft Office 2024 Professional Plus MAK - Multi-User Licenses (5000)",
+      "wooPrice": "1267012.5",
       "wooParentId": 9009,
       "wooType": "variation",
       "confidence": "high",
@@ -1837,6 +2242,33 @@
       "wooType": "variation",
       "confidence": "high",
       "method": "fuzzy_0.99+variation_price_match"
+    },
+    "9041": {
+      "wooId": 9041,
+      "wooName": "Microsoft Windows 10 Professional MAK Key (20/150/2500/5000 Users) (150)",
+      "wooPrice": "13771.88",
+      "wooParentId": 9031,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.98+variation_price_match"
+    },
+    "9042": {
+      "wooId": 9042,
+      "wooName": "Microsoft Windows 10 Professional MAK Key (20/150/2500/5000 Users) (2500)",
+      "wooPrice": "183625",
+      "wooParentId": 9031,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.98+variation_price_match"
+    },
+    "9043": {
+      "wooId": 9043,
+      "wooName": "Microsoft Windows 10 Professional MAK Key (20/150/2500/5000 Users) (5000)",
+      "wooPrice": "275437.5",
+      "wooParentId": 9031,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.98+variation_price_match"
     },
     "9056": {
       "wooId": 9056,
@@ -1889,6 +2321,15 @@
       "confidence": "high",
       "method": "fuzzy_0.94+variation_price_match"
     },
+    "49779": {
+      "wooId": 49779,
+      "wooName": "Revit 2024: BIM software to design and make anything (Yearly Subscription) (3)",
+      "wooPrice": "19821",
+      "wooParentId": 8374,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "fuzzy_0.94+variation_price_match"
+    },
     "50328": {
       "wooId": 50328,
       "wooName": "Visual Studio 2026 Enterprise",
@@ -1932,101 +2373,578 @@
       "confidence": "high",
       "method": "exact_name+variation_price_match"
     },
+    "99020": {
+      "wooId": 54132,
+      "wooName": "Autodesk Arnold 2027 – Advanced Global Illumination Rendering Software (1)",
+      "wooPrice": "1098.08",
+      "wooParentId": 54131,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99022": {
+      "wooId": 54125,
+      "wooName": "Autodesk Media &amp; Entertainment (MEC) Collection 2027 (1)",
+      "wooPrice": "7341.33",
+      "wooParentId": 54101,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99023": {
+      "wooId": 54129,
+      "wooName": "Autodesk Mudbox 2027 (1)",
+      "wooPrice": "363.58",
+      "wooParentId": 54128,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99024": {
+      "wooId": 54142,
+      "wooName": "Autodesk Product Design &amp; Manufacturing Collection 2027 (1)",
+      "wooPrice": "9177.58",
+      "wooParentId": 54134,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99031": {
+      "wooId": 8504,
+      "wooName": "Windows 11 Enterprise LTSC (2024)",
+      "wooPrice": "499",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99032": {
+      "wooId": 8503,
+      "wooName": "Windows 11 Enterprise loT LTSC (2024)",
+      "wooPrice": "550",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99033": {
+      "wooId": 8585,
+      "wooName": "Windows 11 Enterprise",
+      "wooPrice": "499",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99044": {
+      "wooId": 54123,
+      "wooName": "Autodesk Mudbox 2025 (1)",
+      "wooPrice": "363.58",
+      "wooParentId": 54122,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99064": {
+      "wooId": 54132,
+      "wooName": "Autodesk Arnold 2027 – Advanced Global Illumination Rendering Software (1)",
+      "wooPrice": "1098.08",
+      "wooParentId": 54131,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99066": {
+      "wooId": 54125,
+      "wooName": "Autodesk Media &amp; Entertainment (MEC) Collection 2027 (1)",
+      "wooPrice": "7341.33",
+      "wooParentId": 54101,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99067": {
+      "wooId": 54129,
+      "wooName": "Autodesk Mudbox 2027 (1)",
+      "wooPrice": "363.58",
+      "wooParentId": 54128,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99068": {
+      "wooId": 54142,
+      "wooName": "Autodesk Product Design &amp; Manufacturing Collection 2027 (1)",
+      "wooPrice": "9177.58",
+      "wooParentId": 54134,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99084": {
+      "wooId": 8509,
+      "wooName": "Microsoft 365 Family",
+      "wooPrice": "403.97",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99085": {
+      "wooId": 8508,
+      "wooName": "Microsoft 365 Personal",
+      "wooPrice": "363.57",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99091": {
+      "wooId": 8281,
+      "wooName": "Microsoft Office 365 Professional Plus",
+      "wooPrice": "399",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99095": {
+      "wooId": 8344,
+      "wooName": "Microsoft Office 2021 Home and Business for MAC",
+      "wooPrice": "599",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99097": {
+      "wooId": 51960,
+      "wooName": "Microsoft Office LTSC Standard 2024",
+      "wooPrice": "730.82",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99098": {
+      "wooId": 8500,
+      "wooName": "Microsoft Office Home &amp; Business 2024",
+      "wooPrice": "730.82",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99100": {
+      "wooId": 51961,
+      "wooName": "Microsoft Office 2024 Home",
+      "wooPrice": "495.78",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99102": {
+      "wooId": 8172,
+      "wooName": "Microsoft Windows 10 Pro for Workstation",
+      "wooPrice": "599",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99110": {
+      "wooId": 8384,
+      "wooName": "Windows 11 Pro",
+      "wooPrice": "249",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99112": {
+      "wooId": 8504,
+      "wooName": "Windows 11 Enterprise LTSC (2024)",
+      "wooPrice": "499",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99113": {
+      "wooId": 8503,
+      "wooName": "Windows 11 Enterprise loT LTSC (2024)",
+      "wooPrice": "550",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99114": {
+      "wooId": 8585,
+      "wooName": "Windows 11 Enterprise",
+      "wooPrice": "499",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99139": {
+      "wooId": 8564,
+      "wooName": "Dynamics 365 Customer Insights (1 Tenant)",
+      "wooPrice": "62386",
+      "wooParentId": 8493,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99141": {
+      "wooId": 8562,
+      "wooName": "Dynamics 365 Marketing (Base Pack) (1 Tenant)",
+      "wooPrice": "55046",
+      "wooParentId": 8491,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99142": {
+      "wooId": 8235,
+      "wooName": "Microsoft Exchange Server 2016 Enterprise",
+      "wooPrice": "4999",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99143": {
+      "wooId": 8236,
+      "wooName": "Microsoft Exchange Server 2016 Standard",
+      "wooPrice": "1499",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99144": {
+      "wooId": 8237,
+      "wooName": "Microsoft Exchange Server 2019 Enterprise",
+      "wooPrice": "11013.82",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99145": {
+      "wooId": 51956,
+      "wooName": "Microsoft Exchange Server 2019 Enterprise Device",
+      "wooPrice": "146.9",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
     "99146": {
       "wooId": 51957,
       "wooName": "Microsoft Exchange Server 2019 Enterprise User Cal",
       "wooPrice": "183.62",
       "wooType": "simple",
-      "confidence": "medium",
-      "method": "fuzzy_0.91"
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99147": {
+      "wooId": 8238,
+      "wooName": "Microsoft Exchange Server 2019 Standard",
+      "wooPrice": "2567.07",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
     },
     "99148": {
       "wooId": 8239,
       "wooName": "Microsoft Exchange Server 2019 Standard User Cal",
       "wooPrice": "183.62",
       "wooType": "simple",
-      "confidence": "medium",
-      "method": "fuzzy_0.91"
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99149": {
+      "wooId": 8198,
+      "wooName": "Microsoft SharePoint Server 2016",
+      "wooPrice": "11999",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
     },
     "99150": {
       "wooId": 8199,
       "wooName": "Microsoft SharePoint Server 2016 Enterprise User Cal",
       "wooPrice": "348.3",
       "wooType": "simple",
-      "confidence": "medium",
-      "method": "fuzzy_0.91"
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99151": {
+      "wooId": 8200,
+      "wooName": "Microsoft SharePoint Server 2019",
+      "wooPrice": "13999",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99152": {
+      "wooId": 51945,
+      "wooName": "Microsoft SharePoint Server 2019 Enterprise",
+      "wooPrice": "22016",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
     },
     "99153": {
       "wooId": 51949,
       "wooName": "Microsoft SharePoint Server 2019 Enterprise Device CAL",
       "wooPrice": "184",
       "wooType": "simple",
-      "confidence": "medium",
-      "method": "fuzzy_0.91"
+      "confidence": "high",
+      "method": "exact_name"
     },
     "99154": {
       "wooId": 51948,
       "wooName": "Microsoft SharePoint Server 2019 Enterprise User Cal",
       "wooPrice": "220",
       "wooType": "simple",
-      "confidence": "medium",
-      "method": "fuzzy_0.91"
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99155": {
+      "wooId": 51943,
+      "wooName": "Microsoft SharePoint Server 2019 Standard",
+      "wooPrice": "22016",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
     },
     "99156": {
       "wooId": 51947,
       "wooName": "Microsoft SharePoint Server 2019 Standard Device Cal",
       "wooPrice": "220",
       "wooType": "simple",
-      "confidence": "medium",
-      "method": "fuzzy_0.91"
+      "confidence": "high",
+      "method": "exact_name"
     },
     "99157": {
       "wooId": 51946,
       "wooName": "Microsoft SharePoint Server 2019 Standard User CAL",
       "wooPrice": "257",
       "wooType": "simple",
-      "confidence": "medium",
-      "method": "fuzzy_0.91"
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99158": {
+      "wooId": 51492,
+      "wooName": "Microsoft Windows Server 2025 Standard (16 Core)",
+      "wooPrice": "2199.82",
+      "wooParentId": 8389,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99161": {
+      "wooId": 51498,
+      "wooName": "Microsoft Windows Server 2025 Datacenter (16 Core)",
+      "wooPrice": "11381.07",
+      "wooParentId": 8386,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99162": {
+      "wooId": 51506,
+      "wooName": "Microsoft Windows Server 2022 Datacenter (16 Core)",
+      "wooPrice": "7341.32",
+      "wooParentId": 8158,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99163": {
+      "wooId": 51526,
+      "wooName": "Microsoft Windows Server 2016 Datacenter (16 Core)",
+      "wooPrice": "4036.07",
+      "wooParentId": 51524,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99165": {
+      "wooId": 51501,
+      "wooName": "Microsoft Windows Server 2022 Standard (16 Core)",
+      "wooPrice": "1652.62",
+      "wooParentId": 8242,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99170": {
+      "wooId": 51515,
+      "wooName": "Microsoft Windows Server 2019 Datacenter (16 Core)",
+      "wooPrice": "6606.82",
+      "wooParentId": 8246,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99171": {
+      "wooId": 8248,
+      "wooName": "Microsoft Windows Server 2019 Essentials",
+      "wooPrice": "799",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99172": {
+      "wooId": 51522,
+      "wooName": "Microsoft Windows Server 2016 Standard (16 Core)",
+      "wooPrice": "1098.07",
+      "wooParentId": 8154,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
     },
     "99178": {
       "wooId": 8372,
       "wooName": "Microsoft SQL Server 2022 Enterprise (2 Core)",
       "wooPrice": "44066.32",
       "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99179": {
+      "wooId": 51707,
+      "wooName": "Microsoft SQL Server 2022 Standard – 1 User Client Access License (User CAL)",
+      "wooPrice": "550.87",
+      "wooType": "simple",
       "confidence": "medium",
-      "method": "fuzzy_0.90"
+      "method": "fuzzy_0.92"
     },
     "99180": {
       "wooId": 8371,
       "wooName": "Microsoft SQL Server 2022 Standard 2 Core",
       "wooPrice": "11013.82",
       "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99181": {
+      "wooId": 51708,
+      "wooName": "Microsoft SQL Server 2022 Standard – 1 Device Client Access License (Device CAL)",
+      "wooPrice": "550.87",
+      "wooType": "simple",
       "confidence": "medium",
-      "method": "fuzzy_0.90"
+      "method": "fuzzy_0.91"
     },
     "99182": {
       "wooId": 8183,
       "wooName": "Microsoft SQL Server 2019 Enterprise (2 Core)",
       "wooPrice": "36721.32",
       "wooType": "simple",
-      "confidence": "medium",
-      "method": "fuzzy_0.90"
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99183": {
+      "wooId": 51664,
+      "wooName": "Microsoft SQL Server 2019 Standard (Standard)",
+      "wooPrice": "1832.57",
+      "wooParentId": 8195,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
     },
     "99184": {
       "wooId": 8192,
       "wooName": "Microsoft SQL Server 2017 Enterprise (2 Core)",
       "wooPrice": "34885.07",
       "wooType": "simple",
-      "confidence": "medium",
-      "method": "fuzzy_0.90"
+      "confidence": "high",
+      "method": "exact_name"
     },
     "99185": {
       "wooId": 8194,
       "wooName": "Microsoft SQL Server 2017 Standard (2 Core)",
       "wooPrice": "9177.57",
       "wooType": "simple",
-      "confidence": "medium",
-      "method": "fuzzy_0.90"
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99186": {
+      "wooId": 51668,
+      "wooName": "Microsoft SQL Server 2017 Standard (Standard)",
+      "wooPrice": "1652.62",
+      "wooParentId": 8193,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99187": {
+      "wooId": 8505,
+      "wooName": "Project Standard 2024",
+      "wooPrice": "2200",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99188": {
+      "wooId": 8502,
+      "wooName": "Project Professional 2024",
+      "wooPrice": "3669.35",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99189": {
+      "wooId": 8551,
+      "wooName": "Microsoft Project Online Project Plan 5 (1 User)",
+      "wooPrice": "624",
+      "wooParentId": 8485,
+      "wooType": "variation",
+      "confidence": "high",
+      "method": "exact_name+variation_price_match"
+    },
+    "99194": {
+      "wooId": 8506,
+      "wooName": "Visio Standard 2024",
+      "wooPrice": "1832.84",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99196": {
+      "wooId": 8501,
+      "wooName": "Visio Professional 2024",
+      "wooPrice": "1832.84",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99200": {
+      "wooId": 50330,
+      "wooName": "Visual Studio 2026 Professional",
+      "wooPrice": "1999",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99201": {
+      "wooId": 50328,
+      "wooName": "Visual Studio 2026 Enterprise",
+      "wooPrice": "10999",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99203": {
+      "wooId": 8263,
+      "wooName": "Microsoft Visual Studio 2019 Enterprise",
+      "wooPrice": "9999",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99204": {
+      "wooId": 8270,
+      "wooName": "Microsoft Visual Studio 2022 Enterprise",
+      "wooPrice": "10999",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
+    },
+    "99205": {
+      "wooId": 8264,
+      "wooName": "Microsoft Visual Studio 2019 Professional",
+      "wooPrice": "1399",
+      "wooType": "simple",
+      "confidence": "high",
+      "method": "exact_name"
     }
   }
 }
