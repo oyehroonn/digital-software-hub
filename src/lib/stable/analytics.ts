@@ -104,9 +104,54 @@ export function getAnonymousId(): string {
   return readStored(hasWindow ? window.localStorage : undefined, ANON_KEY, 'anon');
 }
 
+// ── UTM attribution (first-touch, per tab session) ──────────────────────────
+//
+// Captures utm_* query params on the landing hit and persists them to
+// sessionStorage so every telemetry/order/lead call for the rest of THIS tab
+// session carries the same attribution, even once the visitor navigates away
+// from the original landing URL. Used to attribute traffic/orders back to
+// outbound campaigns (e.g. the `waleed_ai` email/LinkedIn/SMS initiative) —
+// same utm_source/utm_medium/utm_campaign scheme already used by the
+// `blogs.digitalsoftwaremarket.ai` render-time UTM links (ag_blogs).
+
+const UTM_KEY = 'dsm.utm';
+const UTM_FIELDS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'] as const;
+
+export type UtmContext = Partial<Record<(typeof UTM_FIELDS)[number], string>>;
+
+/** Reads fresh utm_* params from the URL, or falls back to this session's first-touch values. */
+export function getUtmContext(): UtmContext | undefined {
+  if (!hasWindow) return undefined;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fresh: UtmContext = {};
+    for (const key of UTM_FIELDS) {
+      const value = params.get(key);
+      if (value) fresh[key] = value;
+    }
+    if (Object.keys(fresh).length > 0) {
+      window.sessionStorage.setItem(UTM_KEY, JSON.stringify(fresh));
+      return fresh;
+    }
+    const stored = window.sessionStorage.getItem(UTM_KEY);
+    if (stored) return JSON.parse(stored) as UtmContext;
+  } catch {
+    // sessionStorage unavailable (private mode, etc.) — no attribution, not fatal.
+  }
+  return undefined;
+}
+
+/** Renders a UTM context as a single human-readable line for a free-text `notes` field. */
+export function utmNoteLine(utm: UtmContext | undefined): string {
+  if (!utm || Object.keys(utm).length === 0) return '';
+  const parts = UTM_FIELDS.filter((k) => utm[k]).map((k) => `${k}=${utm[k]}`);
+  return parts.length ? `UTM: ${parts.join(' ')}` : '';
+}
+
 // ── Transport ────────────────────────────────────────────────────────────────
 
 function buildEvent(input: TelemetryInput): TelemetryEvent {
+  const utm = getUtmContext();
   return {
     storeName: STORE_NAME,
     sessionId: getSessionId(),
@@ -115,6 +160,7 @@ function buildEvent(input: TelemetryInput): TelemetryEvent {
     pageUrl: hasWindow ? window.location.href : undefined,
     userAgent: hasWindow ? navigator.userAgent : undefined,
     ...input,
+    metadata: utm ? { ...utm, ...(input.metadata ?? {}) } : input.metadata,
   };
 }
 

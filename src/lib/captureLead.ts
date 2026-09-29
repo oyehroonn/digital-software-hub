@@ -30,6 +30,8 @@ import {
   STORE_NAME,
   getSessionId,
   getAnonymousId,
+  getUtmContext,
+  utmNoteLine,
 } from './stable/analytics';
 
 /** Where the lead was captured — tags the record for the admin Customers view. */
@@ -112,13 +114,15 @@ export function captureLead(input: CaptureLeadInput): Promise<void> {
   if (sent.has(dedupeKey)) return Promise.resolve();
   sent.add(dedupeKey);
 
+  const utm = getUtmContext();
+  const metadata = utm ? { ...utm, ...(input.metadata ?? {}) } : input.metadata;
+
   const notes = [
     `Lead source: ${source}`,
     input.company ? `Company: ${input.company.trim()}` : '',
     input.notes?.trim() || '',
-    input.metadata && Object.keys(input.metadata).length
-      ? `Context: ${safeJson(input.metadata)}`
-      : '',
+    utmNoteLine(utm),
+    metadata && Object.keys(metadata).length ? `Context: ${safeJson(metadata)}` : '',
   ]
     .filter(Boolean)
     .join('\n');

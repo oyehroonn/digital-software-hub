@@ -18,7 +18,14 @@
  */
 
 import { enqueue, registerProcessor } from '../offlineQueue';
-import { ANALYTICS_URL, STORE_NAME, getSessionId, getAnonymousId } from './analytics';
+import {
+  ANALYTICS_URL,
+  STORE_NAME,
+  getSessionId,
+  getAnonymousId,
+  getUtmContext,
+  utmNoteLine,
+} from './analytics';
 
 const QUEUE_KIND = 'order';
 
@@ -75,12 +82,19 @@ function makeRef(): string {
 }
 
 function buildEnvelope(order: OrderPayload, clientRef: string): OrderEnvelope {
+  // Attribute the order back to a campaign (e.g. waleed_ai email/LinkedIn/SMS
+  // outreach) when the visitor's session carries utm_* params — same scheme
+  // as the `ag_blogs` render-time UTM links. Appended to `notes` since
+  // OrderPayload has no dedicated metadata field; original notes are kept.
+  const utmLine = utmNoteLine(getUtmContext());
+  const notes = utmLine ? [order.notes?.trim(), utmLine].filter(Boolean).join('\n') : order.notes;
+
   return {
     type: 'order',
     clientRef,
     sessionId: getSessionId(),
     anonymousId: getAnonymousId(),
-    order: { storeName: STORE_NAME, ...order },
+    order: { storeName: STORE_NAME, ...order, notes },
   };
 }
 
