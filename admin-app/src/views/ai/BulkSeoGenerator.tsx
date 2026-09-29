@@ -219,12 +219,12 @@ export function BulkSeoGenerator({ config }: { config: AppConfig }) {
             <h1 className="text-lg font-semibold">AI Bulk SEO Generator</h1>
             <LlmBadge status={llm} />
           </div>
-          <p className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             Generate SEO titles, meta descriptions & keywords for many products at once.{" "}
             <Badge variant="muted">
               source: {source === "vps" ? "live catalog" : source === "orders" ? "orders sheet" : "DSM featured"}
             </Badge>
-          </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
