@@ -79,6 +79,7 @@ import { ApprovalsView } from "@/views/approvals/ApprovalsView";
 import { DesktopAppView } from "@/views/system/DesktopAppView";
 import { ApiAccessView } from "@/views/system/ApiAccessView";
 import { MergeRequestsView } from "@/views/system/MergeRequestsView";
+import { CampaignApprovalsView } from "@/views/campaign-approvals/CampaignApprovalsView";
 import { DocsView } from "@/views/system/DocsView";
 
 export type LucideIcon = typeof Boxes;
@@ -318,6 +319,19 @@ export const SECTIONS: Section[] = [
     singlePage: true,
     pages: [],
     render: (ctx) => <ApiAccessView config={ctx.config} />,
+  },
+
+  {
+    key: "campaign-approvals",
+    label: "Campaign Approvals",
+    icon: Send,
+    group: "Growth",
+    perm: "marketing.blast",
+    blurb:
+      "Human-approval inbox for the waleed_ai outbound email initiative — real segment sizes, real content previews, real suppression-filtered test sends. Approve triggers a real, small ActiveCampaign send; nothing sends automatically.",
+    singlePage: true,
+    pages: [],
+    render: (ctx) => <CampaignApprovalsView config={ctx.config} />,
   },
 
   {
